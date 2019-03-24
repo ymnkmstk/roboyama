@@ -1,7 +1,10 @@
 /*
-!/EV3way_EV3RT/
-!/EV3RT.xcodeproj/project.pbxproj
 !.gitignore
+!/EV3way_EV3RT/
+!/EV3RT.xcodeproj/
+/EV3RT.xcodeproj/project.xcworkspace/
+/EV3RT.xcodeproj/xcuserdata/
+/EV3RT.xcodeproj/build/
 *~
 *.swp
 .DS_Store
