@@ -1,5 +1,6 @@
 /*
 !.gitignore
+!/ev3way-cpp/
 !/EV3way_EV3RT/
 !/EV3RT.xcodeproj/
 /EV3RT.xcodeproj/project.xcworkspace/
