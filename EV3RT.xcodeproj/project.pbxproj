@@ -8,16 +8,44 @@
 
 /* Begin PBXFileReference section */
 		636D51762272C9A9000BF529 /* ev3way-cpp */ = {isa = PBXFileReference; lastKnownFileType = folder; path = "ev3way-cpp"; sourceTree = "<group>"; };
+		63A5DD4E229BCF2D008A1791 /* balancer_param.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = balancer_param.c; sourceTree = "<group>"; };
+		63A5DD4F229BCF37008A1791 /* balancer_private.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = balancer_private.h; sourceTree = "<group>"; };
+		63A5DD50229BCF41008A1791 /* balancer.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = balancer.c; sourceTree = "<group>"; };
+		63A5DD51229BCF4C008A1791 /* balancer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = balancer.h; sourceTree = "<group>"; };
+		63A5DD52229BCF55008A1791 /* Makefile.inc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.pascal; path = Makefile.inc; sourceTree = "<group>"; };
 		63DC32292246D5FA00193473 /* EV3way_EV3RT */ = {isa = PBXFileReference; lastKnownFileType = folder; path = EV3way_EV3RT; sourceTree = "<group>"; };
+		63F355EE228D03BC009BB1A7 /* crew.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = crew.hpp; sourceTree = "<group>"; };
+		63F355EF228D03BC009BB1A7 /* crew.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = crew.cpp; sourceTree = "<group>"; };
+		63F355F0228D03BC009BB1A7 /* app.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = app.cpp; sourceTree = "<group>"; };
+		63F355F1228D03BC009BB1A7 /* app.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = app.h; sourceTree = "<group>"; };
+		63F355F2228D907D009BB1A7 /* app.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = app.cfg; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
 		63DC321E2245EB6000193473 = {
 			isa = PBXGroup;
 			children = (
+				63F355E9228D0309009BB1A7 /* aflac2019 */,
 				636D51762272C9A9000BF529 /* ev3way-cpp */,
 				63DC32292246D5FA00193473 /* EV3way_EV3RT */,
 			);
+			sourceTree = "<group>";
+		};
+		63F355E9228D0309009BB1A7 /* aflac2019 */ = {
+			isa = PBXGroup;
+			children = (
+				63A5DD52229BCF55008A1791 /* Makefile.inc */,
+				63A5DD51229BCF4C008A1791 /* balancer.h */,
+				63A5DD50229BCF41008A1791 /* balancer.c */,
+				63A5DD4F229BCF37008A1791 /* balancer_private.h */,
+				63A5DD4E229BCF2D008A1791 /* balancer_param.c */,
+				63F355F2228D907D009BB1A7 /* app.cfg */,
+				63F355F0228D03BC009BB1A7 /* app.cpp */,
+				63F355F1228D03BC009BB1A7 /* app.h */,
+				63F355EF228D03BC009BB1A7 /* crew.cpp */,
+				63F355EE228D03BC009BB1A7 /* crew.hpp */,
+			);
+			path = aflac2019;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -51,6 +79,20 @@
 			passBuildSettingsInEnvironment = 0;
 			productName = EV3way_EV3RT;
 		};
+		63F355EA228D038E009BB1A7 /* aflac2019 */ = {
+			isa = PBXLegacyTarget;
+			buildArgumentsString = "$(CONFIGURATION)=$(TARGET_NAME) PWD=$(PROJECT_DIR)";
+			buildConfigurationList = 63F355EB228D038E009BB1A7 /* Build configuration list for PBXLegacyTarget "aflac2019" */;
+			buildPhases = (
+			);
+			buildToolPath = /usr/bin/make;
+			buildWorkingDirectory = "";
+			dependencies = (
+			);
+			name = aflac2019;
+			passBuildSettingsInEnvironment = 0;
+			productName = EV3way_EV3RT;
+		};
 /* End PBXLegacyTarget section */
 
 /* Begin PBXProject section */
@@ -77,6 +119,7 @@
 			targets = (
 				63DC32252246D2F500193473 /* EV3way_EV3RT */,
 				636D51772272CC07000BF529 /* ev3way-cpp */,
+				63F355EA228D038E009BB1A7 /* aflac2019 */,
 			);
 		};
 /* End PBXProject section */
@@ -328,6 +371,123 @@
 			};
 			name = img;
 		};
+		63F355EC228D038E009BB1A7 /* app */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUGGING_SYMBOLS = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 2QRPE4YP36;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = app;
+		};
+		63F355ED228D038E009BB1A7 /* img */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 2QRPE4YP36;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = img;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -354,6 +514,15 @@
 			buildConfigurations = (
 				63DC32262246D2F500193473 /* app */,
 				63DC32272246D2F500193473 /* img */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = app;
+		};
+		63F355EB228D038E009BB1A7 /* Build configuration list for PBXLegacyTarget "aflac2019" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				63F355EC228D038E009BB1A7 /* app */,
+				63F355ED228D038E009BB1A7 /* img */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = app;

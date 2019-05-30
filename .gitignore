@@ -1,5 +1,6 @@
 /*
 !.gitignore
+!/aflac2019/
 !/ev3way-cpp/
 !/EV3way_EV3RT/
 !/EV3RT.xcodeproj/
