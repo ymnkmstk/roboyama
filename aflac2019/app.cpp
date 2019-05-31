@@ -10,14 +10,7 @@
 
 #include "crew.hpp"
 
-#define DEBUG
-
-#ifdef DEBUG
-#define _debug(x) (x)
-#else
-#define _debug(x)
-#endif
-
+Clock*      clock;
 Captain*    captain;
 Observer*   observer;
 Navigator*  activeNavigator = NULL;
@@ -31,21 +24,21 @@ void task_activator(intptr_t tskid) {
 
 // Captain's periodic task
 void captain_task(intptr_t unused) {
-    captain->operate();
+    if (captain != NULL) captain->operate();
 }
 
 // Observer's periodic task
 void observer_task(intptr_t unused) {
-    observer->operate();
+    if (observer != NULL) observer->operate();
 }
 
 // Navigator's periodic task
 void navigator_task(intptr_t unused) {
-    activeNavigator->operate();
+    if (activeNavigator != NULL) activeNavigator->operate();
 }
 
 void main_task(intptr_t unused) {
-    Clock* clock   = new Clock();
+    clock   = new Clock;
     captain = new Captain;
     
     captain->takeoff();
@@ -56,7 +49,5 @@ void main_task(intptr_t unused) {
     captain->land();
     
     delete captain;
-    
-    clock->sleep(1000); // wait a while
     ext_tsk();
 }

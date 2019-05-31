@@ -9,6 +9,14 @@
 #ifndef crew_hpp
 #define crew_hpp
 
+#define DEBUG
+
+#ifdef DEBUG
+#define _debug(x) (x)
+#else
+#define _debug(x)
+#endif
+
 #include "TouchSensor.h"
 #include "SonarSensor.h"
 #include "ColorSensor.h"
@@ -59,17 +67,20 @@ protected:
     int8_t forward;      /* 前後進命令 */
     int8_t turn;         /* 旋回命令 */
     int8_t pwm_L, pwm_R; /* 左右モータPWM出力 */
-    Motor*      leftMotor;
-    Motor*      rightMotor;
-    Motor*      tailMotor;
-    GyroSensor* gyroSensor;
+    int8_t cnt_operate = 0;
+    Motor*          leftMotor;
+    Motor*          rightMotor;
+    Motor*          tailMotor;
+    GyroSensor*     gyroSensor;
+    ColorSensor*    colorSensor;
     void cancelBacklash(int8_t lpwm, int8_t rpwm, int32_t *lenc, int32_t *renc);
     void controlTail(int32_t angle);
 public:
     Navigator();
-    virtual void goOnDuty() = 0;
+    void goOnDuty();
+    virtual void haveControl() = 0;
     virtual void operate() = 0;
-    virtual void goOffDuty() = 0;
+    void goOffDuty();
     virtual ~Navigator();
 };
 
@@ -79,24 +90,21 @@ protected:
 public:
     AnchorWatch();
     AnchorWatch(Motor* tm);
-    void goOnDuty();
+    void haveControl();
     void operate(); // method to invoke from the cyclic handler
-    void goOffDuty();
     ~AnchorWatch();
 };
 
 class LineTracer : public Navigator {
 private:
-    ColorSensor*    colorSensor;
     int32_t motor_ang_l, motor_ang_r;
     int32_t gyro, volt;
 protected:
 public:
     LineTracer();
     LineTracer(Motor* lm, Motor* rm, Motor* tm, GyroSensor* gs, ColorSensor* cs);
-    void goOnDuty();
+    void haveControl();
     void operate(); // method to invoke from the cyclic handler
-    void goOffDuty();
     ~LineTracer();
 };
 
@@ -104,10 +112,9 @@ class SeesawCrimber : public Navigator {
 protected:
 public:
     SeesawCrimber();
-    SeesawCrimber(int16_t*);
-    void goOnDuty();
+    SeesawCrimber(Motor* lm, Motor* rm, Motor* tm, GyroSensor* gs, ColorSensor* cs);
+    void haveControl();
     void operate(); // method to invoke from the cyclic handler
-    void goOffDuty();
     ~SeesawCrimber();
 };
 
@@ -115,10 +122,9 @@ class LimboDancer : public Navigator {
 protected:
 public:
     LimboDancer();
-    LimboDancer(int16_t*);
-    void goOnDuty();
+    LimboDancer(Motor* lm, Motor* rm, Motor* tm, GyroSensor* gs, ColorSensor* cs);
+    void haveControl();
     void operate(); // method to invoke from the cyclic handler
-    void goOffDuty();
     ~LimboDancer();
 };
 
