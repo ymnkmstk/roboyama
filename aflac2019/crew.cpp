@@ -1,6 +1,6 @@
 //
 //  crew.cpp
-//  cppTest
+//  aflac2019
 //
 //  Created by Wataru Taniguchi on 2019/04/28.
 //  Copyright © 2019 Wataru Taniguchi. All rights reserved.
@@ -152,6 +152,7 @@ void Navigator::controlTail(int32_t angle) {
     }
     
     if (cnt_operate++ % 250 == 0) {
+        cnt_operate = 0;
         _debug(syslog(LOG_NOTICE, "Navigator::controlTail(): pwm = %d", pwm));
     }
     tailMotor->setPWM(pwm);
@@ -197,7 +198,6 @@ void AnchorWatch::haveControl() {
 }
 
 void AnchorWatch::operate() {
-    //_debug(syslog(LOG_NOTICE, "AnchorWatch is in action...");
     controlTail(TAIL_ANGLE_STAND_UP); /* 完全停止用角度に制御 */
 }
 
@@ -235,7 +235,6 @@ void LineTracer::operate() {
     
     if (sonar_flag) {
         forward = turn = 0; /* 障害物を検知したら停止 */
-        sonar_flag = false;
     } else {
         //forward = 30; /* 前進命令 */
         forward = 5;
@@ -267,6 +266,7 @@ void LineTracer::operate() {
                     (int8_t *)&pwm_R);
     
     if (cnt_operate++ % 250 == 0) {
+        cnt_operate = 0;
         _debug(syslog(LOG_NOTICE, "LineTracer::operatte(): pwm_L = %d, pwm_R = %d", pwm_L, pwm_R));
     }
     leftMotor->setPWM(pwm_L);
@@ -309,13 +309,10 @@ void Captain::takeoff() {
 }
 
 void Captain::operate() {
-    //_debug(syslog(LOG_NOTICE, "Captain is in action...");
-    
     /* ToDo: implement a state machine to pick up an appropriate Navigator */
     if (bt_flag || touch_flag) {
         syslog(LOG_NOTICE, "Departing...");
         lineTracer->haveControl();
-        //lineTracer->goOnDuty();
     }
     if (backButton_flag) {
         syslog(LOG_NOTICE, "Landing...");
@@ -324,12 +321,10 @@ void Captain::operate() {
     /*
     switch (event) {
      case "a":
-        activeNavigator->goOffDuty();
-        seesawCrimber->goOnDuty();
+        seesawCrimber->haveControl();
         break;
      case "b":
-        activeNavigator->goOffDuty();
-        lineTracer->goOnDuty();
+        lineTracer->haveControl();
         break;
      default:
         break;

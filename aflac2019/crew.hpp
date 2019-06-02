@@ -1,6 +1,6 @@
 //
 //  crew.hpp
-//  cppTest
+//  aflac2019
 //
 //  Created by Wataru Taniguchi on 2019/04/28.
 //  Copyright © 2019 Wataru Taniguchi. All rights reserved.
