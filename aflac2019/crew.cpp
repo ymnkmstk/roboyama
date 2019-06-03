@@ -24,7 +24,7 @@ extern Clock*       clock;
 extern bool         landing;
 
 Observer::Observer(TouchSensor* ts,SonarSensor* ss) {
-    _debug(syslog(LOG_NOTICE, "Observer constructor"));
+    _debug(syslog(LOG_NOTICE, "%ld, Observer constructor", (ulong_t)get_utm(&utime)));
     touchSensor = ts;
     sonarSensor = ss;
     bt = NULL;
@@ -37,30 +37,31 @@ void Observer::goOnDuty() {
 
     // register cyclic handler to EV3RT
     ev3_sta_cyc(CYC_OBS_TSK);
-    _debug(syslog(LOG_NOTICE, "Observer handler set"));
+    clock->sleep(2*PERIOD_OBS_TSK); // wait a while
+    _debug(syslog(LOG_NOTICE, "%ld, Observer handler set", (ulong_t)get_utm(&utime)));
 }
 
 void Observer::operate() {
     //if (check_bt())         bt_flag         = true;
     if (check_touch() && !touch_flag) {
-        _debug(syslog(LOG_NOTICE, "TouchSensor flipped on"));
+        _debug(syslog(LOG_NOTICE, "%ld, TouchSensor flipped on", (ulong_t)get_utm(&utime)));
         touch_flag = true;
     } else if (!check_touch() && touch_flag) {
-        _debug(syslog(LOG_NOTICE, "TouchSensor flipped off"));
+        _debug(syslog(LOG_NOTICE, "%ld, TouchSensor flipped off", (ulong_t)get_utm(&utime)));
         touch_flag = false;
     }
     if (check_sonar() && !sonar_flag) {
-        _debug(syslog(LOG_NOTICE, "SonarSensor flipped on"));
+        _debug(syslog(LOG_NOTICE, "%ld, SonarSensor flipped on", (ulong_t)get_utm(&utime)));
         sonar_flag = true;
     } else if (!check_sonar() && sonar_flag) {
-        _debug(syslog(LOG_NOTICE, "SonarSensor flipped off"));
+        _debug(syslog(LOG_NOTICE, "%ld, SonarSensor flipped off", (ulong_t)get_utm(&utime)));
         sonar_flag = false;
     }
     if (check_backButton() && !backButton_flag) {
-        _debug(syslog(LOG_NOTICE, "Back button flipped on"));
+        _debug(syslog(LOG_NOTICE, "%ld, Back button flipped on", (ulong_t)get_utm(&utime)));
         backButton_flag = true;
     } else if (!check_backButton() && backButton_flag) {
-        _debug(syslog(LOG_NOTICE, "Back button flipped off"));
+        _debug(syslog(LOG_NOTICE, "%ld, Back button flipped off", (ulong_t)get_utm(&utime)));
         backButton_flag = false;
     }
 }
@@ -69,7 +70,7 @@ void Observer::goOffDuty() {
     // deregister cyclic handler from EV3RT
     ev3_stp_cyc(CYC_OBS_TSK);
     clock->sleep(2*PERIOD_OBS_TSK); // wait a while
-    _debug(syslog(LOG_NOTICE, "Observer handler unset"));
+    _debug(syslog(LOG_NOTICE, "%ld, Observer handler unset", (ulong_t)get_utm(&utime)));
     
     //fclose(bt);
 }
@@ -112,11 +113,11 @@ bool Observer::check_backButton(void) {
 }
 
 Observer::~Observer() {
-    _debug(syslog(LOG_NOTICE, "Observer destructor"));
+    _debug(syslog(LOG_NOTICE, "%ld, Observer destructor", (ulong_t)get_utm(&utime)));
 }
 
 Navigator::Navigator() {
-    _debug(syslog(LOG_NOTICE, "Navigator default constructor"));
+    _debug(syslog(LOG_NOTICE, "%ld, Navigator default constructor", (ulong_t)get_utm(&utime)));
 }
 
 //*****************************************************************************
@@ -151,38 +152,39 @@ void Navigator::controlTail(int32_t angle) {
         pwm = -PWM_ABS_MAX;
     }
     
-    if (cnt_operate++ % 250 == 0) {
-        cnt_operate = 0;
-        _debug(syslog(LOG_NOTICE, "Navigator::controlTail(): pwm = %d", pwm));
+    if (++cnt_operate1 % 250 == 0) {
+        cnt_operate1 = 0;
+        _debug(syslog(LOG_NOTICE, "%ld, Navigator::controlTail(): pwm = %d", (ulong_t)get_utm(&utime), pwm));
     }
     tailMotor->setPWM(pwm);
 }
 
 void Navigator::goOnDuty() {
-    _debug(syslog(LOG_NOTICE, "Navigator goes on duty"));
+    _debug(syslog(LOG_NOTICE, "%ld, Navigator goes on duty", (ulong_t)get_utm(&utime)));
 
 
     // register cyclic handler to EV3RT
     ev3_sta_cyc(CYC_NAV_TSK);
-    _debug(syslog(LOG_NOTICE, "Navigator handler set"));
+    clock->sleep(2*PERIOD_NAV_TSK); // wait a while
+    _debug(syslog(LOG_NOTICE, "%ld, Navigator handler set", (ulong_t)get_utm(&utime)));
 }
 
 void Navigator::goOffDuty() {
-    _debug(syslog(LOG_NOTICE, "Navigator goes off duty"));
+    _debug(syslog(LOG_NOTICE, "%ld, Navigator goes off duty", (ulong_t)get_utm(&utime)));
     
     // deregister cyclic handler from EV3RT
     ev3_stp_cyc(CYC_NAV_TSK);
     clock->sleep(2*PERIOD_NAV_TSK); // wait a while
-    _debug(syslog(LOG_NOTICE, "Navigator handler unset"));
+    _debug(syslog(LOG_NOTICE, "%ld, Navigator handler unset", (ulong_t)get_utm(&utime)));
     activeNavigator = NULL;
 }
 
 Navigator::~Navigator() {
-    _debug(syslog(LOG_NOTICE, "Navigator destructor"));
+    _debug(syslog(LOG_NOTICE, "%ld, Navigator destructor", (ulong_t)get_utm(&utime)));
 }
 
 AnchorWatch::AnchorWatch(Motor* tm) {
-    _debug(syslog(LOG_NOTICE, "AnchorWatch constructor"));
+    _debug(syslog(LOG_NOTICE, "%ld, AnchorWatch constructor", (ulong_t)get_utm(&utime)));
     tailMotor   = tm;
 }
 
@@ -191,10 +193,10 @@ void AnchorWatch::haveControl() {
     /* 尻尾モーターのリセット */
     tailMotor->reset();
     ev3_led_set_color(LED_ORANGE); /* 初期化完了通知 */
-    cnt_operate = 0;
+    cnt_operate1 = 0;
     activeNavigator = this;
     
-    syslog(LOG_NOTICE, "AnchorWatch has control");
+    syslog(LOG_NOTICE, "%ld, AnchorWatch has control", (ulong_t)get_utm(&utime));
 }
 
 void AnchorWatch::operate() {
@@ -202,11 +204,11 @@ void AnchorWatch::operate() {
 }
 
 AnchorWatch::~AnchorWatch() {
-    _debug(syslog(LOG_NOTICE, "AnchorWatch destructor"));
+    _debug(syslog(LOG_NOTICE, "%ld, AnchorWatch destructor", (ulong_t)get_utm(&utime)));
 }
 
 LineTracer::LineTracer(Motor* lm, Motor* rm, Motor* tm, GyroSensor* gs, ColorSensor* cs) {
-    _debug(syslog(LOG_NOTICE, "LineTracer constructor"));
+    _debug(syslog(LOG_NOTICE, "%ld, LineTracer constructor", (ulong_t)get_utm(&utime)));
     leftMotor   = lm;
     rightMotor  = rm;
     tailMotor   = tm;
@@ -224,20 +226,19 @@ void LineTracer::haveControl() {
     balance_init(); /* 倒立振子API初期化 */
     
     ev3_led_set_color(LED_GREEN); /* スタート通知 */
-    cnt_operate = 0;
+    cnt_operate2 = 0;
     activeNavigator = this;
 
-    syslog(LOG_NOTICE, "LineTracer has control");
+    syslog(LOG_NOTICE, "%ld, LineTracer has control", (ulong_t)get_utm(&utime));
 }
 
 void LineTracer::operate() {
     controlTail(TAIL_ANGLE_DRIVE); /* バランス走行用角度に制御 */
-    
+
     if (sonar_flag) {
         forward = turn = 0; /* 障害物を検知したら停止 */
     } else {
-        //forward = 30; /* 前進命令 */
-        forward = 5;
+        forward = 30; /* 前進命令 */
         if (colorSensor->getBrightness() >= (LIGHT_WHITE + LIGHT_BLACK)/2) {
             turn =  20; /* 左旋回命令 */
         } else {
@@ -265,20 +266,20 @@ void LineTracer::operate() {
                     (int8_t *)&pwm_L,
                     (int8_t *)&pwm_R);
     
-    if (cnt_operate++ % 250 == 0) {
-        cnt_operate = 0;
-        _debug(syslog(LOG_NOTICE, "LineTracer::operatte(): pwm_L = %d, pwm_R = %d", pwm_L, pwm_R));
+    if (++cnt_operate2 % 250 == 0) {
+        cnt_operate2 = 0;
+        _debug(syslog(LOG_NOTICE, "LineTracer::operate(): pwm_L = %d, pwm_R = %d", pwm_L, pwm_R));
     }
     leftMotor->setPWM(pwm_L);
     rightMotor->setPWM(pwm_R);
 }
 
 LineTracer::~LineTracer() {
-    _debug(syslog(LOG_NOTICE, "LineTracer destructor"));
+    _debug(syslog(LOG_NOTICE, "%ld, LineTracer destructor", (ulong_t)get_utm(&utime)));
 }
 
 Captain::Captain() {
-    _debug(syslog(LOG_NOTICE, "Captain default constructor"));
+    _debug(syslog(LOG_NOTICE, "%ld, Captain default constructor", (ulong_t)get_utm(&utime)));
 }
 
 void Captain::takeoff() {
@@ -297,7 +298,8 @@ void Captain::takeoff() {
     
     // register cyclic handler to EV3RT
     ev3_sta_cyc(CYC_CAP_TSK);
-    
+    clock->sleep(2*PERIOD_CAP_TSK); // wait a while
+
     observer = new Observer(touchSensor, sonarSensor);
     observer->goOnDuty();
     //limboDancer = new LimboDancer(leftMotor, rightMotor, tailMotor);
@@ -311,12 +313,16 @@ void Captain::takeoff() {
 void Captain::operate() {
     /* ToDo: implement a state machine to pick up an appropriate Navigator */
     if (bt_flag || touch_flag) {
-        syslog(LOG_NOTICE, "Departing...");
+        syslog(LOG_NOTICE, "%ld, Departing...", (ulong_t)get_utm(&utime));
+        activeNavigator->goOffDuty();
+        lineTracer->goOnDuty();
         lineTracer->haveControl();
     }
     if (backButton_flag) {
-        syslog(LOG_NOTICE, "Landing...");
-        landing = true; // This will cause the main task to initiate the landing sequence
+        syslog(LOG_NOTICE, "%ld, Landing...", (ulong_t)get_utm(&utime));
+        //landing = true; // This will cause the main task to initiate the landing sequence
+        ER ercd = wup_tsk(MAIN_TASK); // wake up the main task
+        assert(ercd == E_OK);
     }
     /*
     switch (event) {
@@ -351,5 +357,5 @@ void Captain::land() {
 }
 
 Captain::~Captain() {
-    _debug(syslog(LOG_NOTICE, "Captain destructor"));
+    _debug(syslog(LOG_NOTICE, "%ld, Captain destructor", (ulong_t)get_utm(&utime)));
 }

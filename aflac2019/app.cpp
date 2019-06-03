@@ -42,10 +42,14 @@ void main_task(intptr_t unused) {
     captain = new Captain;
     
     captain->takeoff();
+    
+    // sleep until being waken up
+    ER ercd = slp_tsk();
+    assert(ercd == E_OK);
     // infinite loop until stop condition is met
-    while (!landing) {
-        clock->sleep(10);
-    }
+    //while (!landing) {
+    //    clock->sleep(10);
+    //}
     captain->land();
     
     delete captain;

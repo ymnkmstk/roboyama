@@ -48,6 +48,7 @@ private:
     FILE*           bt;      /* Bluetoothファイルハンドル */
     TouchSensor*    touchSensor;
     SonarSensor*    sonarSensor;
+    SYSUTM utime;
     bool check_touch(void);
     bool check_sonar(void);
     bool check_bt(void);
@@ -67,12 +68,14 @@ protected:
     int8_t forward;      /* 前後進命令 */
     int8_t turn;         /* 旋回命令 */
     int8_t pwm_L, pwm_R; /* 左右モータPWM出力 */
-    int8_t cnt_operate = 0;
+    int16_t cnt_operate1 = 0;
+    int16_t cnt_operate2 = 0;
     Motor*          leftMotor;
     Motor*          rightMotor;
     Motor*          tailMotor;
     GyroSensor*     gyroSensor;
     ColorSensor*    colorSensor;
+    SYSUTM utime;
     void cancelBacklash(int8_t lpwm, int8_t rpwm, int32_t *lenc, int32_t *renc);
     void controlTail(int32_t angle);
 public:
@@ -141,6 +144,7 @@ private:
     LineTracer*     lineTracer;
     SeesawCrimber*  seesawCrimber;
     LimboDancer*    limboDancer;
+    SYSUTM          utime;
 protected:
 public:
     Captain();
