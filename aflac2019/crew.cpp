@@ -3,7 +3,7 @@
 //  aflac2019
 //
 //  Created by Wataru Taniguchi on 2019/04/28.
-//  Copyright © 2019 Wataru Taniguchi. All rights reserved.
+//  Copyright © 2019 Ahiruchan Koubou. All rights reserved.
 //
 
 #include "app.h"
@@ -21,10 +21,9 @@ bool backButton_flag = false; /* true: BackButton押下 */
 extern Observer*    observer;
 extern Navigator*   activeNavigator;
 extern Clock*       clock;
-extern bool         landing;
 
 Observer::Observer(TouchSensor* ts,SonarSensor* ss) {
-    _debug(syslog(LOG_NOTICE, "%ld, Observer constructor", (ulong_t)get_utm(&utime)));
+    _debug(syslog(LOG_NOTICE, "%PRIu32, Observer constructor", clock->now()));
     touchSensor = ts;
     sonarSensor = ss;
     bt = NULL;
@@ -38,30 +37,30 @@ void Observer::goOnDuty() {
     // register cyclic handler to EV3RT
     ev3_sta_cyc(CYC_OBS_TSK);
     clock->sleep(2*PERIOD_OBS_TSK); // wait a while
-    _debug(syslog(LOG_NOTICE, "%ld, Observer handler set", (ulong_t)get_utm(&utime)));
+    _debug(syslog(LOG_NOTICE, "%PRIu32, Observer handler set", clock->now()));
 }
 
 void Observer::operate() {
     //if (check_bt())         bt_flag         = true;
     if (check_touch() && !touch_flag) {
-        _debug(syslog(LOG_NOTICE, "%ld, TouchSensor flipped on", (ulong_t)get_utm(&utime)));
+        _debug(syslog(LOG_NOTICE, "%PRIu32, TouchSensor flipped on", clock->now()));
         touch_flag = true;
     } else if (!check_touch() && touch_flag) {
-        _debug(syslog(LOG_NOTICE, "%ld, TouchSensor flipped off", (ulong_t)get_utm(&utime)));
+        _debug(syslog(LOG_NOTICE, "%PRIu32, TouchSensor flipped off", clock->now()));
         touch_flag = false;
     }
     if (check_sonar() && !sonar_flag) {
-        _debug(syslog(LOG_NOTICE, "%ld, SonarSensor flipped on", (ulong_t)get_utm(&utime)));
+        _debug(syslog(LOG_NOTICE, "%PRIu32, SonarSensor flipped on", clock->now()));
         sonar_flag = true;
     } else if (!check_sonar() && sonar_flag) {
-        _debug(syslog(LOG_NOTICE, "%ld, SonarSensor flipped off", (ulong_t)get_utm(&utime)));
+        _debug(syslog(LOG_NOTICE, "%PRIu32, SonarSensor flipped off", clock->now()));
         sonar_flag = false;
     }
     if (check_backButton() && !backButton_flag) {
-        _debug(syslog(LOG_NOTICE, "%ld, Back button flipped on", (ulong_t)get_utm(&utime)));
+        _debug(syslog(LOG_NOTICE, "%PRIu32, Back button flipped on", clock->now()));
         backButton_flag = true;
     } else if (!check_backButton() && backButton_flag) {
-        _debug(syslog(LOG_NOTICE, "%ld, Back button flipped off", (ulong_t)get_utm(&utime)));
+        _debug(syslog(LOG_NOTICE, "%PRIu32, Back button flipped off", clock->now()));
         backButton_flag = false;
     }
 }
@@ -70,7 +69,7 @@ void Observer::goOffDuty() {
     // deregister cyclic handler from EV3RT
     ev3_stp_cyc(CYC_OBS_TSK);
     clock->sleep(2*PERIOD_OBS_TSK); // wait a while
-    _debug(syslog(LOG_NOTICE, "%ld, Observer handler unset", (ulong_t)get_utm(&utime)));
+    _debug(syslog(LOG_NOTICE, "%PRIu32, Observer handler unset", clock->now()));
     
     //fclose(bt);
 }
@@ -113,11 +112,11 @@ bool Observer::check_backButton(void) {
 }
 
 Observer::~Observer() {
-    _debug(syslog(LOG_NOTICE, "%ld, Observer destructor", (ulong_t)get_utm(&utime)));
+    _debug(syslog(LOG_NOTICE, "%PRIu32, Observer destructor", clock->now()));
 }
 
 Navigator::Navigator() {
-    _debug(syslog(LOG_NOTICE, "%ld, Navigator default constructor", (ulong_t)get_utm(&utime)));
+    _debug(syslog(LOG_NOTICE, "%PRIu32, Navigator default constructor", clock->now()));
 }
 
 //*****************************************************************************
@@ -151,52 +150,48 @@ void Navigator::controlTail(int32_t angle) {
     } else if (pwm < -PWM_ABS_MAX) {
         pwm = -PWM_ABS_MAX;
     }
-    
-    if (++cnt_operate1 % 250 == 0) {
-        cnt_operate1 = 0;
-        _debug(syslog(LOG_NOTICE, "%ld, Navigator::controlTail(): pwm = %d", (ulong_t)get_utm(&utime), pwm));
-    }
+
     tailMotor->setPWM(pwm);
+
+    // display pwm in every PERIOD_TRACE_MSG ms */
+    if (++trace_pwmT * PERIOD_NAV_TSK >= PERIOD_TRACE_MSG) {
+       trace_pwmT = 0;
+        _debug(syslog(LOG_NOTICE, "%PRIu32, Navigator::controlTail(): pwm = %d", clock->now(), pwm));
+    }
 }
 
 void Navigator::goOnDuty() {
-    _debug(syslog(LOG_NOTICE, "%ld, Navigator goes on duty", (ulong_t)get_utm(&utime)));
-
-
     // register cyclic handler to EV3RT
     ev3_sta_cyc(CYC_NAV_TSK);
     clock->sleep(2*PERIOD_NAV_TSK); // wait a while
-    _debug(syslog(LOG_NOTICE, "%ld, Navigator handler set", (ulong_t)get_utm(&utime)));
+    _debug(syslog(LOG_NOTICE, "%PRIu32, Navigator handler set", clock->now()));
 }
 
 void Navigator::goOffDuty() {
-    _debug(syslog(LOG_NOTICE, "%ld, Navigator goes off duty", (ulong_t)get_utm(&utime)));
-    
     // deregister cyclic handler from EV3RT
     ev3_stp_cyc(CYC_NAV_TSK);
     clock->sleep(2*PERIOD_NAV_TSK); // wait a while
-    _debug(syslog(LOG_NOTICE, "%ld, Navigator handler unset", (ulong_t)get_utm(&utime)));
     activeNavigator = NULL;
+    _debug(syslog(LOG_NOTICE, "%PRIu32, Navigator handler unset", clock->now()));
 }
 
 Navigator::~Navigator() {
-    _debug(syslog(LOG_NOTICE, "%ld, Navigator destructor", (ulong_t)get_utm(&utime)));
+    _debug(syslog(LOG_NOTICE, "%PRIu32, Navigator destructor", clock->now()));
 }
 
 AnchorWatch::AnchorWatch(Motor* tm) {
-    _debug(syslog(LOG_NOTICE, "%ld, AnchorWatch constructor", (ulong_t)get_utm(&utime)));
+    _debug(syslog(LOG_NOTICE, "%PRIu32, AnchorWatch constructor", clock->now()));
     tailMotor   = tm;
+    trace_pwmT  = 0;
 }
 
 void AnchorWatch::haveControl() {
-    activeNavigator = NULL;
     /* 尻尾モーターのリセット */
     tailMotor->reset();
     ev3_led_set_color(LED_ORANGE); /* 初期化完了通知 */
-    cnt_operate1 = 0;
     activeNavigator = this;
     
-    syslog(LOG_NOTICE, "%ld, AnchorWatch has control", (ulong_t)get_utm(&utime));
+    syslog(LOG_NOTICE, "%PRIu32, AnchorWatch has control", clock->now());
 }
 
 void AnchorWatch::operate() {
@@ -204,20 +199,21 @@ void AnchorWatch::operate() {
 }
 
 AnchorWatch::~AnchorWatch() {
-    _debug(syslog(LOG_NOTICE, "%ld, AnchorWatch destructor", (ulong_t)get_utm(&utime)));
+    _debug(syslog(LOG_NOTICE, "%PRIu32, AnchorWatch destructor", clock->now()));
 }
 
 LineTracer::LineTracer(Motor* lm, Motor* rm, Motor* tm, GyroSensor* gs, ColorSensor* cs) {
-    _debug(syslog(LOG_NOTICE, "%ld, LineTracer constructor", (ulong_t)get_utm(&utime)));
+    _debug(syslog(LOG_NOTICE, "%PRIu32, LineTracer constructor", clock->now()));
     leftMotor   = lm;
     rightMotor  = rm;
     tailMotor   = tm;
     gyroSensor  = gs;
     colorSensor = cs;
+    trace_pwmT  = 0;
+    trace_pwmLR = 0;
 }
 
 void LineTracer::haveControl() {
-    activeNavigator = NULL;
     /* 走行モーターエンコーダーリセット */
     leftMotor->reset();
     rightMotor->reset();
@@ -226,10 +222,9 @@ void LineTracer::haveControl() {
     balance_init(); /* 倒立振子API初期化 */
     
     ev3_led_set_color(LED_GREEN); /* スタート通知 */
-    cnt_operate2 = 0;
     activeNavigator = this;
 
-    syslog(LOG_NOTICE, "%ld, LineTracer has control", (ulong_t)get_utm(&utime));
+    syslog(LOG_NOTICE, "%PRIu32, LineTracer has control", clock->now());
 }
 
 void LineTracer::operate() {
@@ -265,28 +260,30 @@ void LineTracer::operate() {
                     (float)volt,
                     (int8_t *)&pwm_L,
                     (int8_t *)&pwm_R);
-    
-    if (++cnt_operate2 % 250 == 0) {
-        cnt_operate2 = 0;
-        _debug(syslog(LOG_NOTICE, "LineTracer::operate(): pwm_L = %d, pwm_R = %d", pwm_L, pwm_R));
-    }
+
     leftMotor->setPWM(pwm_L);
     rightMotor->setPWM(pwm_R);
+    
+    // display pwm in every PERIOD_TRACE_MSG ms */
+    if (++trace_pwmLR * PERIOD_NAV_TSK >= PERIOD_TRACE_MSG) {
+        trace_pwmLR = 0;
+        _debug(syslog(LOG_NOTICE, "%PRIu32, LineTracer::operate(): pwm_L = %d, pwm_R = %d", clock->now(), pwm_L, pwm_R));
+    }
 }
 
 LineTracer::~LineTracer() {
-    _debug(syslog(LOG_NOTICE, "%ld, LineTracer destructor", (ulong_t)get_utm(&utime)));
+    _debug(syslog(LOG_NOTICE, "%PRIu32, LineTracer destructor", clock->now()));
 }
 
 Captain::Captain() {
-    _debug(syslog(LOG_NOTICE, "%ld, Captain default constructor", (ulong_t)get_utm(&utime)));
+    _debug(syslog(LOG_NOTICE, "%PRIu32, Captain default constructor", clock->now()));
 }
 
 void Captain::takeoff() {
     /* 各オブジェクトを生成・初期化する */
     touchSensor = new TouchSensor(PORT_1);
-    colorSensor = new ColorSensor(PORT_3);
     sonarSensor = new SonarSensor(PORT_2);
+    colorSensor = new ColorSensor(PORT_3);
     gyroSensor  = new GyroSensor(PORT_4);
     leftMotor   = new Motor(PORT_C);
     rightMotor  = new Motor(PORT_B);
@@ -313,16 +310,18 @@ void Captain::takeoff() {
 void Captain::operate() {
     /* ToDo: implement a state machine to pick up an appropriate Navigator */
     if (bt_flag || touch_flag) {
-        syslog(LOG_NOTICE, "%ld, Departing...", (ulong_t)get_utm(&utime));
-        activeNavigator->goOffDuty();
-        lineTracer->goOnDuty();
+        syslog(LOG_NOTICE, "%PRIu32, Departing...", clock->now());
+        //activeNavigator->goOffDuty();
+        //lineTracer->goOnDuty();
         lineTracer->haveControl();
     }
     if (backButton_flag) {
-        syslog(LOG_NOTICE, "%ld, Landing...", (ulong_t)get_utm(&utime));
-        //landing = true; // This will cause the main task to initiate the landing sequence
+        syslog(LOG_NOTICE, "%PRIu32, Landing...", clock->now());
         ER ercd = wup_tsk(MAIN_TASK); // wake up the main task
         assert(ercd == E_OK);
+        
+        // make sure this routine is NOT executed before it is killed by the main task
+        clock->sleep(2*PERIOD_CAP_TSK); // wait a while
     }
     /*
     switch (event) {
@@ -357,5 +356,5 @@ void Captain::land() {
 }
 
 Captain::~Captain() {
-    _debug(syslog(LOG_NOTICE, "%ld, Captain destructor", (ulong_t)get_utm(&utime)));
+    _debug(syslog(LOG_NOTICE, "%PRIu32, Captain destructor", clock->now()));
 }

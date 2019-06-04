@@ -3,7 +3,7 @@
 //  aflac2019
 //
 //  Created by Wataru Taniguchi on 2019/04/28.
-//  Copyright © 2019 Wataru Taniguchi. All rights reserved.
+//  Copyright © 2019 Ahiruchan Koubou. All rights reserved.
 //
 
 #include "app.h"
@@ -14,7 +14,6 @@ Clock*      clock;
 Captain*    captain;
 Observer*   observer;
 Navigator*  activeNavigator = NULL;
-bool landing = false;
 
 // a cyclic handler to activate a task
 void task_activator(intptr_t tskid) {
@@ -46,10 +45,7 @@ void main_task(intptr_t unused) {
     // sleep until being waken up
     ER ercd = slp_tsk();
     assert(ercd == E_OK);
-    // infinite loop until stop condition is met
-    //while (!landing) {
-    //    clock->sleep(10);
-    //}
+
     captain->land();
     
     delete captain;

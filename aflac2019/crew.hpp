@@ -3,7 +3,7 @@
 //  aflac2019
 //
 //  Created by Wataru Taniguchi on 2019/04/28.
-//  Copyright © 2019 Wataru Taniguchi. All rights reserved.
+//  Copyright © 2019 Ahiruchan Koubou. All rights reserved.
 //
 
 #ifndef crew_hpp
@@ -17,6 +17,7 @@
 #define _debug(x)
 #endif
 
+#include <cinttypes>
 #include "TouchSensor.h"
 #include "SonarSensor.h"
 #include "ColorSensor.h"
@@ -43,6 +44,8 @@ using namespace ev3api;
 #define CALIB_FONT_WIDTH (6/*TODO: magic number*/)
 #define CALIB_FONT_HEIGHT (8/*TODO: magic number*/)
 
+#define PERIOD_TRACE_MSG    1000    /* Trace message in every 1000 ms */
+
 class Observer {
 private:
     FILE*           bt;      /* Bluetoothファイルハンドル */
@@ -68,8 +71,7 @@ protected:
     int8_t forward;      /* 前後進命令 */
     int8_t turn;         /* 旋回命令 */
     int8_t pwm_L, pwm_R; /* 左右モータPWM出力 */
-    int16_t cnt_operate1 = 0;
-    int16_t cnt_operate2 = 0;
+    int16_t         trace_pwmT, trace_pwmLR;
     Motor*          leftMotor;
     Motor*          rightMotor;
     Motor*          tailMotor;
@@ -129,6 +131,16 @@ public:
     void haveControl();
     void operate(); // method to invoke from the cyclic handler
     ~LimboDancer();
+};
+
+class HarbourPilot : public Navigator {
+protected:
+public:
+    HarbourPilot();
+    HarbourPilot(Motor* lm, Motor* rm, Motor* tm, GyroSensor* gs, SonarSensor* ss);
+    void haveControl();
+    void operate(); // method to invoke from the cyclic handler
+    ~HarbourPilot();
 };
 
 class Captain {

@@ -3,7 +3,7 @@
 //  aflac2019
 //
 //  Created by Wataru Taniguchi on 2019/05/08.
-//  Copyright © 2019 Wataru Taniguchi. All rights reserved.
+//  Copyright © 2019 Ahiruchan Koubou. All rights reserved.
 //
 
 #ifndef app_h
