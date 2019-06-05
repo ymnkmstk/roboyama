@@ -67,6 +67,10 @@ public:
 };
 
 class Navigator {
+private:
+    long double kp, ki, kd;   /* PID constant */
+    int16_t diff[2];
+    long double integral;
 protected:
     int8_t forward;      /* 前後進命令 */
     int8_t turn;         /* 旋回命令 */
@@ -80,6 +84,9 @@ protected:
     SYSUTM utime;
     void cancelBacklash(int8_t lpwm, int8_t rpwm, int32_t *lenc, int32_t *renc);
     void controlTail(int32_t angle);
+    void setPIDconst(long double p, long double i, long double d);
+    int8_t math_limit(int8_t input, int8_t min, int8_t max);
+    int8_t computePID(int8_t sensor, int8_t target);
 public:
     Navigator();
     void goOnDuty();

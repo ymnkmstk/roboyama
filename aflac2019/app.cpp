@@ -18,7 +18,7 @@ Navigator*  activeNavigator = NULL;
 // a cyclic handler to activate a task
 void task_activator(intptr_t tskid) {
     ER ercd = act_tsk(tskid);
-    assert(ercd == E_OK);
+    //assert(ercd == E_OK);
 }
 
 // Captain's periodic task
