@@ -156,12 +156,10 @@ void Navigator::controlTail(int32_t angle) {
     tailMotor->setPWM(pwm);
 
     // display pwm in every PERIOD_TRACE_MSG ms */
-    /*
     if (++trace_pwmT * PERIOD_NAV_TSK >= PERIOD_TRACE_MSG) {
        trace_pwmT = 0;
         _debug(syslog(LOG_NOTICE, "%lu, Navigator::controlTail(): pwm = %d", clock->now(), pwm));
     }
-    */
 }
 
 void Navigator::setPIDconst(long double p, long double i, long double d) {
@@ -218,9 +216,7 @@ AnchorWatch::AnchorWatch(Motor* tm) {
 }
 
 void AnchorWatch::haveControl() {
-    ev3_led_set_color(LED_ORANGE); /* 初期化完了通知 */
     activeNavigator = this;
-   
     syslog(LOG_NOTICE, "%lu, AnchorWatch has control", clock->now());
 }
 
@@ -244,9 +240,7 @@ LineTracer::LineTracer(Motor* lm, Motor* rm, Motor* tm, GyroSensor* gs, ColorSen
 }
 
 void LineTracer::haveControl() {
-    ev3_led_set_color(LED_GREEN); /* スタート通知 */
     activeNavigator = this;
-
     syslog(LOG_NOTICE, "%lu, LineTracer has control", clock->now());
 }
 
@@ -257,16 +251,16 @@ void LineTracer::operate() {
         forward = turn = 0; /* 障害物を検知したら停止 */
     } else {
         forward = 30; //前進命令
+        /*
         if (colorSensor->getBrightness() >= (LIGHT_WHITE + LIGHT_BLACK)/2) {
             turn =  20; // 左旋回命令
         } else {
             turn = -20; // 右旋回命令
         }
-        /*
+        */
         int8_t sensor = colorSensor->getBrightness();
         int8_t target = (LIGHT_WHITE + LIGHT_BLACK)/2;
         turn = computePID(sensor, target);
-        */
     }
     /* 倒立振子制御API に渡すパラメータを取得する */
     motor_ang_l = leftMotor->getCount();
@@ -293,12 +287,10 @@ void LineTracer::operate() {
     rightMotor->setPWM(pwm_R);
 
     // display pwm in every PERIOD_TRACE_MSG ms */
-    /*
     if (++trace_pwmLR * PERIOD_NAV_TSK >= PERIOD_TRACE_MSG) {
         trace_pwmLR = 0;
         _debug(syslog(LOG_NOTICE, "%lu, LineTracer::operate(): pwm_L = %d, pwm_R = %d", clock->now(), pwm_L, pwm_R));
     }
-    */
 }
 
 LineTracer::~LineTracer() {
@@ -336,14 +328,7 @@ void Captain::takeoff() {
     /* 尻尾モーターのリセット */
     tailMotor->reset();
     
-    /* 走行モーターエンコーダーリセット */
-    leftMotor->reset();
-    rightMotor->reset();
-
-    balance_init(); /* 倒立振子API初期化 */
-    
-    /* ジャイロセンサーリセット */
-    gyroSensor->reset();
+    ev3_led_set_color(LED_ORANGE); /* 初期化完了通知 */
 
     anchorWatch = new AnchorWatch(tailMotor);
     anchorWatch->goOnDuty();
@@ -354,8 +339,17 @@ void Captain::operate() {
     /* ToDo: implement a state machine to pick up an appropriate Navigator */
     if (bt_flag || touch_flag) {
         syslog(LOG_NOTICE, "%lu, Departing...", clock->now());
-        activeNavigator->goOffDuty();
-        lineTracer->goOnDuty();
+        
+        /* 走行モーターエンコーダーリセット */
+        leftMotor->reset();
+        rightMotor->reset();
+        
+        balance_init(); /* 倒立振子API初期化 */
+        
+        /* ジャイロセンサーリセット */
+        gyroSensor->reset();
+        ev3_led_set_color(LED_GREEN); /* スタート通知 */
+
         lineTracer->haveControl();
         clock->sleep(PERIOD_CAP_TSK/2); // wait a while
    }
