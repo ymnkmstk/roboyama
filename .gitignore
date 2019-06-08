@@ -1,6 +1,7 @@
 /*
 !.gitignore
 !/aflac2019/
+!/test-sensor/
 !/ev3way-cpp/
 !/EV3way_EV3RT/
 !/EV3RT.xcodeproj/
