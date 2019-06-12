@@ -120,31 +120,14 @@ public:
     ~LineTracer();
 };
 
-class SeesawCrimber : public Navigator {
-protected:
-public:
-    SeesawCrimber();
-    SeesawCrimber(Motor* lm, Motor* rm, Motor* tm, GyroSensor* gs, ColorSensor* cs);
-    void haveControl();
-    void operate(); // method to invoke from the cyclic handler
-    ~SeesawCrimber();
-};
-
-class LimboDancer : public Navigator {
-protected:
-public:
-    LimboDancer();
-    LimboDancer(Motor* lm, Motor* rm, Motor* tm, GyroSensor* gs, ColorSensor* cs);
-    void haveControl();
-    void operate(); // method to invoke from the cyclic handler
-    ~LimboDancer();
-};
+#include "SeesawCrimber.hpp"
+#include "LimboDancer.hpp"
 
 class HarbourPilot : public Navigator {
 protected:
 public:
     HarbourPilot();
-    HarbourPilot(Motor* lm, Motor* rm, Motor* tm, GyroSensor* gs, SonarSensor* ss);
+    HarbourPilot(Motor* lm, Motor* rm, Motor* tm, GyroSensor* gs, ColorSensor* cs);
     void haveControl();
     void operate(); // method to invoke from the cyclic handler
     ~HarbourPilot();
@@ -163,7 +146,7 @@ private:
     LineTracer*     lineTracer;
     SeesawCrimber*  seesawCrimber;
     LimboDancer*    limboDancer;
-    SYSUTM          utime;
+    HarbourPilot*   harbourPilot;
 protected:
 public:
     Captain();
@@ -172,5 +155,9 @@ public:
     void land();
     ~Captain();
 };
+
+extern Observer*    observer;
+extern Navigator*   activeNavigator;
+extern Clock*       clock;
 
 #endif /* crew_hpp */

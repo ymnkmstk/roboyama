@@ -12,6 +12,10 @@
 		636EB8B722AB1BEC0046CCFC /* app.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = app.cpp; sourceTree = "<group>"; };
 		636EB8B822AB1BF40046CCFC /* app.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = app.h; sourceTree = "<group>"; };
 		636EB8B922AB1BFD0046CCFC /* Makefile.inc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.pascal; path = Makefile.inc; sourceTree = "<group>"; };
+		636EB8BA22B079F60046CCFC /* LimboDancer.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = LimboDancer.cpp; sourceTree = "<group>"; };
+		636EB8BB22B079F60046CCFC /* LimboDancer.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LimboDancer.hpp; sourceTree = "<group>"; };
+		636EB8BC22B07A2C0046CCFC /* SeesawCrimber.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SeesawCrimber.cpp; sourceTree = "<group>"; };
+		636EB8BD22B07A2C0046CCFC /* SeesawCrimber.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = SeesawCrimber.hpp; sourceTree = "<group>"; };
 		63A5DD4E229BCF2D008A1791 /* balancer_param.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = balancer_param.c; sourceTree = "<group>"; };
 		63A5DD4F229BCF37008A1791 /* balancer_private.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = balancer_private.h; sourceTree = "<group>"; };
 		63A5DD50229BCF41008A1791 /* balancer.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = balancer.c; sourceTree = "<group>"; };
@@ -60,6 +64,10 @@
 				63F355F1228D03BC009BB1A7 /* app.h */,
 				63F355EF228D03BC009BB1A7 /* crew.cpp */,
 				63F355EE228D03BC009BB1A7 /* crew.hpp */,
+				636EB8BC22B07A2C0046CCFC /* SeesawCrimber.cpp */,
+				636EB8BD22B07A2C0046CCFC /* SeesawCrimber.hpp */,
+				636EB8BA22B079F60046CCFC /* LimboDancer.cpp */,
+				636EB8BB22B079F60046CCFC /* LimboDancer.hpp */,
 			);
 			path = aflac2019;
 			sourceTree = "<group>";
