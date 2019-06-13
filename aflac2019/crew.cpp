@@ -18,11 +18,16 @@ bool touch_flag      = false; /* TouchSensor true:タッチセンサー押下 */
 bool sonar_flag      = false; /* SonarSensor true:障害物検知 */
 bool backButton_flag = false; /* true: BackButton押下 */
 
-Observer::Observer(TouchSensor* ts,SonarSensor* ss) {
+Observer::Observer(Motor* lm, Motor* rm, TouchSensor* ts,SonarSensor* ss) {
     _debug(syslog(LOG_NOTICE, "%08lu, Observer constructor", clock->now()));
+    leftMotor   = lm;
+    rightMotor  = rm;
     touchSensor = ts;
     sonarSensor = ss;
     bt = NULL;
+    distance = 0.0;
+    prevAngL = 0;
+    prevAngR = 0;
 }
 
 void Observer::goOnDuty() {
@@ -32,11 +37,57 @@ void Observer::goOnDuty() {
 
     // register cyclic handler to EV3RT
     ev3_sta_cyc(CYC_OBS_TSK);
-    clock->sleep(2*PERIOD_OBS_TSK); // wait a while
+    clock->sleep(PERIOD_OBS_TSK/2); // wait a while
     _debug(syslog(LOG_NOTICE, "%08lu, Observer handler set", clock->now()));
 }
 
+void Observer::reset() {
+    distance = 0.0;
+    azimuth = 0.0;
+    locX = 0.0;
+    locY = 0.0;
+    prevAngL = leftMotor->getCount();
+    prevAngR = rightMotor->getCount();
+}
+
+float Observer::getDistance() {
+    return distance;
+}
+
+float Observer::getAzimuth() {
+    return azimuth;
+}
+
+float Observer::getLocX() {
+    return locX;
+}
+
+float Observer::getLocY() {
+    return locY;
+}
+
 void Observer::operate() {
+    // accumulate distance
+    float curAngL = leftMotor->getCount();
+    float curAngR = rightMotor->getCount();
+    float deltaDistL = M_PI * TIRE_DIAMETER * (curAngL - prevAngL) / 360.0;
+    float deltaDistR = M_PI * TIRE_DIAMETER * (curAngR - prevAngR) / 360.0;
+    float deltaDist = (deltaDistL + deltaDistR) / 2.0;
+    distance += deltaDist;
+    prevAngL = curAngL;
+    prevAngR = curAngR;
+    // calculate azimuth
+    float deltaRad = atan2((deltaDistL - deltaDistR), WHEEL_TREAD);
+    azimuth += 180.0 * deltaRad / M_PI;
+    if (azimuth > 360.0) {
+        azimuth -= 360.0;
+    } else if (azimuth < 0.0) {
+        azimuth += 360.0;
+    }
+    // estimate location
+    locX += deltaDist * sin(deltaRad);
+    locY += deltaDist * cos(deltaRad);
+
     //if (check_bt())         bt_flag         = true;
     if (check_touch() && !touch_flag) {
         _debug(syslog(LOG_NOTICE, "%08lu, TouchSensor flipped on", clock->now()));
@@ -64,7 +115,7 @@ void Observer::operate() {
 void Observer::goOffDuty() {
     // deregister cyclic handler from EV3RT
     ev3_stp_cyc(CYC_OBS_TSK);
-    clock->sleep(2*PERIOD_OBS_TSK); // wait a while
+    clock->sleep(PERIOD_OBS_TSK/2); // wait a while
     _debug(syslog(LOG_NOTICE, "%08lu, Observer handler unset", clock->now()));
     
     //fclose(bt);
@@ -248,6 +299,7 @@ void LineTracer::operate() {
     } else {
         forward = 30; //前進命令
         /*
+        // on-off control
         if (colorSensor->getBrightness() >= (LIGHT_WHITE + LIGHT_BLACK)/2) {
             turn =  20; // 左旋回命令
         } else {
@@ -285,7 +337,7 @@ void LineTracer::operate() {
     // display pwm in every PERIOD_TRACE_MSG ms */
     if (++trace_pwmLR * PERIOD_NAV_TSK >= PERIOD_TRACE_MSG) {
         trace_pwmLR = 0;
-        _debug(syslog(LOG_NOTICE, "%08lu, LineTracer::operate(): pwm_L = %d, pwm_R = %d", clock->now(), pwm_L, pwm_R));
+        _debug(syslog(LOG_NOTICE, "%08lu, LineTracer::operate(): pwm_L = %d, pwm_R = %d, distance = %d, azimuth = %d, x = %d, y = %d", clock->now(), pwm_L, pwm_R, (int16_t)observer->getDistance(), (int8_t)observer->getAzimuth(), (int16_t)observer->getLocX(), (int16_t)observer->getLocY()));
     }
 }
 
@@ -336,7 +388,7 @@ void Captain::takeoff() {
     ev3_sta_cyc(CYC_CAP_TSK);
     clock->sleep(PERIOD_CAP_TSK/2); // wait a while
 
-    observer = new Observer(touchSensor, sonarSensor);
+    observer = new Observer(leftMotor, rightMotor, touchSensor, sonarSensor);
     observer->goOnDuty();
     limboDancer = new LimboDancer(leftMotor, rightMotor, tailMotor, gyroSensor, colorSensor);
     seesawCrimber = new SeesawCrimber(leftMotor, rightMotor, tailMotor, gyroSensor, colorSensor);
@@ -355,42 +407,43 @@ void Captain::takeoff() {
 
 void Captain::operate() {
     /* ToDo: implement a state machine to pick up an appropriate Navigator */
-    if (bt_flag || touch_flag) {
-        syslog(LOG_NOTICE, "%08lu, Departing...", clock->now());
-        
-        /* 走行モーターエンコーダーリセット */
-        leftMotor->reset();
-        rightMotor->reset();
-        
-        balance_init(); /* 倒立振子API初期化 */
-        
-        /* ジャイロセンサーリセット */
-        gyroSensor->reset();
-        ev3_led_set_color(LED_GREEN); /* スタート通知 */
-
-        lineTracer->haveControl();
-        clock->sleep(PERIOD_CAP_TSK/2); // wait a while
-   }
-    if (backButton_flag) {
-        syslog(LOG_NOTICE, "%08lu, Landing...", clock->now());
-        ER ercd = wup_tsk(MAIN_TASK); // wake up the main task
-        assert(ercd == E_OK);
-        
-        // make sure this routine is NOT executed before it is killed by the main task
-        clock->sleep(PERIOD_CAP_TSK/2); // wait a while
+    switch (state) {
+        case ST_takingOff:
+            if (bt_flag || touch_flag) {
+                syslog(LOG_NOTICE, "%08lu, Departing...", clock->now());
+                
+                /* 走行モーターエンコーダーリセット */
+                leftMotor->reset();
+                rightMotor->reset();
+                
+                balance_init(); /* 倒立振子API初期化 */
+                observer->reset();
+                
+                /* ジャイロセンサーリセット */
+                gyroSensor->reset();
+                ev3_led_set_color(LED_GREEN); /* スタート通知 */
+                
+                lineTracer->haveControl();
+                clock->sleep(PERIOD_CAP_TSK/2); // wait a while
+                state = ST_tracing;
+            }
+            break;
+        case ST_tracing:
+            if (backButton_flag) {
+                syslog(LOG_NOTICE, "%08lu, Landing...", clock->now());
+                ER ercd = wup_tsk(MAIN_TASK); // wake up the main task
+                assert(ercd == E_OK);
+                
+                // make sure this routine is NOT executed before it is killed by the main task
+                clock->sleep(PERIOD_CAP_TSK/2); // wait a while
+                state = ST_landing;
+            }
+            break;
+        case ST_challenging:
+            break;
+        case ST_landing:
+            break;
     }
-    /*
-    switch (event) {
-     case "a":
-        seesawCrimber->haveControl();
-        break;
-     case "b":
-        lineTracer->haveControl();
-        break;
-     default:
-        break;
-    }
-    */
 }
 
 void Captain::land() {

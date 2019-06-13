@@ -18,6 +18,7 @@
 #endif
 
 #include <cinttypes>
+#include <cmath>
 #include "TouchSensor.h"
 #include "SonarSensor.h"
 #include "ColorSensor.h"
@@ -31,13 +32,23 @@ using namespace ev3api;
 #define LIGHT_WHITE          55  /* 白色の光センサ値 */
 #define LIGHT_BLACK           0  /* 黒色の光センサ値 */
 #define SONAR_ALERT_DISTANCE 30  /* 超音波センサによる障害物検知距離[cm] */
-#define TAIL_ANGLE_STAND_UP  90  /* 完全停止時の角度[度] */
+#define TAIL_ANGLE_STAND_UP  85  /* 完全停止時の角度[度] */
 #define TAIL_ANGLE_DRIVE      3  /* バランス走行時の角度[度] */
 #define P_GAIN             2.5F  /* 完全停止用モータ制御比例係数 */
 #define PWM_ABS_MAX          60  /* 完全停止用モータ制御PWM絶対最大値 */
+
+#define TIRE_DIAMETER    100.0F  // diameter of tire in milimater
+#define WHEEL_TREAD      175.0F  // distance between the right and left wheels
+
 //#define DEVICE_NAME     "ET0"  /* Bluetooth名 hrp2/target/ev3.h BLUETOOTH_LOCAL_NAMEで設定 */
 //#define PASS_KEY        "1234" /* パスキー    hrp2/target/ev3.h BLUETOOTH_PIN_CODEで設定 */
 #define CMD_START         '1'    /* リモートスタートコマンド */
+
+// machine state
+#define ST_takingOff    1
+#define ST_tracing      2
+#define ST_challenging  3
+#define ST_landing      4
 
 /* LCDフォントサイズ */
 #define CALIB_FONT (EV3_FONT_SMALL)
@@ -49,18 +60,26 @@ using namespace ev3api;
 class Observer {
 private:
     FILE*           bt;      /* Bluetoothファイルハンドル */
+    Motor*          leftMotor;
+    Motor*          rightMotor;
     TouchSensor*    touchSensor;
     SonarSensor*    sonarSensor;
-    SYSUTM utime;
     bool check_touch(void);
     bool check_sonar(void);
     bool check_bt(void);
     bool check_backButton(void);
+    float distance, azimuth, locX, locY;
+    int32_t prevAngL, prevAngR;
 protected:
 public:
     Observer();
-    Observer(TouchSensor* ts,SonarSensor* ss);
+    Observer(Motor* lm, Motor* rm, TouchSensor* ts,SonarSensor* ss);
     void goOnDuty();
+    void reset();
+    float getDistance();
+    float getAzimuth();
+    float getLocX();
+    float getLocY();
     void operate(); // method to invoke from the cyclic handler
     void goOffDuty();
     ~Observer();
@@ -81,7 +100,6 @@ protected:
     Motor*          tailMotor;
     GyroSensor*     gyroSensor;
     ColorSensor*    colorSensor;
-    SYSUTM utime;
     void cancelBacklash(int8_t lpwm, int8_t rpwm, int32_t *lenc, int32_t *renc);
     void controlTail(int32_t angle);
     void setPIDconst(long double p, long double i, long double d);
@@ -159,5 +177,6 @@ public:
 extern Observer*    observer;
 extern Navigator*   activeNavigator;
 extern Clock*       clock;
+extern uint8_t      state;
 
 #endif /* crew_hpp */

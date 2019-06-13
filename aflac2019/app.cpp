@@ -14,14 +14,17 @@ Clock*      clock;
 Captain*    captain;
 Observer*   observer;
 Navigator*  activeNavigator = NULL;
+uint8_t     state = ST_takingOff;
 
 // a cyclic handler to activate a task
 void task_activator(intptr_t tskid) {
     ER ercd = act_tsk(tskid);
-    //assert(ercd == E_OK);
+    assert(ercd == E_OK || E_QOVR);
+    /*
     if (ercd != E_OK) {
-        _debug(syslog(LOG_NOTICE, "%08lu, act_tsk() returned %u", clock->now(), ercd));
+        _debug(syslog(LOG_NOTICE, "%08lu, act_tsk() returned %d", clock->now(), ercd));
     }
+    */
 }
 
 // Captain's periodic task
