@@ -26,14 +26,17 @@ Observer::Observer(Motor* lm, Motor* rm, TouchSensor* ts,SonarSensor* ss) {
     sonarSensor = ss;
     bt = NULL;
     distance = 0.0;
+    azimuth = 0.0;
+    locX = 0.0;
+    locY = 0.0;
     prevAngL = 0;
     prevAngR = 0;
 }
 
 void Observer::goOnDuty() {
     /* Open Bluetooth file */
-    //bt = ev3_serial_open_file(EV3_SERIAL_BT);
-    //assert(bt != NULL);
+    bt = ev3_serial_open_file(EV3_SERIAL_BT);
+    assert(bt != NULL);
 
     // register cyclic handler to EV3RT
     ev3_sta_cyc(CYC_OBS_TSK);
@@ -50,45 +53,50 @@ void Observer::reset() {
     prevAngR = rightMotor->getCount();
 }
 
-float Observer::getDistance() {
-    return distance;
+int32_t Observer::getDistance() {
+    return (int32_t)distance;
 }
 
-float Observer::getAzimuth() {
-    return azimuth;
+int16_t Observer::getAzimuth() {
+    // degree = 360.0 * radian / M_2PI;
+    int16_t degree = (360.0 * azimuth / M_2PI);
+    return degree;
 }
 
-float Observer::getLocX() {
-    return locX;
+int32_t Observer::getLocX() {
+    return (int32_t)locX;
 }
 
-float Observer::getLocY() {
-    return locY;
+int32_t Observer::getLocY() {
+    return (int32_t)locY;
 }
 
 void Observer::operate() {
     // accumulate distance
-    float curAngL = leftMotor->getCount();
-    float curAngR = rightMotor->getCount();
-    float deltaDistL = M_PI * TIRE_DIAMETER * (curAngL - prevAngL) / 360.0;
-    float deltaDistR = M_PI * TIRE_DIAMETER * (curAngR - prevAngR) / 360.0;
-    float deltaDist = (deltaDistL + deltaDistR) / 2.0;
+    int32_t curAngL = leftMotor->getCount();
+    int32_t curAngR = rightMotor->getCount();
+    double deltaDistL = M_PI * TIRE_DIAMETER * (curAngL - prevAngL) / 360.0;
+    double deltaDistR = M_PI * TIRE_DIAMETER * (curAngR - prevAngR) / 360.0;
+    double deltaDist = (deltaDistL + deltaDistR) / 2.0;
     distance += deltaDist;
     prevAngL = curAngL;
     prevAngR = curAngR;
     // calculate azimuth
-    float deltaRad = atan2((deltaDistL - deltaDistR), WHEEL_TREAD);
-    azimuth += 180.0 * deltaRad / M_PI;
-    if (azimuth > 360.0) {
-        azimuth -= 360.0;
+    double deltaAzi = atan2((deltaDistL - deltaDistR), WHEEL_TREAD);
+    azimuth += deltaAzi;
+    if (azimuth > M_2PI) {
+        azimuth -= M_2PI;
     } else if (azimuth < 0.0) {
-        azimuth += 360.0;
+        azimuth += M_2PI;
     }
     // estimate location
-    locX += deltaDist * sin(deltaRad);
-    locY += deltaDist * cos(deltaRad);
+    locX += (deltaDist * sin(azimuth));
+    locY += (deltaDist * cos(azimuth));
 
-    //if (check_bt())         bt_flag         = true;
+    if (check_bt() && !bt_flag) {
+        _debug(syslog(LOG_NOTICE, "%08lu, StartCMD received", clock->now()));
+        bt_flag = true;
+    }
     if (check_touch() && !touch_flag) {
         _debug(syslog(LOG_NOTICE, "%08lu, TouchSensor flipped on", clock->now()));
         touch_flag = true;
@@ -118,7 +126,7 @@ void Observer::goOffDuty() {
     clock->sleep(PERIOD_OBS_TSK/2); // wait a while
     _debug(syslog(LOG_NOTICE, "%08lu, Observer handler unset", clock->now()));
     
-    //fclose(bt);
+    fclose(bt);
 }
 
 bool Observer::check_touch(void) {
@@ -337,7 +345,8 @@ void LineTracer::operate() {
     // display pwm in every PERIOD_TRACE_MSG ms */
     if (++trace_pwmLR * PERIOD_NAV_TSK >= PERIOD_TRACE_MSG) {
         trace_pwmLR = 0;
-        _debug(syslog(LOG_NOTICE, "%08lu, LineTracer::operate(): pwm_L = %d, pwm_R = %d, distance = %d, azimuth = %d, x = %d, y = %d", clock->now(), pwm_L, pwm_R, (int16_t)observer->getDistance(), (int8_t)observer->getAzimuth(), (int16_t)observer->getLocX(), (int16_t)observer->getLocY()));
+        //_debug(syslog(LOG_NOTICE, "%08lu, LineTracer::operate(): pwm_L = %d, pwm_R = %d, distance = %ld, azimuth = %d, x = %ld, y = %ld", clock->now(), pwm_L, pwm_R, observer->getDistance(), observer->getAzimuth(), observer->getLocX(), observer->getLocY()));
+        _debug(syslog(LOG_NOTICE, "%08lu, LineTracer::operate(): distance = %ld, azimuth = %d, x = %ld, y = %ld", clock->now(), observer->getDistance(), observer->getAzimuth(), observer->getLocX(), observer->getLocY()));
     }
 }
 

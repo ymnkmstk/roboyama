@@ -56,6 +56,7 @@ using namespace ev3api;
 #define CALIB_FONT_HEIGHT (8/*TODO: magic number*/)
 
 #define PERIOD_TRACE_MSG    1000    /* Trace message in every 1000 ms */
+#define M_2PI    (2.0 * M_PI)
 
 class Observer {
 private:
@@ -68,7 +69,7 @@ private:
     bool check_sonar(void);
     bool check_bt(void);
     bool check_backButton(void);
-    float distance, azimuth, locX, locY;
+    double distance, azimuth, locX, locY;
     int32_t prevAngL, prevAngR;
 protected:
 public:
@@ -76,10 +77,10 @@ public:
     Observer(Motor* lm, Motor* rm, TouchSensor* ts,SonarSensor* ss);
     void goOnDuty();
     void reset();
-    float getDistance();
-    float getAzimuth();
-    float getLocX();
-    float getLocY();
+    int32_t getDistance();
+    int16_t getAzimuth();
+    int32_t getLocX();
+    int32_t getLocY();
     void operate(); // method to invoke from the cyclic handler
     void goOffDuty();
     ~Observer();
