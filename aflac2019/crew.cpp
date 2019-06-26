@@ -8,7 +8,6 @@
 
 #include "app.h"
 #include "balancer.h"
-
 #include "crew.hpp"
 
 /* Observer event flags */
@@ -19,7 +18,7 @@ bool sonar_flag      = false; /* SonarSensor true:障害物検知 */
 bool backButton_flag = false; /* true: BackButton押下 */
 
 Observer::Observer(Motor* lm, Motor* rm, TouchSensor* ts,SonarSensor* ss) {
-    _debug(syslog(LOG_NOTICE, "%08lu, Observer constructor", clock->now()));
+    _debug(syslog(LOG_NOTICE, "%08u, Observer constructor", clock->now()));
     leftMotor   = lm;
     rightMotor  = rm;
     touchSensor = ts;
@@ -35,13 +34,15 @@ Observer::Observer(Motor* lm, Motor* rm, TouchSensor* ts,SonarSensor* ss) {
 
 void Observer::goOnDuty() {
     /* Open Bluetooth file */
+    /*
     bt = ev3_serial_open_file(EV3_SERIAL_BT);
     assert(bt != NULL);
+    */
 
     // register cyclic handler to EV3RT
     ev3_sta_cyc(CYC_OBS_TSK);
     clock->sleep(PERIOD_OBS_TSK/2); // wait a while
-    _debug(syslog(LOG_NOTICE, "%08lu, Observer handler set", clock->now()));
+    _debug(syslog(LOG_NOTICE, "%08u, Observer handler set", clock->now()));
 }
 
 void Observer::reset() {
@@ -93,29 +94,32 @@ void Observer::operate() {
     locX += (deltaDist * sin(azimuth));
     locY += (deltaDist * cos(azimuth));
 
+    /*
     if (check_bt() && !bt_flag) {
-        _debug(syslog(LOG_NOTICE, "%08lu, StartCMD received", clock->now()));
+        _debug(syslog(LOG_NOTICE, "%08u, StartCMD received", clock->now()));
         bt_flag = true;
     }
+    */
+    
     if (check_touch() && !touch_flag) {
-        _debug(syslog(LOG_NOTICE, "%08lu, TouchSensor flipped on", clock->now()));
+        _debug(syslog(LOG_NOTICE, "%08u, TouchSensor flipped on", clock->now()));
         touch_flag = true;
     } else if (!check_touch() && touch_flag) {
-        _debug(syslog(LOG_NOTICE, "%08lu, TouchSensor flipped off", clock->now()));
+        _debug(syslog(LOG_NOTICE, "%08u, TouchSensor flipped off", clock->now()));
         touch_flag = false;
     }
     if (check_sonar() && !sonar_flag) {
-        _debug(syslog(LOG_NOTICE, "%08lu, SonarSensor flipped on", clock->now()));
+        _debug(syslog(LOG_NOTICE, "%08u, SonarSensor flipped on", clock->now()));
         sonar_flag = true;
     } else if (!check_sonar() && sonar_flag) {
-        _debug(syslog(LOG_NOTICE, "%08lu, SonarSensor flipped off", clock->now()));
+        _debug(syslog(LOG_NOTICE, "%08u, SonarSensor flipped off", clock->now()));
         sonar_flag = false;
     }
     if (check_backButton() && !backButton_flag) {
-        _debug(syslog(LOG_NOTICE, "%08lu, Back button flipped on", clock->now()));
+        _debug(syslog(LOG_NOTICE, "%08u, Back button flipped on", clock->now()));
         backButton_flag = true;
     } else if (!check_backButton() && backButton_flag) {
-        _debug(syslog(LOG_NOTICE, "%08lu, Back button flipped off", clock->now()));
+        _debug(syslog(LOG_NOTICE, "%08u, Back button flipped off", clock->now()));
         backButton_flag = false;
     }
 }
@@ -124,9 +128,9 @@ void Observer::goOffDuty() {
     // deregister cyclic handler from EV3RT
     ev3_stp_cyc(CYC_OBS_TSK);
     clock->sleep(PERIOD_OBS_TSK/2); // wait a while
-    _debug(syslog(LOG_NOTICE, "%08lu, Observer handler unset", clock->now()));
+    _debug(syslog(LOG_NOTICE, "%08u, Observer handler unset", clock->now()));
     
-    fclose(bt);
+    //fclose(bt);
 }
 
 bool Observer::check_touch(void) {
@@ -167,11 +171,11 @@ bool Observer::check_backButton(void) {
 }
 
 Observer::~Observer() {
-    _debug(syslog(LOG_NOTICE, "%08lu, Observer destructor", clock->now()));
+    _debug(syslog(LOG_NOTICE, "%08u, Observer destructor", clock->now()));
 }
 
 Navigator::Navigator() {
-    _debug(syslog(LOG_NOTICE, "%08lu, Navigator default constructor", clock->now()));
+    _debug(syslog(LOG_NOTICE, "%08u, Navigator default constructor", clock->now()));
     setPIDconst(0.38, 0.06, 0.027); // set default PID constant
     diff[1] = 0; // initialize diff[1]
 }
@@ -213,7 +217,7 @@ void Navigator::controlTail(int32_t angle) {
     // display pwm in every PERIOD_TRACE_MSG ms */
     if (++trace_pwmT * PERIOD_NAV_TSK >= PERIOD_TRACE_MSG) {
        trace_pwmT = 0;
-        _debug(syslog(LOG_NOTICE, "%08lu, Navigator::controlTail(): pwm = %d", clock->now(), pwm));
+        _debug(syslog(LOG_NOTICE, "%08u, Navigator::controlTail(): pwm = %d", clock->now(), pwm));
     }
 }
 
@@ -249,7 +253,7 @@ void Navigator::goOnDuty() {
     // register cyclic handler to EV3RT
     ev3_sta_cyc(CYC_NAV_TSK);
     clock->sleep(PERIOD_NAV_TSK/2); // wait a while
-    _debug(syslog(LOG_NOTICE, "%08lu, Navigator handler set", clock->now()));
+    _debug(syslog(LOG_NOTICE, "%08u, Navigator handler set", clock->now()));
 }
 
 void Navigator::goOffDuty() {
@@ -257,22 +261,22 @@ void Navigator::goOffDuty() {
     // deregister cyclic handler from EV3RT
     ev3_stp_cyc(CYC_NAV_TSK);
     clock->sleep(PERIOD_NAV_TSK/2); // wait a while
-    _debug(syslog(LOG_NOTICE, "%08lu, Navigator handler unset", clock->now()));
+    _debug(syslog(LOG_NOTICE, "%08u, Navigator handler unset", clock->now()));
 }
 
 Navigator::~Navigator() {
-    _debug(syslog(LOG_NOTICE, "%08lu, Navigator destructor", clock->now()));
+    _debug(syslog(LOG_NOTICE, "%08u, Navigator destructor", clock->now()));
 }
 
 AnchorWatch::AnchorWatch(Motor* tm) {
-    _debug(syslog(LOG_NOTICE, "%08lu, AnchorWatch constructor", clock->now()));
+    _debug(syslog(LOG_NOTICE, "%08u, AnchorWatch constructor", clock->now()));
     tailMotor   = tm;
     trace_pwmT  = 0;
 }
 
 void AnchorWatch::haveControl() {
     activeNavigator = this;
-    syslog(LOG_NOTICE, "%08lu, AnchorWatch has control", clock->now());
+    syslog(LOG_NOTICE, "%08u, AnchorWatch has control", clock->now());
 }
 
 void AnchorWatch::operate() {
@@ -280,11 +284,11 @@ void AnchorWatch::operate() {
 }
 
 AnchorWatch::~AnchorWatch() {
-    _debug(syslog(LOG_NOTICE, "%08lu, AnchorWatch destructor", clock->now()));
+    _debug(syslog(LOG_NOTICE, "%08u, AnchorWatch destructor", clock->now()));
 }
 
 LineTracer::LineTracer(Motor* lm, Motor* rm, Motor* tm, GyroSensor* gs, ColorSensor* cs) {
-    _debug(syslog(LOG_NOTICE, "%08lu, LineTracer constructor", clock->now()));
+    _debug(syslog(LOG_NOTICE, "%08u, LineTracer constructor", clock->now()));
     leftMotor   = lm;
     rightMotor  = rm;
     tailMotor   = tm;
@@ -296,7 +300,7 @@ LineTracer::LineTracer(Motor* lm, Motor* rm, Motor* tm, GyroSensor* gs, ColorSen
 
 void LineTracer::haveControl() {
     activeNavigator = this;
-    syslog(LOG_NOTICE, "%08lu, LineTracer has control", clock->now());
+    syslog(LOG_NOTICE, "%08u, LineTracer has control", clock->now());
 }
 
 void LineTracer::operate() {
@@ -345,17 +349,17 @@ void LineTracer::operate() {
     // display pwm in every PERIOD_TRACE_MSG ms */
     if (++trace_pwmLR * PERIOD_NAV_TSK >= PERIOD_TRACE_MSG) {
         trace_pwmLR = 0;
-        //_debug(syslog(LOG_NOTICE, "%08lu, LineTracer::operate(): pwm_L = %d, pwm_R = %d, distance = %ld, azimuth = %d, x = %ld, y = %ld", clock->now(), pwm_L, pwm_R, observer->getDistance(), observer->getAzimuth(), observer->getLocX(), observer->getLocY()));
-        _debug(syslog(LOG_NOTICE, "%08lu, LineTracer::operate(): distance = %ld, azimuth = %d, x = %ld, y = %ld", clock->now(), observer->getDistance(), observer->getAzimuth(), observer->getLocX(), observer->getLocY()));
+        //_debug(syslog(LOG_NOTICE, "%08u, LineTracer::operate(): pwm_L = %d, pwm_R = %d, distance = %ld, azimuth = %d, x = %ld, y = %ld", clock->now(), pwm_L, pwm_R, observer->getDistance(), observer->getAzimuth(), observer->getLocX(), observer->getLocY()));
+        _debug(syslog(LOG_NOTICE, "%08u, LineTracer::operate(): distance = %d, azimuth = %d, x = %d, y = %d", clock->now(), observer->getDistance(), observer->getAzimuth(), observer->getLocX(), observer->getLocY()));
     }
 }
 
 LineTracer::~LineTracer() {
-    _debug(syslog(LOG_NOTICE, "%08lu, LineTracer destructor", clock->now()));
+    _debug(syslog(LOG_NOTICE, "%08u, LineTracer destructor", clock->now()));
 }
 
 HarbourPilot::HarbourPilot(Motor* lm, Motor* rm, Motor* tm, GyroSensor* gs, ColorSensor* cs) {
-    _debug(syslog(LOG_NOTICE, "%08lu, HarbourPilot constructor", clock->now()));
+    _debug(syslog(LOG_NOTICE, "%08u, HarbourPilot constructor", clock->now()));
     leftMotor   = lm;
     rightMotor  = rm;
     tailMotor   = tm;
@@ -365,18 +369,18 @@ HarbourPilot::HarbourPilot(Motor* lm, Motor* rm, Motor* tm, GyroSensor* gs, Colo
 
 void HarbourPilot::haveControl() {
     activeNavigator = this;
-    syslog(LOG_NOTICE, "%08lu, HarbourPilot has control", clock->now());
+    syslog(LOG_NOTICE, "%08u, HarbourPilot has control", clock->now());
 }
 
 void HarbourPilot::operate() {
 }
 
 HarbourPilot::~HarbourPilot() {
-    _debug(syslog(LOG_NOTICE, "%08lu, HarbourPilot destructor", clock->now()));
+    _debug(syslog(LOG_NOTICE, "%08u, HarbourPilot destructor", clock->now()));
 }
 
 Captain::Captain() {
-    _debug(syslog(LOG_NOTICE, "%08lu, Captain default constructor", clock->now()));
+    _debug(syslog(LOG_NOTICE, "%08u, Captain default constructor", clock->now()));
 }
 
 void Captain::takeoff() {
@@ -419,7 +423,7 @@ void Captain::operate() {
     switch (state) {
         case ST_takingOff:
             if (bt_flag || touch_flag) {
-                syslog(LOG_NOTICE, "%08lu, Departing...", clock->now());
+                syslog(LOG_NOTICE, "%08u, Departing...", clock->now());
                 
                 /* 走行モーターエンコーダーリセット */
                 leftMotor->reset();
@@ -439,7 +443,7 @@ void Captain::operate() {
             break;
         case ST_tracing:
             if (backButton_flag) {
-                syslog(LOG_NOTICE, "%08lu, Landing...", clock->now());
+                syslog(LOG_NOTICE, "%08u, Landing...", clock->now());
                 ER ercd = wup_tsk(MAIN_TASK); // wake up the main task
                 assert(ercd == E_OK);
                 
@@ -475,5 +479,5 @@ void Captain::land() {
 }
 
 Captain::~Captain() {
-    _debug(syslog(LOG_NOTICE, "%08lu, Captain destructor", clock->now()));
+    _debug(syslog(LOG_NOTICE, "%08u, Captain destructor", clock->now()));
 }
