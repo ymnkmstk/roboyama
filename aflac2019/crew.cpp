@@ -12,10 +12,42 @@
 
 /* Observer event flags */
 /* ToDo: replace these by priorityQueue */
-bool bt_flag         = false; /* Bluetoothコマンド true:リモートスタート */
+char start_flag      = ' ';   // start command via Bluetooth
 bool touch_flag      = false; /* TouchSensor true:タッチセンサー押下 */
 bool sonar_flag      = false; /* SonarSensor true:障害物検知 */
 bool backButton_flag = false; /* true: BackButton押下 */
+
+Radioman::Radioman() {
+    _debug(syslog(LOG_NOTICE, "%08u, Radioman constructor", clock->now()));
+    /* Open Bluetooth file */
+    bt = ev3_serial_open_file(EV3_SERIAL_BT);
+    assert(bt != NULL);
+}
+
+void Radioman::operate() {
+    uint8_t c = fgetc(bt); /* 受信 */
+    fputc(c, bt); /* エコーバック */
+    switch(c)
+    {
+        case CMD_START_R:
+        case CMD_START_r:
+            _debug(syslog(LOG_NOTICE, "%08u, StartCMD R-mode received", clock->now()));
+            start_flag = CMD_START_R;
+            break;
+        case CMD_START_L:
+        case CMD_START_l:
+            _debug(syslog(LOG_NOTICE, "%08u, StartCMD L-mode received", clock->now()));
+            start_flag = CMD_START_L;
+            break;
+        default:
+            break;
+    }
+}
+
+Radioman::~Radioman() {
+    _debug(syslog(LOG_NOTICE, "%08u, Radioman destructor", clock->now()));
+    fclose(bt);
+}
 
 Observer::Observer(Motor* lm, Motor* rm, TouchSensor* ts,SonarSensor* ss) {
     _debug(syslog(LOG_NOTICE, "%08u, Observer constructor", clock->now()));
@@ -23,7 +55,6 @@ Observer::Observer(Motor* lm, Motor* rm, TouchSensor* ts,SonarSensor* ss) {
     rightMotor  = rm;
     touchSensor = ts;
     sonarSensor = ss;
-    bt = NULL;
     distance = 0.0;
     azimuth = 0.0;
     locX = 0.0;
@@ -33,12 +64,6 @@ Observer::Observer(Motor* lm, Motor* rm, TouchSensor* ts,SonarSensor* ss) {
 }
 
 void Observer::goOnDuty() {
-    /* Open Bluetooth file */
-    /*
-    bt = ev3_serial_open_file(EV3_SERIAL_BT);
-    assert(bt != NULL);
-    */
-
     // register cyclic handler to EV3RT
     ev3_sta_cyc(CYC_OBS_TSK);
     clock->sleep(PERIOD_OBS_TSK/2); // wait a while
@@ -129,8 +154,6 @@ void Observer::goOffDuty() {
     ev3_stp_cyc(CYC_OBS_TSK);
     clock->sleep(PERIOD_OBS_TSK/2); // wait a while
     _debug(syslog(LOG_NOTICE, "%08u, Observer handler unset", clock->now()));
-    
-    //fclose(bt);
 }
 
 bool Observer::check_touch(void) {
@@ -147,18 +170,6 @@ bool Observer::check_sonar(void) {
         return true; // obstacle detected - alert
     } else {
         return false; // no problem
-    }
-}
-
-bool Observer::check_bt(void) {
-    uint8_t c = fgetc(bt); /* 受信 */
-    fputc(c, bt); /* エコーバック */
-    switch(c)
-    {
-        case '1':
-            return true;
-        default:
-            return false;
     }
 }
 
@@ -320,7 +331,12 @@ void LineTracer::operate() {
         */
         int8_t sensor = colorSensor->getBrightness();
         int8_t target = (LIGHT_WHITE + LIGHT_BLACK)/2;
-        turn = computePID(sensor, target);
+        if (state == ST_tracing_L || state == ST_dancing) {
+            turn = computePID(sensor, target);
+        } else {
+            // state == ST_tracing_R || state == ST_crimbing
+            turn = (-1) * computePID(sensor, target);
+        }
     }
     /* 倒立振子制御API に渡すパラメータを取得する */
     motor_ang_l = leftMotor->getCount();
@@ -349,7 +365,7 @@ void LineTracer::operate() {
     // display pwm in every PERIOD_TRACE_MSG ms */
     if (++trace_pwmLR * PERIOD_NAV_TSK >= PERIOD_TRACE_MSG) {
         trace_pwmLR = 0;
-        //_debug(syslog(LOG_NOTICE, "%08u, LineTracer::operate(): pwm_L = %d, pwm_R = %d, distance = %ld, azimuth = %d, x = %ld, y = %ld", clock->now(), pwm_L, pwm_R, observer->getDistance(), observer->getAzimuth(), observer->getLocX(), observer->getLocY()));
+        //_debug(syslog(LOG_NOTICE, "%08u, LineTracer::operate(): pwm_L = %d, pwm_R = %d, distance = %d, azimuth = %d, x = %d, y = %d", clock->now(), pwm_L, pwm_R, observer->getDistance(), observer->getAzimuth(), observer->getLocX(), observer->getLocY()));
         _debug(syslog(LOG_NOTICE, "%08u, LineTracer::operate(): distance = %d, azimuth = %d, x = %d, y = %d", clock->now(), observer->getDistance(), observer->getAzimuth(), observer->getLocX(), observer->getLocY()));
     }
 }
@@ -397,6 +413,9 @@ void Captain::takeoff() {
     ev3_lcd_fill_rect(0, 0, EV3_LCD_WIDTH, EV3_LCD_HEIGHT, EV3_LCD_WHITE);
     ev3_lcd_draw_string("EV3way-ET aflac2019", 0, CALIB_FONT_HEIGHT*1);
     
+    ER ercd = wup_tsk(RADIO_TASK); // wake up the radioman task
+    assert(ercd == E_OK);
+
     // register cyclic handler to EV3RT
     ev3_sta_cyc(CYC_CAP_TSK);
     clock->sleep(PERIOD_CAP_TSK/2); // wait a while
@@ -422,7 +441,9 @@ void Captain::operate() {
     /* ToDo: implement a state machine to pick up an appropriate Navigator */
     switch (state) {
         case ST_takingOff:
-            if (bt_flag || touch_flag) {
+            if (start_flag == CMD_START_R ||
+                start_flag == CMD_START_L ||
+                touch_flag) {
                 syslog(LOG_NOTICE, "%08u, Departing...", clock->now());
                 
                 /* 走行モーターエンコーダーリセット */
@@ -438,10 +459,16 @@ void Captain::operate() {
                 
                 lineTracer->haveControl();
                 clock->sleep(PERIOD_CAP_TSK/2); // wait a while
-                state = ST_tracing;
+                if (start_flag == CMD_START_R) {
+                    state = ST_tracing_R;
+                } else {
+                    // when started by the touch sensor, robot traces the LEFT edge of line
+                    state = ST_tracing_L;
+                }
             }
             break;
-        case ST_tracing:
+        case ST_tracing_R:
+        case ST_tracing_L:
             if (backButton_flag) {
                 syslog(LOG_NOTICE, "%08u, Landing...", clock->now());
                 ER ercd = wup_tsk(MAIN_TASK); // wake up the main task
@@ -452,7 +479,11 @@ void Captain::operate() {
                 state = ST_landing;
             }
             break;
-        case ST_challenging:
+        case ST_dancing:
+            break;
+        case ST_crimbing:
+            break;
+        case ST_stopping:
             break;
         case ST_landing:
             break;
