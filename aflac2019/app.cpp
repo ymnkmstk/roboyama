@@ -44,11 +44,9 @@ void navigator_task(intptr_t unused) {
 }
 
 // Radioman's resident task
-void radioman_task(intptr_t unused) {
-    // sleep until being waken up by Captain::takeoff()
-    ER ercd = slp_tsk();
-    assert(ercd == E_OK);
-    
+void radioman_task(intptr_t unused) {    
+    _debug(syslog(LOG_NOTICE, "%08u, radioman task ready", clock->now()));
+
     while (true) { // infinite loop
         if (radioman != NULL) radioman->operate();
     }
@@ -58,7 +56,7 @@ void main_task(intptr_t unused) {
     clock    = new Clock;
     captain  = new Captain;
     radioman = new Radioman;
-    
+
     captain->takeoff();
     
     // sleep until being waken up

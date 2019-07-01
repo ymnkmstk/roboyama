@@ -413,9 +413,6 @@ void Captain::takeoff() {
     ev3_lcd_fill_rect(0, 0, EV3_LCD_WIDTH, EV3_LCD_HEIGHT, EV3_LCD_WHITE);
     ev3_lcd_draw_string("EV3way-ET aflac2019", 0, CALIB_FONT_HEIGHT*1);
     
-    ER ercd = wup_tsk(RADIO_TASK); // wake up the radioman task
-    assert(ercd == E_OK);
-
     // register cyclic handler to EV3RT
     ev3_sta_cyc(CYC_CAP_TSK);
     clock->sleep(PERIOD_CAP_TSK/2); // wait a while
@@ -435,6 +432,8 @@ void Captain::takeoff() {
     anchorWatch = new AnchorWatch(tailMotor);
     anchorWatch->goOnDuty();
     anchorWatch->haveControl();
+
+    act_tsk(RADIO_TASK);
 }
 
 void Captain::operate() {
@@ -491,6 +490,8 @@ void Captain::operate() {
 }
 
 void Captain::land() {
+    ter_tsk(RADIO_TASK);
+
     if (activeNavigator != NULL) {
         activeNavigator->goOffDuty();
     }
