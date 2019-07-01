@@ -31,6 +31,9 @@ using namespace ev3api;
 #define GYRO_OFFSET           0  /* ジャイロセンサオフセット値(角速度0[deg/sec]時) */
 #define LIGHT_WHITE          60  /* 白色の光センサ値 */
 #define LIGHT_BLACK           3  /* 黒色の光センサ値 */
+#define HSV_V_WHITE         280
+#define HSV_V_BLACK          10
+#define HSV_V_BLUE           90
 #define SONAR_ALERT_DISTANCE 30  /* 超音波センサによる障害物検知距離[cm] */
 #define TAIL_ANGLE_STAND_UP  90  /* 完全停止時の角度[度] */
 #define TAIL_ANGLE_DRIVE      3  /* バランス走行時の角度[度] */
@@ -67,6 +70,14 @@ using namespace ev3api;
 
 #define PERIOD_TRACE_MSG    1000    /* Trace message in every 1000 ms */
 #define M_2PI    (2.0 * M_PI)
+
+typedef struct {
+    uint16_t h; // Hue
+    uint16_t s; // Saturation
+    uint16_t v; // Value of brightness
+} hsv_raw_t;
+
+void rgb_to_hsv(rgb_raw_t rgb, hsv_raw_t& hsv);
 
 class Radioman {
 private:
@@ -121,8 +132,8 @@ protected:
     void cancelBacklash(int8_t lpwm, int8_t rpwm, int32_t *lenc, int32_t *renc);
     void controlTail(int32_t angle);
     void setPIDconst(long double p, long double i, long double d);
-    int8_t math_limit(int8_t input, int8_t min, int8_t max);
-    int8_t computePID(int8_t sensor, int8_t target);
+    int16_t math_limit(int16_t input, int16_t min, int16_t max);
+    int16_t computePID(int16_t sensor, int16_t target);
 public:
     Navigator();
     void goOnDuty();

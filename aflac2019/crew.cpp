@@ -17,6 +17,41 @@ bool touch_flag      = false; /* TouchSensor true:タッチセンサー押下 */
 bool sonar_flag      = false; /* SonarSensor true:障害物検知 */
 bool backButton_flag = false; /* true: BackButton押下 */
 
+void rgb_to_hsv(rgb_raw_t rgb, hsv_raw_t& hsv) {
+    uint16_t max, min, cr, cg, cb, h;
+    
+    max = rgb.r;
+    if(max < rgb.g) max = rgb.g;
+    if(max < rgb.b) max = rgb.b;
+    
+    min = rgb.r;
+    if(min > rgb.g) min = rgb.g;
+    if(min > rgb.b) min = rgb.b;
+    
+    hsv.v = max;
+    
+    if (!max) {
+        hsv.s = 0;
+        hsv.h = 0;
+    } else {
+        hsv.s = 255 * (max - min) / (double)max;
+        cr = (max - rgb.r) / (double)(max - min);
+        cg = (max - rgb.g) / (double)(max - min);
+        cb = (max - rgb.b) / (double)(max - min);
+        
+        if (max == rgb.r) {
+            h = cb - cg;
+        } else if (max == rgb.g) {
+            h = 2 + cr - cb;
+        } else {
+            h = 4 + cg - cr;
+        }
+        h *= 60;
+        if (h < 0) h += 360;
+        hsv.h = h;
+    }
+}
+
 Radioman::Radioman() {
     _debug(syslog(LOG_NOTICE, "%08u, Radioman constructor", clock->now()));
     /* Open Bluetooth file */
@@ -238,7 +273,7 @@ void Navigator::setPIDconst(long double p, long double i, long double d) {
     kd = d;
 }
 
-int8_t Navigator::math_limit(int8_t input, int8_t min, int8_t max) {
+int16_t Navigator::math_limit(int16_t input, int16_t min, int16_t max) {
     if (input < min) {
         return min;
     } else if (input > max) {
@@ -247,7 +282,7 @@ int8_t Navigator::math_limit(int8_t input, int8_t min, int8_t max) {
     return input;
 }
 
-int8_t Navigator::computePID(int8_t sensor, int8_t target) {
+int16_t Navigator::computePID(int16_t sensor, int16_t target) {
     long double p, i, d;
     
     diff[0] = diff[1];
@@ -329,8 +364,19 @@ void LineTracer::operate() {
             turn = -20; // 右旋回命令
         }
         */
-        int8_t sensor = colorSensor->getBrightness();
-        int8_t target = (LIGHT_WHITE + LIGHT_BLACK)/2;
+        /*
+        // PID control by brightness
+        int16_t sensor = colorSensor->getBrightness();
+        int16_t target = (LIGHT_WHITE + LIGHT_BLACK)/2;
+        */
+        // PID control by V in HSV
+        rgb_raw_t cur_rgb;
+        hsv_raw_t cur_hsv;
+        colorSensor->getRawColor(cur_rgb);
+        rgb_to_hsv(cur_rgb, cur_hsv);
+        int16_t sensor = cur_hsv.v;
+        int16_t target = (HSV_V_BLUE + HSV_V_WHITE)/2;
+        
         if (state == ST_tracing_L || state == ST_dancing) {
             turn = computePID(sensor, target);
         } else {
