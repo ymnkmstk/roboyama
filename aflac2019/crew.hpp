@@ -42,13 +42,23 @@ using namespace ev3api;
 
 //#define DEVICE_NAME     "ET0"  /* Bluetooth名 hrp2/target/ev3.h BLUETOOTH_LOCAL_NAMEで設定 */
 //#define PASS_KEY        "1234" /* パスキー    hrp2/target/ev3.h BLUETOOTH_PIN_CODEで設定 */
-#define CMD_START         '1'    /* リモートスタートコマンド */
+#define CMD_START_R     'R' // R-mode start command
+#define CMD_START_r     'r' // R-mode start command
+#define CMD_START_L     'L' // L-mode start command
+#define CMD_START_l     'l' // L-mode start command
+#define CMD_DANCE_D     'D'
+#define CMD_DANCE_d     'd'
+#define CMD_CRIMB_C     'C'
+#define CMD_CRIMB_c     'c'
 
 // machine state
 #define ST_takingOff    1
-#define ST_tracing      2
-#define ST_challenging  3
-#define ST_landing      4
+#define ST_tracing_L    2
+#define ST_dancing      3
+#define ST_tracing_R    4
+#define ST_crimbing     5
+#define ST_stopping     6
+#define ST_landing      7
 
 /* LCDフォントサイズ */
 #define CALIB_FONT (EV3_FONT_SMALL)
@@ -58,16 +68,23 @@ using namespace ev3api;
 #define PERIOD_TRACE_MSG    1000    /* Trace message in every 1000 ms */
 #define M_2PI    (2.0 * M_PI)
 
-class Observer {
+class Radioman {
 private:
     FILE*           bt;      /* Bluetoothファイルハンドル */
+public:
+    Radioman();
+    void operate(); // method to invoke from the task handler
+    ~Radioman();
+};
+
+class Observer {
+private:
     Motor*          leftMotor;
     Motor*          rightMotor;
     TouchSensor*    touchSensor;
     SonarSensor*    sonarSensor;
     bool check_touch(void);
     bool check_sonar(void);
-    bool check_bt(void);
     bool check_backButton(void);
     double distance, azimuth, locX, locY;
     int32_t prevAngL, prevAngR;

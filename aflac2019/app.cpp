@@ -13,6 +13,7 @@
 Clock*      clock;
 Captain*    captain;
 Observer*   observer;
+Radioman*   radioman;
 Navigator*  activeNavigator = NULL;
 uint8_t     state = ST_takingOff;
 
@@ -42,10 +43,20 @@ void navigator_task(intptr_t unused) {
     if (activeNavigator != NULL) activeNavigator->operate();
 }
 
+// Radioman's resident task
+void radioman_task(intptr_t unused) {    
+    _debug(syslog(LOG_NOTICE, "%08u, radioman task ready", clock->now()));
+
+    while (true) { // infinite loop
+        if (radioman != NULL) radioman->operate();
+    }
+}
+
 void main_task(intptr_t unused) {
-    clock   = new Clock;
-    captain = new Captain;
-    
+    clock    = new Clock;
+    captain  = new Captain;
+    radioman = new Radioman;
+
     captain->takeoff();
     
     // sleep until being waken up
