@@ -10,12 +10,40 @@
 #include "balancer.h"
 #include "crew.hpp"
 
-/* Observer event flags */
-/* ToDo: replace these by priorityQueue */
-char start_flag      = ' ';   // start command via Bluetooth
-bool touch_flag      = false; /* TouchSensor true:タッチセンサー押下 */
-bool sonar_flag      = false; /* SonarSensor true:障害物検知 */
-bool backButton_flag = false; /* true: BackButton押下 */
+void rgb_to_hsv(rgb_raw_t rgb, hsv_raw_t& hsv) {
+    uint16_t max, min, cr, cg, cb, h;
+    
+    max = rgb.r;
+    if(max < rgb.g) max = rgb.g;
+    if(max < rgb.b) max = rgb.b;
+    
+    min = rgb.r;
+    if(min > rgb.g) min = rgb.g;
+    if(min > rgb.b) min = rgb.b;
+    
+    hsv.v = max;
+    
+    if (!max) {
+        hsv.s = 0;
+        hsv.h = 0;
+    } else {
+        hsv.s = 255 * (max - min) / (double)max;
+        cr = (max - rgb.r) / (double)(max - min);
+        cg = (max - rgb.g) / (double)(max - min);
+        cb = (max - rgb.b) / (double)(max - min);
+        
+        if (max == rgb.r) {
+            h = cb - cg;
+        } else if (max == rgb.g) {
+            h = 2 + cr - cb;
+        } else {
+            h = 4 + cg - cr;
+        }
+        h *= 60;
+        if (h < 0) h += 360;
+        hsv.h = h;
+    }
+}
 
 Radioman::Radioman() {
     _debug(syslog(LOG_NOTICE, "%08u, Radioman constructor", clock->now()));
@@ -32,12 +60,27 @@ void Radioman::operate() {
         case CMD_START_R:
         case CMD_START_r:
             _debug(syslog(LOG_NOTICE, "%08u, StartCMD R-mode received", clock->now()));
-            start_flag = CMD_START_R;
+            captain->decide(EVT_cmdStart_R);
             break;
         case CMD_START_L:
         case CMD_START_l:
             _debug(syslog(LOG_NOTICE, "%08u, StartCMD L-mode received", clock->now()));
-            start_flag = CMD_START_L;
+            captain->decide(EVT_cmdStart_L);
+            break;
+        case CMD_DANCE_D:
+        case CMD_DANCE_d:
+            _debug(syslog(LOG_NOTICE, "%08u, LimboDancer forced by command", clock->now()));
+            captain->decide(EVT_cmdDance);
+            break;
+        case CMD_CRIMB_C:
+        case CMD_CRIMB_c:
+            _debug(syslog(LOG_NOTICE, "%08u, SeesawCrimber forced by command", clock->now()));
+            captain->decide(EVT_cmdCrimb);
+            break;
+        case CMD_PILOT_P:
+        case CMD_PILOT_p:
+            _debug(syslog(LOG_NOTICE, "%08u, HarbourPilot forced by command", clock->now()));
+            captain->decide(EVT_cmdPilot);
             break;
         default:
             break;
@@ -61,6 +104,9 @@ Observer::Observer(Motor* lm, Motor* rm, TouchSensor* ts,SonarSensor* ss) {
     locY = 0.0;
     prevAngL = 0;
     prevAngR = 0;
+    touch_flag = false;
+    sonar_flag = false;
+    backButton_flag = false;
 }
 
 void Observer::goOnDuty() {
@@ -119,33 +165,32 @@ void Observer::operate() {
     locX += (deltaDist * sin(azimuth));
     locY += (deltaDist * cos(azimuth));
 
-    /*
-    if (check_bt() && !bt_flag) {
-        _debug(syslog(LOG_NOTICE, "%08u, StartCMD received", clock->now()));
-        bt_flag = true;
-    }
-    */
-    
     if (check_touch() && !touch_flag) {
         _debug(syslog(LOG_NOTICE, "%08u, TouchSensor flipped on", clock->now()));
         touch_flag = true;
+        captain->decide(EVT_touch_On);
     } else if (!check_touch() && touch_flag) {
         _debug(syslog(LOG_NOTICE, "%08u, TouchSensor flipped off", clock->now()));
         touch_flag = false;
+        captain->decide(EVT_touch_Off);
     }
     if (check_sonar() && !sonar_flag) {
         _debug(syslog(LOG_NOTICE, "%08u, SonarSensor flipped on", clock->now()));
         sonar_flag = true;
+        captain->decide(EVT_sonar_On);
     } else if (!check_sonar() && sonar_flag) {
         _debug(syslog(LOG_NOTICE, "%08u, SonarSensor flipped off", clock->now()));
         sonar_flag = false;
-    }
+        captain->decide(EVT_sonar_Off);
+   }
     if (check_backButton() && !backButton_flag) {
         _debug(syslog(LOG_NOTICE, "%08u, Back button flipped on", clock->now()));
         backButton_flag = true;
+        captain->decide(EVT_backButton_On);
     } else if (!check_backButton() && backButton_flag) {
         _debug(syslog(LOG_NOTICE, "%08u, Back button flipped off", clock->now()));
         backButton_flag = false;
+        captain->decide(EVT_backButton_Off);
     }
 }
 
@@ -238,7 +283,7 @@ void Navigator::setPIDconst(long double p, long double i, long double d) {
     kd = d;
 }
 
-int8_t Navigator::math_limit(int8_t input, int8_t min, int8_t max) {
+int16_t Navigator::math_limit(int16_t input, int16_t min, int16_t max) {
     if (input < min) {
         return min;
     } else if (input > max) {
@@ -247,7 +292,7 @@ int8_t Navigator::math_limit(int8_t input, int8_t min, int8_t max) {
     return input;
 }
 
-int8_t Navigator::computePID(int8_t sensor, int8_t target) {
+int16_t Navigator::computePID(int16_t sensor, int16_t target) {
     long double p, i, d;
     
     diff[0] = diff[1];
@@ -307,6 +352,7 @@ LineTracer::LineTracer(Motor* lm, Motor* rm, Motor* tm, GyroSensor* gs, ColorSen
     colorSensor = cs;
     trace_pwmT  = 0;
     trace_pwmLR = 0;
+    frozen      = false;
 }
 
 void LineTracer::haveControl() {
@@ -317,7 +363,7 @@ void LineTracer::haveControl() {
 void LineTracer::operate() {
     controlTail(TAIL_ANGLE_DRIVE); /* バランス走行用角度に制御 */
 
-    if (sonar_flag) {
+    if (frozen) {
         forward = turn = 0; /* 障害物を検知したら停止 */
     } else {
         forward = 30; //前進命令
@@ -329,8 +375,19 @@ void LineTracer::operate() {
             turn = -20; // 右旋回命令
         }
         */
-        int8_t sensor = colorSensor->getBrightness();
-        int8_t target = (LIGHT_WHITE + LIGHT_BLACK)/2;
+        // PID control by brightness
+        int16_t sensor = colorSensor->getBrightness();
+        int16_t target = (LIGHT_WHITE + LIGHT_BLACK)/2;
+        /*
+        // PID control by V in HSV
+        rgb_raw_t cur_rgb;
+        hsv_raw_t cur_hsv;
+        colorSensor->getRawColor(cur_rgb);
+        rgb_to_hsv(cur_rgb, cur_hsv);
+        int16_t sensor = cur_hsv.v;
+        int16_t target = (HSV_V_BLACK + HSV_V_WHITE)/2;
+        */
+        
         if (state == ST_tracing_L || state == ST_dancing) {
             turn = computePID(sensor, target);
         } else {
@@ -368,6 +425,14 @@ void LineTracer::operate() {
         //_debug(syslog(LOG_NOTICE, "%08u, LineTracer::operate(): pwm_L = %d, pwm_R = %d, distance = %d, azimuth = %d, x = %d, y = %d", clock->now(), pwm_L, pwm_R, observer->getDistance(), observer->getAzimuth(), observer->getLocX(), observer->getLocY()));
         _debug(syslog(LOG_NOTICE, "%08u, LineTracer::operate(): distance = %d, azimuth = %d, x = %d, y = %d", clock->now(), observer->getDistance(), observer->getAzimuth(), observer->getLocX(), observer->getLocY()));
     }
+}
+
+void LineTracer::freeze() {
+    frozen = true;
+}
+
+void LineTracer::unfreeze() {
+    frozen = false;
 }
 
 LineTracer::~LineTracer() {
@@ -413,10 +478,6 @@ void Captain::takeoff() {
     ev3_lcd_fill_rect(0, 0, EV3_LCD_WIDTH, EV3_LCD_HEIGHT, EV3_LCD_WHITE);
     ev3_lcd_draw_string("EV3way-ET aflac2019", 0, CALIB_FONT_HEIGHT*1);
     
-    // register cyclic handler to EV3RT
-    ev3_sta_cyc(CYC_CAP_TSK);
-    clock->sleep(PERIOD_CAP_TSK/2); // wait a while
-
     observer = new Observer(leftMotor, rightMotor, touchSensor, sonarSensor);
     observer->goOnDuty();
     limboDancer = new LimboDancer(leftMotor, rightMotor, tailMotor, gyroSensor, colorSensor);
@@ -429,6 +490,7 @@ void Captain::takeoff() {
     
     ev3_led_set_color(LED_ORANGE); /* 初期化完了通知 */
 
+    state = ST_takingOff;
     anchorWatch = new AnchorWatch(tailMotor);
     anchorWatch->goOnDuty();
     anchorWatch->haveControl();
@@ -436,46 +498,68 @@ void Captain::takeoff() {
     act_tsk(RADIO_TASK);
 }
 
-void Captain::operate() {
-    /* ToDo: implement a state machine to pick up an appropriate Navigator */
+void Captain::decide(uint8_t event) {
     switch (state) {
         case ST_takingOff:
-            if (start_flag == CMD_START_R ||
-                start_flag == CMD_START_L ||
-                touch_flag) {
-                syslog(LOG_NOTICE, "%08u, Departing...", clock->now());
-                
-                /* 走行モーターエンコーダーリセット */
-                leftMotor->reset();
-                rightMotor->reset();
-                
-                balance_init(); /* 倒立振子API初期化 */
-                observer->reset();
-                
-                /* ジャイロセンサーリセット */
-                gyroSensor->reset();
-                ev3_led_set_color(LED_GREEN); /* スタート通知 */
-                
-                lineTracer->haveControl();
-                clock->sleep(PERIOD_CAP_TSK/2); // wait a while
-                if (start_flag == CMD_START_R) {
-                    state = ST_tracing_R;
-                } else {
-                    // when started by the touch sensor, robot traces the LEFT edge of line
-                    state = ST_tracing_L;
-                }
+            switch (event) {
+                case EVT_cmdStart_R:
+                case EVT_cmdStart_L:
+                case EVT_touch_On:
+                    if (event == EVT_cmdStart_R) {
+                        state = ST_tracing_R;
+                    } else {
+                        state = ST_tracing_L;
+                    }
+                    syslog(LOG_NOTICE, "%08u, Departing...", clock->now());
+                    
+                    /* 走行モーターエンコーダーリセット */
+                    leftMotor->reset();
+                    rightMotor->reset();
+                    
+                    balance_init(); /* 倒立振子API初期化 */
+                    observer->reset();
+                    
+                    /* ジャイロセンサーリセット */
+                    gyroSensor->reset();
+                    ev3_led_set_color(LED_GREEN); /* スタート通知 */
+                    
+                    lineTracer->haveControl();
+                    break;
+                default:
+                    break;
             }
             break;
         case ST_tracing_R:
         case ST_tracing_L:
-            if (backButton_flag) {
-                syslog(LOG_NOTICE, "%08u, Landing...", clock->now());
-                ER ercd = wup_tsk(MAIN_TASK); // wake up the main task
-                assert(ercd == E_OK);
-                
-                // make sure this routine is NOT executed before it is killed by the main task
-                clock->sleep(PERIOD_CAP_TSK/2); // wait a while
-                state = ST_landing;
+            switch (event) {
+                case EVT_backButton_On:
+                    state = ST_landing;
+                    syslog(LOG_NOTICE, "%08u, Landing...", clock->now());
+                    { // complile fails without this paren
+                    ER ercd = wup_tsk(MAIN_TASK); // wake up the main task
+                    assert(ercd == E_OK);
+                    }
+                    break;
+                case EVT_sonar_On:
+                    lineTracer->freeze();
+                    break;
+                case EVT_sonar_Off:
+                    lineTracer->unfreeze();
+                    break;
+                case EVT_cmdDance:
+                    state = ST_dancing;
+                    limboDancer->haveControl();
+                    break;
+                case EVT_cmdCrimb:
+                    state = ST_crimbing;
+                    seesawCrimber->haveControl();
+                    break;
+                case EVT_cmdPilot:
+                    state = ST_stopping;
+                    harbourPilot->haveControl();
+                    break;
+                default:
+                    break;
             }
             break;
         case ST_dancing:
@@ -485,6 +569,8 @@ void Captain::operate() {
         case ST_stopping:
             break;
         case ST_landing:
+            break;
+        default:
             break;
     }
 }
@@ -505,9 +591,6 @@ void Captain::land() {
     delete harbourPilot;
     observer->goOffDuty();
     delete observer;
-    // deregister cyclic handler from EV3RT
-    ev3_stp_cyc(CYC_CAP_TSK);
-    clock->sleep(2*PERIOD_CAP_TSK); // wait a while
 }
 
 Captain::~Captain() {

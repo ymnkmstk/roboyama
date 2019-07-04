@@ -22,7 +22,6 @@ extern "C" {
 /**
  * Task priorities (smaller number has higher priority)
  */
-#define PRIORITY_CAP_TSK    TMIN_APP_TPRI
 #define PRIORITY_OBS_TSK    TMIN_APP_TPRI
 #define PRIORITY_NAV_TSK    TMIN_APP_TPRI
 #define PRIORITY_MAIN_TASK  (TMIN_APP_TPRI + 1)
@@ -31,7 +30,6 @@ extern "C" {
 /**
  * Task periods in ms
  */
-#define PERIOD_CAP_TSK  (40)
 #define PERIOD_OBS_TSK  (40)
 #define PERIOD_NAV_TSK  (4)
 
@@ -48,7 +46,6 @@ extern "C" {
 #ifndef TOPPERS_MACRO_ONLY
 
 extern void main_task(intptr_t unused);
-extern void captain_task(intptr_t unused);
 extern void observer_task(intptr_t unused);
 extern void navigator_task(intptr_t unused);
 extern void radioman_task(intptr_t unused);
