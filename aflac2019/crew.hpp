@@ -31,9 +31,9 @@ using namespace ev3api;
 #define GYRO_OFFSET           0  /* ジャイロセンサオフセット値(角速度0[deg/sec]時) */
 #define LIGHT_WHITE          60  /* 白色の光センサ値 */
 #define LIGHT_BLACK           3  /* 黒色の光センサ値 */
-#define HSV_V_WHITE         280
+#define HSV_V_WHITE         260
 #define HSV_V_BLACK          10
-#define HSV_V_BLUE           90
+#define HSV_V_BLUE           80
 #define SONAR_ALERT_DISTANCE 30  /* 超音波センサによる障害物検知距離[cm] */
 #define TAIL_ANGLE_STAND_UP  90  /* 完全停止時の角度[度] */
 #define TAIL_ANGLE_DRIVE      3  /* バランス走行時の角度[度] */
@@ -53,15 +53,32 @@ using namespace ev3api;
 #define CMD_DANCE_d     'd'
 #define CMD_CRIMB_C     'C'
 #define CMD_CRIMB_c     'c'
+#define CMD_PILOT_P     'P'
+#define CMD_PILOT_p     'p'
 
 // machine state
 #define ST_takingOff    1
 #define ST_tracing_L    2
-#define ST_dancing      3
+#define ST_crimbing     3
 #define ST_tracing_R    4
-#define ST_crimbing     5
+#define ST_dancing      5
 #define ST_stopping     6
 #define ST_landing      7
+
+// event
+#define EVT_cmdStart_L      1
+#define EVT_cmdStart_R      2
+#define EVT_touch_On        3
+#define EVT_touch_Off       4
+#define EVT_sonar_On        5
+#define EVT_sonar_Off       6
+#define EVT_backButton_On   7
+#define EVT_backButton_Off  8
+#define EVT_bk2bl           9
+#define EVT_bl2bk           10
+#define EVT_cmdDance        11
+#define EVT_cmdCrimb        12
+#define EVT_cmdPilot        13
 
 /* LCDフォントサイズ */
 #define CALIB_FONT (EV3_FONT_SMALL)
@@ -94,11 +111,12 @@ private:
     Motor*          rightMotor;
     TouchSensor*    touchSensor;
     SonarSensor*    sonarSensor;
+    double distance, azimuth, locX, locY;
+    int32_t prevAngL, prevAngR;
+    bool touch_flag, sonar_flag, backButton_flag;
     bool check_touch(void);
     bool check_sonar(void);
     bool check_backButton(void);
-    double distance, azimuth, locX, locY;
-    int32_t prevAngL, prevAngR;
 protected:
 public:
     Observer();
@@ -158,12 +176,15 @@ class LineTracer : public Navigator {
 private:
     int32_t motor_ang_l, motor_ang_r;
     int32_t gyro, volt;
+    bool    frozen;
 protected:
 public:
     LineTracer();
     LineTracer(Motor* lm, Motor* rm, Motor* tm, GyroSensor* gs, ColorSensor* cs);
     void haveControl();
     void operate(); // method to invoke from the cyclic handler
+    void freeze();
+    void unfreeze();
     ~LineTracer();
 };
 
@@ -198,11 +219,12 @@ protected:
 public:
     Captain();
     void takeoff();
-    void operate(); // method to invoke from the cyclic handler
+    void decide(uint8_t event);
     void land();
     ~Captain();
 };
 
+extern Captain*     captain;
 extern Observer*    observer;
 extern Navigator*   activeNavigator;
 extern Clock*       clock;

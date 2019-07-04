@@ -28,11 +28,6 @@ void task_activator(intptr_t tskid) {
     */
 }
 
-// Captain's periodic task
-void captain_task(intptr_t unused) {
-    if (captain != NULL) captain->operate();
-}
-
 // Observer's periodic task
 void observer_task(intptr_t unused) {
     if (observer != NULL) observer->operate();
