@@ -185,7 +185,7 @@ void Observer::operate() {
     if (++traceCnt * PERIOD_OBS_TSK >= PERIOD_TRACE_MSG) {
         traceCnt = 0;
         _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): distance = %d, azimuth = %d, x = %d, y = %d", clock->now(), getDistance(), getAzimuth(), getLocX(), getLocY()));
-        _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): hsv = (%d, %d, %d), rgb = (%d, %d, %d)", clock->now(), cur_hsv.h, cur_hsv.s, cur_hsv.v, cur_rgb.r, cur_rgb.g, cur_rgb.b));
+        _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): hsv = (%u, %u, %u), rgb = (%u, %u, %u)", clock->now(), cur_hsv.h, cur_hsv.s, cur_hsv.v, cur_rgb.r, cur_rgb.g, cur_rgb.b));
     }
 }
 
