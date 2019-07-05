@@ -115,7 +115,8 @@ void main_task(intptr_t unused)
 
         colorSensor->getRawColor(cur_rgb);
         rgb_to_hsv(cur_rgb, cur_hsv);
-        syslog(LOG_NOTICE, "%08u, hsv = (%u, %u, %u), rgb = (%u, %u, %u)", clock->now(), (uint16_t)cur_hsv.h, (uint16_t)cur_hsv.s, (uint16_t)cur_hsv.v, (uint16_t)cur_rgb.r, (uint16_t)cur_rgb.g, (uint16_t)cur_rgb.b);
+        syslog(LOG_NOTICE, "%08u, hsv = (%03u, %03u, %03u)", clock->now(), cur_hsv.h, cur_hsv.s, cur_hsv.v);
+        syslog(LOG_NOTICE, "%08u, rgb = (%03u, %03u, %03u)", clock->now(), cur_rgb.r, cur_rgb.g, cur_rgb.b);
         clock->sleep(500); /* execute in every 500 msec */
     }
     //ter_tsk(BT_TASK);
