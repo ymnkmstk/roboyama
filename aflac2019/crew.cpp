@@ -175,7 +175,7 @@ void Observer::operate() {
         lost_flag = false;
         captain->decide(EVT_line_found);
     }
-    if (distance > notifyDistance) {
+    if ((notifyDistance != 0.0) && (distance > notifyDistance)) {
         syslog(LOG_NOTICE, "%08u, distance reached", clock->now());
         notifyDistance = 0.0; // event to be sent only once
         captain->decide(EVT_dist_reached);
