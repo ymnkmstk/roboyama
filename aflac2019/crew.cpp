@@ -187,6 +187,10 @@ void Observer::operate() {
         _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): distance = %d, azimuth = %d, x = %d, y = %d", clock->now(), getDistance(), getAzimuth(), getLocX(), getLocY()));
         _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): hsv = (%03u, %03u, %03u)", clock->now(), cur_hsv.h, cur_hsv.s, cur_hsv.v));
         _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): rgb = (%03u, %03u, %03u)", clock->now(), cur_rgb.r, cur_rgb.g, cur_rgb.b));
+        
+        uint16_t angle = gyroSensor->getAngle();
+        uint16_t anglerVelocity = gyroSensor->getAnglerVelocity();
+        _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): angle = %u, anglerVelocity = %u", clock->now(), angle, anglerVelocity));
     }
 }
 
