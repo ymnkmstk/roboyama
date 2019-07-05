@@ -9,8 +9,9 @@
 #include "utility.hpp"
 
 void rgb_to_hsv(rgb_raw_t rgb, hsv_raw_t& hsv) {
-    uint16_t max, min, cr, cg, cb, h;
-    
+    uint16_t max, min;
+    double cr, cg, cb, h;  // must be double
+
     max = rgb.r;
     if(max < rgb.g) max = rgb.g;
     if(max < rgb.b) max = rgb.b;

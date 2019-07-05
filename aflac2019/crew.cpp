@@ -185,7 +185,7 @@ void Observer::operate() {
     if (++traceCnt * PERIOD_OBS_TSK >= PERIOD_TRACE_MSG) {
         traceCnt = 0;
         _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): distance = %d, azimuth = %d, x = %d, y = %d", clock->now(), getDistance(), getAzimuth(), getLocX(), getLocY()));
-        _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): hsv = (%u, %u, %u), rgb = (%u, %u, %u)", clock->now(), cur_hsv.h, cur_hsv.s, cur_hsv.v, cur_rgb.r, cur_rgb.g, cur_rgb.b));
+        _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): hsv = (%u, %u, %u), rgb = (%u, %u, %u)", clock->now(), (uint16_t)cur_hsv.h, (uint16_t)cur_hsv.s, (uint16_t)cur_hsv.v, (uint16_t)cur_rgb.r, (uint16_t)cur_rgb.g, (uint16_t)cur_rgb.b));
     }
 }
 
@@ -278,7 +278,7 @@ void Navigator::controlTail(int32_t angle) {
     // display pwm in every PERIOD_TRACE_MSG ms */
     if (++trace_pwmT * PERIOD_NAV_TSK >= PERIOD_TRACE_MSG) {
        trace_pwmT = 0;
-        _debug(syslog(LOG_NOTICE, "%08u, Navigator::controlTail(): pwm = %d", clock->now(), pwm));
+        _debug(syslog(LOG_NOTICE, "%08u, Navigator::controlTail(): pwm = %d", clock->now(), (int16_t)pwm));
     }
 }
 
