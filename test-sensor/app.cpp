@@ -59,13 +59,13 @@ void rgb_to_hsv(rgb_raw_t rgb, hsv_raw_t& hsv) {
     if(min > rgb.g) min = rgb.g;
     if(min > rgb.b) min = rgb.b;
 
-    hsv.v = max;
+    hsv.v = 100 * max / (double)255.0;
     
     if (!max) {
         hsv.s = 0;
         hsv.h = 0;
     } else {
-        hsv.s = 255 * (max - min) / (double)max;
+        hsv.s = 100 * (max - min) / (double)max;
         cr = (max - rgb.r) / (double)(max - min);
         cg = (max - rgb.g) / (double)(max - min);
         cb = (max - rgb.b) / (double)(max - min);

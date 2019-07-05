@@ -16,6 +16,8 @@
 		636EB8BB22B079F60046CCFC /* LimboDancer.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LimboDancer.hpp; sourceTree = "<group>"; };
 		636EB8BC22B07A2C0046CCFC /* SeesawCrimber.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SeesawCrimber.cpp; sourceTree = "<group>"; };
 		636EB8BD22B07A2C0046CCFC /* SeesawCrimber.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = SeesawCrimber.hpp; sourceTree = "<group>"; };
+		636EB8C222CED8EA0046CCFC /* utility.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = utility.cpp; sourceTree = "<group>"; };
+		636EB8C322CED8EA0046CCFC /* utility.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = utility.hpp; sourceTree = "<group>"; };
 		63A5DD4E229BCF2D008A1791 /* balancer_param.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = balancer_param.c; sourceTree = "<group>"; };
 		63A5DD4F229BCF37008A1791 /* balancer_private.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = balancer_private.h; sourceTree = "<group>"; };
 		63A5DD50229BCF41008A1791 /* balancer.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = balancer.c; sourceTree = "<group>"; };
@@ -68,6 +70,8 @@
 				636EB8BD22B07A2C0046CCFC /* SeesawCrimber.hpp */,
 				636EB8BA22B079F60046CCFC /* LimboDancer.cpp */,
 				636EB8BB22B079F60046CCFC /* LimboDancer.hpp */,
+				636EB8C222CED8EA0046CCFC /* utility.cpp */,
+				636EB8C322CED8EA0046CCFC /* utility.hpp */,
 			);
 			path = aflac2019;
 			sourceTree = "<group>";

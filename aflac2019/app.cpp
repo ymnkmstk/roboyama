@@ -59,7 +59,9 @@ void main_task(intptr_t unused) {
     assert(ercd == E_OK);
 
     captain->land();
-    
+
+    delete radioman;
     delete captain;
+    delete clock;
     ext_tsk();
 }
