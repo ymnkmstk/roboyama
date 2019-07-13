@@ -10,41 +10,6 @@
 #include "balancer.h"
 #include "crew.hpp"
 
-void rgb_to_hsv(rgb_raw_t rgb, hsv_raw_t& hsv) {
-    uint16_t max, min, cr, cg, cb, h;
-    
-    max = rgb.r;
-    if(max < rgb.g) max = rgb.g;
-    if(max < rgb.b) max = rgb.b;
-    
-    min = rgb.r;
-    if(min > rgb.g) min = rgb.g;
-    if(min > rgb.b) min = rgb.b;
-    
-    hsv.v = max;
-    
-    if (!max) {
-        hsv.s = 0;
-        hsv.h = 0;
-    } else {
-        hsv.s = 255 * (max - min) / (double)max;
-        cr = (max - rgb.r) / (double)(max - min);
-        cg = (max - rgb.g) / (double)(max - min);
-        cb = (max - rgb.b) / (double)(max - min);
-        
-        if (max == rgb.r) {
-            h = cb - cg;
-        } else if (max == rgb.g) {
-            h = 2 + cr - cb;
-        } else {
-            h = 4 + cg - cr;
-        }
-        h *= 60;
-        if (h < 0) h += 360;
-        hsv.h = h;
-    }
-}
-
 Radioman::Radioman() {
     _debug(syslog(LOG_NOTICE, "%08u, Radioman constructor", clock->now()));
     /* Open Bluetooth file */
@@ -59,28 +24,28 @@ void Radioman::operate() {
     {
         case CMD_START_R:
         case CMD_START_r:
-            _debug(syslog(LOG_NOTICE, "%08u, StartCMD R-mode received", clock->now()));
+            syslog(LOG_NOTICE, "%08u, StartCMD R-mode received", clock->now());
             captain->decide(EVT_cmdStart_R);
             break;
         case CMD_START_L:
         case CMD_START_l:
-            _debug(syslog(LOG_NOTICE, "%08u, StartCMD L-mode received", clock->now()));
+            syslog(LOG_NOTICE, "%08u, StartCMD L-mode received", clock->now());
             captain->decide(EVT_cmdStart_L);
             break;
         case CMD_DANCE_D:
         case CMD_DANCE_d:
-            _debug(syslog(LOG_NOTICE, "%08u, LimboDancer forced by command", clock->now()));
+            syslog(LOG_NOTICE, "%08u, LimboDancer forced by command", clock->now());
             captain->decide(EVT_cmdDance);
             break;
         case CMD_CRIMB_C:
         case CMD_CRIMB_c:
-            _debug(syslog(LOG_NOTICE, "%08u, SeesawCrimber forced by command", clock->now()));
+            syslog(LOG_NOTICE, "%08u, SeesawCrimber forced by command", clock->now());
             captain->decide(EVT_cmdCrimb);
             break;
-        case CMD_PILOT_P:
-        case CMD_PILOT_p:
-            _debug(syslog(LOG_NOTICE, "%08u, HarbourPilot forced by command", clock->now()));
-            captain->decide(EVT_cmdPilot);
+        case CMD_STOP_S:
+        case CMD_STOP_s:
+            syslog(LOG_NOTICE, "%08u, stop forced by command", clock->now());
+            captain->decide(EVT_cmdStop);
             break;
         default:
             break;
@@ -92,21 +57,26 @@ Radioman::~Radioman() {
     fclose(bt);
 }
 
-Observer::Observer(Motor* lm, Motor* rm, TouchSensor* ts,SonarSensor* ss) {
+Observer::Observer(Motor* lm, Motor* rm, TouchSensor* ts, SonarSensor* ss, GyroSensor* gs, ColorSensor* cs) {
     _debug(syslog(LOG_NOTICE, "%08u, Observer constructor", clock->now()));
     leftMotor   = lm;
     rightMotor  = rm;
     touchSensor = ts;
     sonarSensor = ss;
+    gyroSensor  = gs;
+    colorSensor = cs;
     distance = 0.0;
     azimuth = 0.0;
     locX = 0.0;
     locY = 0.0;
     prevAngL = 0;
     prevAngR = 0;
+    notifyDistance = 0;
+    traceCnt = 0;
     touch_flag = false;
     sonar_flag = false;
     backButton_flag = false;
+    lost_flag = false;
 }
 
 void Observer::goOnDuty() {
@@ -123,6 +93,10 @@ void Observer::reset() {
     locY = 0.0;
     prevAngL = leftMotor->getCount();
     prevAngR = rightMotor->getCount();
+}
+
+void Observer::notifyOfDistance(int32_t delta) {
+    notifyDistance = delta + distance;
 }
 
 int32_t Observer::getDistance() {
@@ -166,31 +140,57 @@ void Observer::operate() {
     locY += (deltaDist * cos(azimuth));
 
     if (check_touch() && !touch_flag) {
-        _debug(syslog(LOG_NOTICE, "%08u, TouchSensor flipped on", clock->now()));
+        syslog(LOG_NOTICE, "%08u, TouchSensor flipped on", clock->now());
         touch_flag = true;
         captain->decide(EVT_touch_On);
     } else if (!check_touch() && touch_flag) {
-        _debug(syslog(LOG_NOTICE, "%08u, TouchSensor flipped off", clock->now()));
+        syslog(LOG_NOTICE, "%08u, TouchSensor flipped off", clock->now());
         touch_flag = false;
         captain->decide(EVT_touch_Off);
     }
     if (check_sonar() && !sonar_flag) {
-        _debug(syslog(LOG_NOTICE, "%08u, SonarSensor flipped on", clock->now()));
+        syslog(LOG_NOTICE, "%08u, SonarSensor flipped on", clock->now());
         sonar_flag = true;
         captain->decide(EVT_sonar_On);
     } else if (!check_sonar() && sonar_flag) {
-        _debug(syslog(LOG_NOTICE, "%08u, SonarSensor flipped off", clock->now()));
+        syslog(LOG_NOTICE, "%08u, SonarSensor flipped off", clock->now());
         sonar_flag = false;
         captain->decide(EVT_sonar_Off);
-   }
+    }
     if (check_backButton() && !backButton_flag) {
-        _debug(syslog(LOG_NOTICE, "%08u, Back button flipped on", clock->now()));
+        syslog(LOG_NOTICE, "%08u, Back button flipped on", clock->now());
         backButton_flag = true;
         captain->decide(EVT_backButton_On);
     } else if (!check_backButton() && backButton_flag) {
-        _debug(syslog(LOG_NOTICE, "%08u, Back button flipped off", clock->now()));
+        syslog(LOG_NOTICE, "%08u, Back button flipped off", clock->now());
         backButton_flag = false;
         captain->decide(EVT_backButton_Off);
+    }
+    if (check_lost() && !lost_flag) {
+        syslog(LOG_NOTICE, "%08u, line lost", clock->now());
+        lost_flag = true;
+        captain->decide(EVT_line_lost);
+    } else if (!check_lost() && lost_flag) {
+        syslog(LOG_NOTICE, "%08u, line found", clock->now());
+        lost_flag = false;
+        captain->decide(EVT_line_found);
+    }
+    if ((notifyDistance != 0.0) && (distance > notifyDistance)) {
+        syslog(LOG_NOTICE, "%08u, distance reached", clock->now());
+        notifyDistance = 0.0; // event to be sent only once
+        captain->decide(EVT_dist_reached);
+    }
+
+    // display trace message in every PERIOD_TRACE_MSG ms */
+    if (++traceCnt * PERIOD_OBS_TSK >= PERIOD_TRACE_MSG) {
+        traceCnt = 0;
+        _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): distance = %d, azimuth = %d, x = %d, y = %d", clock->now(), getDistance(), getAzimuth(), getLocX(), getLocY()));
+        _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): hsv = (%03u, %03u, %03u)", clock->now(), cur_hsv.h, cur_hsv.s, cur_hsv.v));
+        _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): rgb = (%03u, %03u, %03u)", clock->now(), cur_rgb.r, cur_rgb.g, cur_rgb.b));
+        
+        int16_t angle = gyroSensor->getAngle();
+        int16_t anglerVelocity = gyroSensor->getAnglerVelocity();
+        _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): angle = %d, anglerVelocity = %d", clock->now(), angle, anglerVelocity));
     }
 }
 
@@ -226,13 +226,23 @@ bool Observer::check_backButton(void) {
     }
 }
 
+bool Observer::check_lost(void) {
+    colorSensor->getRawColor(cur_rgb);
+    rgb_to_hsv(cur_rgb, cur_hsv);
+    if (cur_hsv.v > HSV_V_LOST) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
 Observer::~Observer() {
     _debug(syslog(LOG_NOTICE, "%08u, Observer destructor", clock->now()));
 }
 
 Navigator::Navigator() {
     _debug(syslog(LOG_NOTICE, "%08u, Navigator default constructor", clock->now()));
-    setPIDconst(0.38, 0.06, 0.027); // set default PID constant
+    setPIDconst(P_CONST, I_CONST, D_CONST); // set default PID constant
     diff[1] = 0; // initialize diff[1]
 }
 
@@ -273,7 +283,7 @@ void Navigator::controlTail(int32_t angle) {
     // display pwm in every PERIOD_TRACE_MSG ms */
     if (++trace_pwmT * PERIOD_NAV_TSK >= PERIOD_TRACE_MSG) {
        trace_pwmT = 0;
-        _debug(syslog(LOG_NOTICE, "%08u, Navigator::controlTail(): pwm = %d", clock->now(), pwm));
+        _debug(syslog(LOG_NOTICE, "%08u, Navigator::controlTail(): pwm = %d", clock->now(), (int16_t)pwm));
     }
 }
 
@@ -375,23 +385,23 @@ void LineTracer::operate() {
             turn = -20; // 右旋回命令
         }
         */
+        /*
         // PID control by brightness
         int16_t sensor = colorSensor->getBrightness();
         int16_t target = (LIGHT_WHITE + LIGHT_BLACK)/2;
-        /*
+        */
         // PID control by V in HSV
         rgb_raw_t cur_rgb;
         hsv_raw_t cur_hsv;
         colorSensor->getRawColor(cur_rgb);
         rgb_to_hsv(cur_rgb, cur_hsv);
         int16_t sensor = cur_hsv.v;
-        int16_t target = (HSV_V_BLACK + HSV_V_WHITE)/2;
-        */
+        int16_t target = (HSV_V_BLUE + HSV_V_WHITE)/2;
         
-        if (state == ST_tracing_L || state == ST_dancing) {
+        if (state == ST_tracing_L || state == ST_stopping_L || state == ST_dancing) {
             turn = computePID(sensor, target);
         } else {
-            // state == ST_tracing_R || state == ST_crimbing
+            // state == ST_tracing_R || state == ST_stopping_R || state == ST_crimbing
             turn = (-1) * computePID(sensor, target);
         }
     }
@@ -422,8 +432,10 @@ void LineTracer::operate() {
     // display pwm in every PERIOD_TRACE_MSG ms */
     if (++trace_pwmLR * PERIOD_NAV_TSK >= PERIOD_TRACE_MSG) {
         trace_pwmLR = 0;
-        //_debug(syslog(LOG_NOTICE, "%08u, LineTracer::operate(): pwm_L = %d, pwm_R = %d, distance = %d, azimuth = %d, x = %d, y = %d", clock->now(), pwm_L, pwm_R, observer->getDistance(), observer->getAzimuth(), observer->getLocX(), observer->getLocY()));
+        _debug(syslog(LOG_NOTICE, "%08u, LineTracer::operate(): pwm_L = %d, pwm_R = %d", clock->now(), pwm_L, pwm_R));
+        /*
         _debug(syslog(LOG_NOTICE, "%08u, LineTracer::operate(): distance = %d, azimuth = %d, x = %d, y = %d", clock->now(), observer->getDistance(), observer->getAzimuth(), observer->getLocX(), observer->getLocY()));
+        */
     }
 }
 
@@ -437,27 +449,6 @@ void LineTracer::unfreeze() {
 
 LineTracer::~LineTracer() {
     _debug(syslog(LOG_NOTICE, "%08u, LineTracer destructor", clock->now()));
-}
-
-HarbourPilot::HarbourPilot(Motor* lm, Motor* rm, Motor* tm, GyroSensor* gs, ColorSensor* cs) {
-    _debug(syslog(LOG_NOTICE, "%08u, HarbourPilot constructor", clock->now()));
-    leftMotor   = lm;
-    rightMotor  = rm;
-    tailMotor   = tm;
-    gyroSensor  = gs;
-    colorSensor = cs;
-}
-
-void HarbourPilot::haveControl() {
-    activeNavigator = this;
-    syslog(LOG_NOTICE, "%08u, HarbourPilot has control", clock->now());
-}
-
-void HarbourPilot::operate() {
-}
-
-HarbourPilot::~HarbourPilot() {
-    _debug(syslog(LOG_NOTICE, "%08u, HarbourPilot destructor", clock->now()));
 }
 
 Captain::Captain() {
@@ -478,12 +469,11 @@ void Captain::takeoff() {
     ev3_lcd_fill_rect(0, 0, EV3_LCD_WIDTH, EV3_LCD_HEIGHT, EV3_LCD_WHITE);
     ev3_lcd_draw_string("EV3way-ET aflac2019", 0, CALIB_FONT_HEIGHT*1);
     
-    observer = new Observer(leftMotor, rightMotor, touchSensor, sonarSensor);
+    observer = new Observer(leftMotor, rightMotor, touchSensor, sonarSensor, gyroSensor, colorSensor);
     observer->goOnDuty();
     limboDancer = new LimboDancer(leftMotor, rightMotor, tailMotor, gyroSensor, colorSensor);
     seesawCrimber = new SeesawCrimber(leftMotor, rightMotor, tailMotor, gyroSensor, colorSensor);
     lineTracer = new LineTracer(leftMotor, rightMotor, tailMotor, gyroSensor, colorSensor);
-    harbourPilot = new HarbourPilot(leftMotor, rightMotor, tailMotor, gyroSensor, colorSensor);
     
     /* 尻尾モーターのリセット */
     tailMotor->reset();
@@ -499,6 +489,7 @@ void Captain::takeoff() {
 }
 
 void Captain::decide(uint8_t event) {
+    syslog(LOG_NOTICE, "%08u, Captain::decide(): event %s received by state %s", clock->now(), eventName[event], stateName[state]);
     switch (state) {
         case ST_takingOff:
             switch (event) {
@@ -507,7 +498,7 @@ void Captain::decide(uint8_t event) {
                 case EVT_touch_On:
                     if (event == EVT_cmdStart_R) {
                         state = ST_tracing_R;
-                    } else {
+                    } else {  // event == EVT_cmdStart_L || event == EVT_touch_On
                         state = ST_tracing_L;
                     }
                     syslog(LOG_NOTICE, "%08u, Departing...", clock->now());
@@ -534,11 +525,7 @@ void Captain::decide(uint8_t event) {
             switch (event) {
                 case EVT_backButton_On:
                     state = ST_landing;
-                    syslog(LOG_NOTICE, "%08u, Landing...", clock->now());
-                    { // complile fails without this paren
-                    ER ercd = wup_tsk(MAIN_TASK); // wake up the main task
-                    assert(ercd == E_OK);
-                    }
+                    triggerLanding();
                     break;
                 case EVT_sonar_On:
                     lineTracer->freeze();
@@ -547,32 +534,85 @@ void Captain::decide(uint8_t event) {
                     lineTracer->unfreeze();
                     break;
                 case EVT_cmdDance:
+                // case EVT_bl2bk:
                     state = ST_dancing;
                     limboDancer->haveControl();
                     break;
                 case EVT_cmdCrimb:
+                // case EVT_bl2bk:
                     state = ST_crimbing;
                     seesawCrimber->haveControl();
                     break;
-                case EVT_cmdPilot:
-                    state = ST_stopping;
-                    harbourPilot->haveControl();
+                case EVT_cmdStop:
+                    if (state == ST_tracing_R) {
+                        state = ST_stopping_R;
+                    } else { // state == ST_tracing_L
+                        state = ST_stopping_L;
+                    }
+                    observer->notifyOfDistance(FINAL_APPROACH_LEN);
+                    lineTracer->haveControl();
                     break;
                 default:
                     break;
             }
             break;
         case ST_dancing:
+            switch (event) {
+                case EVT_backButton_On:
+                    state = ST_landing;
+                    triggerLanding();
+                    break;
+                case EVT_bk2bl:
+                    state = ST_stopping_R;
+                    observer->notifyOfDistance(FINAL_APPROACH_LEN);
+                    lineTracer->haveControl();
+                    break;
+                default:
+                    break;
+            }
             break;
         case ST_crimbing:
+            switch (event) {
+                case EVT_backButton_On:
+                    state = ST_landing;
+                    triggerLanding();
+                    break;
+                case EVT_bk2bl:
+                    state = ST_stopping_L;
+                    observer->notifyOfDistance(FINAL_APPROACH_LEN);
+                    lineTracer->haveControl();
+                    break;
+                default:
+                    break;
+            }
             break;
-        case ST_stopping:
+        case ST_stopping_R:
+        case ST_stopping_L:
+            switch (event) {
+                case EVT_backButton_On:
+                    state = ST_landing;
+                    triggerLanding();
+                    break;
+                case EVT_dist_reached:
+                    state = ST_landing;
+                    anchorWatch->haveControl(); // does robot stand still?
+                    triggerLanding();
+                    break;
+                default:
+                    break;
+            }
             break;
         case ST_landing:
             break;
         default:
             break;
     }
+}
+
+void Captain::triggerLanding() {
+    syslog(LOG_NOTICE, "%08u, Landing...", clock->now());
+    ER ercd = wup_tsk(MAIN_TASK); // wake up the main task
+    assert(ercd == E_OK);
 }
 
 void Captain::land() {
@@ -588,9 +628,16 @@ void Captain::land() {
     delete lineTracer;
     delete seesawCrimber;
     delete limboDancer;
-    delete harbourPilot;
     observer->goOffDuty();
     delete observer;
+    
+    delete tailMotor;
+    delete rightMotor;
+    delete leftMotor;
+    delete gyroSensor;
+    delete colorSensor;
+    delete sonarSensor;
+    delete touchSensor;
 }
 
 Captain::~Captain() {
