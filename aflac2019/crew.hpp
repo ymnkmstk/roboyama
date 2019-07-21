@@ -152,11 +152,12 @@ private:
     int32_t prevAngL, prevAngR, notifyDistance;
     rgb_raw_t cur_rgb;
     hsv_raw_t cur_hsv;
-    bool touch_flag, sonar_flag, backButton_flag, lost_flag;
+    bool touch_flag, sonar_flag, backButton_flag, lost_flag, blue_flag;
     bool check_touch(void);
     bool check_sonar(void);
     bool check_backButton(void);
     bool check_lost(void);
+    bool check_blue(void);
 protected:
 public:
     Observer();

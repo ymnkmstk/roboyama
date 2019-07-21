@@ -139,46 +139,78 @@ void Observer::operate() {
     locX += (deltaDist * sin(azimuth));
     locY += (deltaDist * cos(azimuth));
 
-    if (check_touch() && !touch_flag) {
-        syslog(LOG_NOTICE, "%08u, TouchSensor flipped on", clock->now());
-        touch_flag = true;
-        captain->decide(EVT_touch_On);
-    } else if (!check_touch() && touch_flag) {
-        syslog(LOG_NOTICE, "%08u, TouchSensor flipped off", clock->now());
-        touch_flag = false;
-        captain->decide(EVT_touch_Off);
-    }
-    if (check_sonar() && !sonar_flag) {
-        syslog(LOG_NOTICE, "%08u, SonarSensor flipped on", clock->now());
-        sonar_flag = true;
-        captain->decide(EVT_sonar_On);
-    } else if (!check_sonar() && sonar_flag) {
-        syslog(LOG_NOTICE, "%08u, SonarSensor flipped off", clock->now());
-        sonar_flag = false;
-        captain->decide(EVT_sonar_Off);
-    }
-    if (check_backButton() && !backButton_flag) {
-        syslog(LOG_NOTICE, "%08u, Back button flipped on", clock->now());
-        backButton_flag = true;
-        captain->decide(EVT_backButton_On);
-    } else if (!check_backButton() && backButton_flag) {
-        syslog(LOG_NOTICE, "%08u, Back button flipped off", clock->now());
-        backButton_flag = false;
-        captain->decide(EVT_backButton_Off);
-    }
-    if (check_lost() && !lost_flag) {
-        syslog(LOG_NOTICE, "%08u, line lost", clock->now());
-        lost_flag = true;
-        captain->decide(EVT_line_lost);
-    } else if (!check_lost() && lost_flag) {
-        syslog(LOG_NOTICE, "%08u, line found", clock->now());
-        lost_flag = false;
-        captain->decide(EVT_line_found);
-    }
+    // monitor distance
     if ((notifyDistance != 0.0) && (distance > notifyDistance)) {
         syslog(LOG_NOTICE, "%08u, distance reached", clock->now());
         notifyDistance = 0.0; // event to be sent only once
         captain->decide(EVT_dist_reached);
+    }
+    
+    // monitor touch sensor
+    bool result = check_touch();
+    if (result && !touch_flag) {
+        syslog(LOG_NOTICE, "%08u, TouchSensor flipped on", clock->now());
+        touch_flag = true;
+        captain->decide(EVT_touch_On);
+    } else if (!result && touch_flag) {
+        syslog(LOG_NOTICE, "%08u, TouchSensor flipped off", clock->now());
+        touch_flag = false;
+        captain->decide(EVT_touch_Off);
+    }
+    
+    // monitor sonar sensor
+    result = check_sonar();
+    if (result && !sonar_flag) {
+        syslog(LOG_NOTICE, "%08u, SonarSensor flipped on", clock->now());
+        sonar_flag = true;
+        captain->decide(EVT_sonar_On);
+    } else if (!result && sonar_flag) {
+        syslog(LOG_NOTICE, "%08u, SonarSensor flipped off", clock->now());
+        sonar_flag = false;
+        captain->decide(EVT_sonar_Off);
+    }
+    
+    // monitor Back Button
+    result = check_backButton();
+    if (result && !backButton_flag) {
+        syslog(LOG_NOTICE, "%08u, Back button flipped on", clock->now());
+        backButton_flag = true;
+        captain->decide(EVT_backButton_On);
+    } else if (!result && backButton_flag) {
+        syslog(LOG_NOTICE, "%08u, Back button flipped off", clock->now());
+        backButton_flag = false;
+        captain->decide(EVT_backButton_Off);
+    }
+
+    // monitor color sensor
+    //
+    // Note:
+    //   check_blue() must be invoked after check_lost()
+    //   as cur_rgb and cur_hsv are set by check_lost()
+    //
+    // determine if still tracing the line
+    result = check_lost();
+    if (result && !lost_flag) {
+        syslog(LOG_NOTICE, "%08u, line lost", clock->now());
+        lost_flag = true;
+        captain->decide(EVT_line_lost);
+    } else if (!result && lost_flag) {
+        syslog(LOG_NOTICE, "%08u, line found", clock->now());
+        lost_flag = false;
+        captain->decide(EVT_line_found);
+    }
+    // determine blue when being on the line
+    if (!lost_flag) {
+        result = check_blue();
+        if (result && !blue_flag) {
+            syslog(LOG_NOTICE, "%08u, line color changed black to blue", clock->now());
+            blue_flag = true;
+            captain->decide(EVT_bk2bl);
+        } else if (!result && blue_flag) {
+            syslog(LOG_NOTICE, "%08u, line color changed blue to black", clock->now());
+            blue_flag = false;
+            captain->decide(EVT_bl2bk);
+        }
     }
 
     // display trace message in every PERIOD_TRACE_MSG ms */
@@ -230,6 +262,17 @@ bool Observer::check_lost(void) {
     colorSensor->getRawColor(cur_rgb);
     rgb_to_hsv(cur_rgb, cur_hsv);
     if (cur_hsv.v > HSV_V_LOST) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+bool Observer::check_blue(void) {
+    // assuming that cur_rgb and cur_hsv are already set
+    //colorSensor->getRawColor(cur_rgb);
+    //rgb_to_hsv(cur_rgb, cur_hsv);
+    if (cur_rgb.b > cur_rgb.r && cur_hsv.v > HSV_V_BLUE) {
         return true;
     } else {
         return false;
@@ -396,8 +439,9 @@ void LineTracer::operate() {
         colorSensor->getRawColor(cur_rgb);
         rgb_to_hsv(cur_rgb, cur_hsv);
         int16_t sensor = cur_hsv.v;
-        int16_t target = (HSV_V_BLUE + HSV_V_WHITE)/2;
-        
+        //int16_t target = (HSV_V_BLUE + HSV_V_WHITE)/2;
+        int16_t target = (HSV_V_BLACK + HSV_V_WHITE)/2;
+
         if (state == ST_tracing_L || state == ST_stopping_L || state == ST_dancing) {
             turn = computePID(sensor, target);
         } else {
@@ -521,7 +565,6 @@ void Captain::decide(uint8_t event) {
             }
             break;
         case ST_tracing_R:
-        case ST_tracing_L:
             switch (event) {
                 case EVT_backButton_On:
                     state = ST_landing;
@@ -534,21 +577,38 @@ void Captain::decide(uint8_t event) {
                     lineTracer->unfreeze();
                     break;
                 case EVT_cmdDance:
-                // case EVT_bl2bk:
+                case EVT_bl2bk:
                     state = ST_dancing;
                     limboDancer->haveControl();
                     break;
+                case EVT_cmdStop:
+                    state = ST_stopping_R;
+                    observer->notifyOfDistance(FINAL_APPROACH_LEN);
+                    lineTracer->haveControl();
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case ST_tracing_L:
+            switch (event) {
+                case EVT_backButton_On:
+                    state = ST_landing;
+                    triggerLanding();
+                    break;
+                case EVT_sonar_On:
+                    lineTracer->freeze();
+                    break;
+                case EVT_sonar_Off:
+                    lineTracer->unfreeze();
+                    break;
                 case EVT_cmdCrimb:
-                // case EVT_bl2bk:
+                case EVT_bl2bk:
                     state = ST_crimbing;
                     seesawCrimber->haveControl();
                     break;
                 case EVT_cmdStop:
-                    if (state == ST_tracing_R) {
-                        state = ST_stopping_R;
-                    } else { // state == ST_tracing_L
-                        state = ST_stopping_L;
-                    }
+                    state = ST_stopping_L;
                     observer->notifyOfDistance(FINAL_APPROACH_LEN);
                     lineTracer->haveControl();
                     break;

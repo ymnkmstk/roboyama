@@ -11,7 +11,7 @@
 
 #include "crew.hpp"
 
-class LimboDancer : public Navigator {
+class LimboDancer : public LineTracer {
 protected:
 public:
     LimboDancer();
