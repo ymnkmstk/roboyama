@@ -8,13 +8,8 @@
 
 #include "crew.hpp"
 
-SeesawCrimber::SeesawCrimber(Motor* lm, Motor* rm, Motor* tm, GyroSensor* gs, ColorSensor* cs) {
+SeesawCrimber::SeesawCrimber(Motor* lm, Motor* rm, Motor* tm, GyroSensor* gs, ColorSensor* cs) : LineTracer(lm, rm, tm, gs, cs) {
     _debug(syslog(LOG_NOTICE, "%08lu, SeesawCrimber constructor", clock->now()));
-    leftMotor   = lm;
-    rightMotor  = rm;
-    tailMotor   = tm;
-    gyroSensor  = gs;
-    colorSensor = cs;
 }
 
 void SeesawCrimber::haveControl() {
@@ -23,6 +18,7 @@ void SeesawCrimber::haveControl() {
 }
 
 void SeesawCrimber::operate() {
+    LineTracer::operate();
 }
 
 SeesawCrimber::~SeesawCrimber() {
