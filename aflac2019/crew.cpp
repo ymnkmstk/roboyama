@@ -200,6 +200,7 @@ void Observer::operate() {
         captain->decide(EVT_line_found);
     }
     // determine blue when being on the line
+    /*
     if (!lost_flag) {
         result = check_blue();
         if (result && !blue_flag) {
@@ -212,6 +213,7 @@ void Observer::operate() {
             captain->decide(EVT_bl2bk);
         }
     }
+    */
 
     // display trace message in every PERIOD_TRACE_MSG ms */
     if (++traceCnt * PERIOD_OBS_TSK >= PERIOD_TRACE_MSG) {
