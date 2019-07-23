@@ -419,7 +419,7 @@ void LineTracer::operate() {
     if (frozen) {
         forward = turn = 0; /* 障害物を検知したら停止 */
     } else {
-        forward = 30; //前進命令
+        forward = 15; //前進命令  Changed from 30 to 15 as tuning on July 23
         /*
         // on-off control
         if (colorSensor->getBrightness() >= (LIGHT_WHITE + LIGHT_BLACK)/2) {
@@ -439,13 +439,12 @@ void LineTracer::operate() {
         colorSensor->getRawColor(cur_rgb);
         rgb_to_hsv(cur_rgb, cur_hsv);
         int16_t sensor = cur_hsv.v;
-        //int16_t target = (HSV_V_BLUE + HSV_V_WHITE)/2;
-        int16_t target = (HSV_V_BLACK + HSV_V_WHITE)/2;
+        int16_t target = (HSV_V_BLACK + HSV_V_WHITE)/4;  // devisor changed from 2 to 4 as tuning on July 23
 
-        if (state == ST_tracing_L || state == ST_stopping_L || state == ST_dancing) {
+        if (state == ST_tracing_L || state == ST_stopping_L || state == ST_crimbing) {
             turn = computePID(sensor, target);
         } else {
-            // state == ST_tracing_R || state == ST_stopping_R || state == ST_crimbing
+            // state == ST_tracing_R || state == ST_stopping_R || state == ST_dancing
             turn = (-1) * computePID(sensor, target);
         }
     }
