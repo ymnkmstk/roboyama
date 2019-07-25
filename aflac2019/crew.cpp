@@ -215,6 +215,9 @@ void Observer::operate() {
     }
     */
 
+    // determine if tilt
+    check_tilt();
+    
     // display trace message in every PERIOD_TRACE_MSG ms */
     if (++traceCnt * PERIOD_OBS_TSK >= PERIOD_TRACE_MSG) {
         traceCnt = 0;
@@ -278,6 +281,16 @@ bool Observer::check_blue(void) {
         return true;
     } else {
         return false;
+    }
+}
+
+bool Observer::check_tilt(void) {
+    int16_t anglerVelocity = gyroSensor->getAnglerVelocity();
+    if (anglerVelocity < ANG_V_TILT && anglerVelocity > (-1) * ANG_V_TILT) {
+        return false;
+    } else {
+        _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): TILT anglerVelocity = %d", clock->now(), anglerVelocity));
+        return true;
     }
 }
 

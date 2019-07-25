@@ -37,6 +37,7 @@ using namespace ev3api;
 #define HSV_V_BLACK           0
 #define HSV_V_BLUE           35
 #define FINAL_APPROACH_LEN  100  // final approch length in milimater
+#define ANG_V_TILT           50  // threshold to determine "tilt"
 #define SONAR_ALERT_DISTANCE 30  /* 超音波センサによる障害物検知距離[cm] */
 #define TAIL_ANGLE_STAND_UP  90  /* 完全停止時の角度[度] */
 #define TAIL_ANGLE_DRIVE      3  /* バランス走行時の角度[度] */
@@ -101,6 +102,7 @@ const char stateName[][ST_NAME_LEN] = {
 #define EVT_line_lost       13
 #define EVT_line_found      14
 #define EVT_dist_reached    15
+#define EVT_tilt            16
 
 #define EVT_NAME_LEN        20  // maximum number of characters for an event name
 const char eventName[][EVT_NAME_LEN] = {
@@ -119,7 +121,8 @@ const char eventName[][EVT_NAME_LEN] = {
     "EVT_cmdStop",
     "EVT_line_lost",
     "EVT_line_found",
-    "EVT_dist_reached"
+    "EVT_dist_reached",
+    "EVT_tilt"
 };
 
 /* LCDフォントサイズ */
@@ -158,6 +161,7 @@ private:
     bool check_backButton(void);
     bool check_lost(void);
     bool check_blue(void);
+    bool check_tilt(void);
 protected:
 public:
     Observer();
