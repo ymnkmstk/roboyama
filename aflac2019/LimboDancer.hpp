@@ -11,6 +11,8 @@
 
 #include "crew.hpp"
 
+#define TAIL_ANGLE_LIMBO      60  /* リンボーダンス時の角度[度] */
+
 class LimboDancer : public LineTracer {
 protected:
 public:
@@ -19,6 +21,8 @@ public:
     void haveControl();
     void operate(); // method to invoke from the cyclic handler
     ~LimboDancer();
+    int16_t limboMode;
+    int16_t counter;
 };
 
 #endif /* LimboDancer_hpp */
