@@ -10,8 +10,14 @@
 #include "crew.hpp"
 
 LimboDancer::LimboDancer(Motor* lm, Motor* rm, Motor* tm, GyroSensor* gs, ColorSensor* cs) : LineTracer(lm, rm, tm, gs, cs) {
-    limboMode = 1;
+    limboMode = LIMBO_MODE_INIT;
     counter = 0;
+    angle = calibrator->getPropByInt16("tail.angle.limbo",TAIL_ANGLE_LIMBO);
+    startTime = calibrator->getPropByInt16("limbo.time.start",LIMBO_TIME_START);
+    moveTime = calibrator->getPropByInt16("limbo.time.move",LIMBO_TIME_MOVE);
+    moveTimeAdd = calibrator->getPropByInt16("limbo.time.move.add",LIMBO_TIME_MOVE_ADD);
+    startSpeed = calibrator->getPropByInt16("limbo.speed.start",LIMBO_SPEED_START);
+    moveSpeed = calibrator->getPropByInt16("limbo.speed.move",LIMBO_SPEED_MOVE);
     _debug(syslog(LOG_NOTICE, "%08lu, LimboDancer constructor", clock->now()));
 }
 
@@ -22,37 +28,46 @@ void LimboDancer::haveControl() {
 
 void LimboDancer::operate() {
     _debug(syslog(LOG_NOTICE, "%08u, LimboDancer::operate(): distance = %u, mode = %d", clock->now(), observer->getDistance(), limboMode));
-    if ( limboMode == 1 ) { // Dash small distance and start Limbo
-        if ( ++counter > 30 ) {
-	  limboMode = 2;
+
+    switch ( limboMode ) {
+    case LIMBO_MODE_INIT:
+    case LIMBO_MODE_START:  // Dash small distance and start Limbo
+        if ( ++counter > startTime ) {
+	    limboMode = LIMBO_MODE_FORWARD1;
 	}
-        forward = 30;
+        forward = startSpeed;
 	turn = 0;
-    } else if ( limboMode == 2 ) { // Forward with slow speed by Limbo Style
-        controlTail(TAIL_ANGLE_LIMBO);
-	if ( ++counter > 1030 ) {
-	  limboMode = 3;
+	break;
+    case LIMBO_MODE_FORWARD1: // Forward with slow speed by Limbo Style
+        controlTail(angle);
+	if ( ++counter > startTime + moveTime ) {
+	    limboMode = LIMBO_MODE_BACKWARD1;
 	}
-        forward = 10;
+        forward = moveSpeed;
 	turn = 0;
-    } else if ( limboMode == 3 ) { // Back with slow speed by Limbo Style
-        controlTail(TAIL_ANGLE_LIMBO);
-	if ( ++counter > 2030 ) {
-	  limboMode = 4;
+	break;
+    case LIMBO_MODE_BACKWARD1: // Back with slow speed by Limbo Style
+        controlTail(angle);
+	if ( ++counter > startTime + moveTime*2 ) {
+	    limboMode = LIMBO_MODE_FORWARD2;
 	}
-        forward = -10;
+        forward = -moveSpeed;
 	turn = 0;
-    } else if ( limboMode == 4 ) { // forward with slow speed by Limbo Style
-        controlTail(TAIL_ANGLE_LIMBO);
-	if ( ++counter > 3030 ) {
-	  limboMode = 5;
+	break;
+    case LIMBO_MODE_FORWARD2: // forward with slow speed by Limbo Style
+        controlTail(angle);
+	if ( ++counter > startTime + moveTime*3 + moveTimeAdd ) {
+	  limboMode = LIMBO_MODE_STOP;
 	}
-        forward = 10;
+        forward = moveSpeed;
 	turn = 0;
-    } else /* limboMode == 5 */ { // stop by Limbo Style
-        controlTail(TAIL_ANGLE_LIMBO);
+	break;
+    case LIMBO_MODE_STOP: // stop by Limbo Style
+    default:
+        controlTail(angle);
         forward = 0;
 	turn = 0;
+	break;
     }
     pwm_L = forward;
     pwm_R = forward;
@@ -69,3 +84,32 @@ void LimboDancer::operate() {
 LimboDancer::~LimboDancer() {
     _debug(syslog(LOG_NOTICE, "%08lu, LimboDancer destructor", clock->now()));
 }
+
+/**********************
+ * 仮の実装。正しい実装ができたら、下のプログラムは削除する。
+ *********************/
+
+Calibrator::Calibrator()
+{
+    _debug(syslog(LOG_NOTICE, "%08u, Calibrator default constructor", clock->now()));
+}
+
+void	Calibrator::readPropFile( const char* filename )
+{
+}
+
+int16_t	Calibrator::getPropByInt16( const char* propname, int16_t deflt )
+{
+    return deflt;
+}
+
+Calibrator::~Calibrator()
+{
+    _debug(syslog(LOG_NOTICE, "%08u, Calibrator destructor", clock->now()));
+}
+
+Calibrator* calibrator;
+
+/********************
+ * ここまで削除
+ ********************/
