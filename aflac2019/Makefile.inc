@@ -1,6 +1,6 @@
 APPL_COBJS += balancer.o balancer_param.o
 
-APPL_CXXOBJS += crew.o SeesawCrimber.o LimboDancer.o
+APPL_CXXOBJS += crew.o SeesawCrimber.o LimboDancer.o Logger.o
 
 SRCLANG := c++
 
