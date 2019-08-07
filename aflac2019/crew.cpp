@@ -145,7 +145,7 @@ void Observer::operate() {
         notifyDistance = 0.0; // event to be sent only once
         captain->decide(EVT_dist_reached);
     }
-    
+
     // monitor touch sensor
     bool result = check_touch();
     if (result && !touch_flag) {
@@ -157,7 +157,7 @@ void Observer::operate() {
         touch_flag = false;
         captain->decide(EVT_touch_Off);
     }
-    
+
     // monitor sonar sensor
     result = check_sonar();
     if (result && !sonar_flag) {
@@ -169,7 +169,7 @@ void Observer::operate() {
         sonar_flag = false;
         captain->decide(EVT_sonar_Off);
     }
-    
+
     // monitor Back Button
     result = check_backButton();
     if (result && !backButton_flag) {
@@ -217,14 +217,14 @@ void Observer::operate() {
 
     // determine if tilt
     check_tilt();
-    
+
     // display trace message in every PERIOD_TRACE_MSG ms */
     if (++traceCnt * PERIOD_OBS_TSK >= PERIOD_TRACE_MSG) {
         traceCnt = 0;
         _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): distance = %d, azimuth = %d, x = %d, y = %d", clock->now(), getDistance(), getAzimuth(), getLocX(), getLocY()));
         _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): hsv = (%03u, %03u, %03u)", clock->now(), cur_hsv.h, cur_hsv.s, cur_hsv.v));
         _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): rgb = (%03u, %03u, %03u)", clock->now(), cur_rgb.r, cur_rgb.g, cur_rgb.b));
-        
+
         int16_t angle = gyroSensor->getAngle();
         int16_t anglerVelocity = gyroSensor->getAnglerVelocity();
         _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): angle = %d, anglerVelocity = %d", clock->now(), angle, anglerVelocity));
@@ -314,10 +314,10 @@ Navigator::Navigator() {
 //*****************************************************************************
 void Navigator::cancelBacklash(int8_t lpwm, int8_t rpwm, int32_t *lenc, int32_t *renc) {
     const int32_t BACKLASHHALF = 4;   // バックラッシュの半分[deg]
-    
+
     if(lpwm < 0) *lenc += BACKLASHHALF;
     else if(lpwm > 0) *lenc -= BACKLASHHALF;
-    
+
     if(rpwm < 0) *renc += BACKLASHHALF;
     else if(rpwm > 0) *renc -= BACKLASHHALF;
 }
@@ -362,11 +362,11 @@ int16_t Navigator::math_limit(int16_t input, int16_t min, int16_t max) {
 
 int16_t Navigator::computePID(int16_t sensor, int16_t target) {
     long double p, i, d;
-    
+
     diff[0] = diff[1];
     diff[1] = sensor - target;
     integral += (diff[0] + diff[1]) / 2.0 * PERIOD_NAV_TSK / 1000;
-    
+
     p = kp * diff[1];
     i = ki * integral;
     d = kd * (diff[1] - diff[0]) * 1000 / PERIOD_NAV_TSK;
@@ -471,7 +471,7 @@ void LineTracer::operate() {
 
     /* バックラッシュキャンセル */
     cancelBacklash(pwm_L, pwm_R, &motor_ang_l, &motor_ang_r);
-    
+
     /* 倒立振子制御APIを呼び出し、倒立走行するための */
     /* 左右モータ出力値を得る */
     balance_control((float)forward,
@@ -522,20 +522,20 @@ void Captain::takeoff() {
     leftMotor   = new Motor(PORT_C);
     rightMotor  = new Motor(PORT_B);
     tailMotor   = new Motor(PORT_A);
-    
+
     /* LCD画面表示 */
     ev3_lcd_fill_rect(0, 0, EV3_LCD_WIDTH, EV3_LCD_HEIGHT, EV3_LCD_WHITE);
     ev3_lcd_draw_string("EV3way-ET aflac2019", 0, CALIB_FONT_HEIGHT*1);
-    
+
     observer = new Observer(leftMotor, rightMotor, touchSensor, sonarSensor, gyroSensor, colorSensor);
     observer->goOnDuty();
     limboDancer = new LimboDancer(leftMotor, rightMotor, tailMotor, gyroSensor, colorSensor);
     seesawCrimber = new SeesawCrimber(leftMotor, rightMotor, tailMotor, gyroSensor, colorSensor);
     lineTracer = new LineTracer(leftMotor, rightMotor, tailMotor, gyroSensor, colorSensor);
-    
+
     /* 尻尾モーターのリセット */
     tailMotor->reset();
-    
+
     ev3_led_set_color(LED_ORANGE); /* 初期化完了通知 */
 
     state = ST_takingOff;
@@ -560,18 +560,18 @@ void Captain::decide(uint8_t event) {
                         state = ST_tracing_L;
                     }
                     syslog(LOG_NOTICE, "%08u, Departing...", clock->now());
-                    
+
                     /* 走行モーターエンコーダーリセット */
                     leftMotor->reset();
                     rightMotor->reset();
-                    
+
                     balance_init(); /* 倒立振子API初期化 */
                     observer->reset();
-                    
+
                     /* ジャイロセンサーリセット */
                     gyroSensor->reset();
                     ev3_led_set_color(LED_GREEN); /* スタート通知 */
-                    
+
                     lineTracer->haveControl();
                     break;
                 default:
@@ -592,6 +592,7 @@ void Captain::decide(uint8_t event) {
                     break;
                 case EVT_cmdDance:
                 case EVT_bl2bk:
+                	lineTracer->freeze();
                     state = ST_dancing;
                     limboDancer->haveControl();
                     break;
@@ -618,6 +619,7 @@ void Captain::decide(uint8_t event) {
                     break;
                 case EVT_cmdCrimb:
                 case EVT_bl2bk:
+                	lineTracer->freeze();
                     state = ST_crimbing;
                     seesawCrimber->haveControl();
                     break;
@@ -697,14 +699,14 @@ void Captain::land() {
     }
     leftMotor->reset();
     rightMotor->reset();
-    
+
     delete anchorWatch;
     delete lineTracer;
     delete seesawCrimber;
     delete limboDancer;
     observer->goOffDuty();
     delete observer;
-    
+
     delete tailMotor;
     delete rightMotor;
     delete leftMotor;

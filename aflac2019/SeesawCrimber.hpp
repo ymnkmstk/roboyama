@@ -11,7 +11,16 @@
 
 #include "crew.hpp"
 
+#define TAIL_ANGLE_NORMAL_RUN    80  /* 通常走行時のしっぽの角度[度] */
+#define TAIL_ANGLE_SEESAW_FIRST  40  /* シーソー上り始めのしっぽの角度[度] */
+#define START_SPEED 0  /* START時の各モーターに与える値 */
+
 class SeesawCrimber : public LineTracer {
+private:
+	int16_t startTime;
+	int16_t counter;
+	int16_t speed;
+
 protected:
 public:
     SeesawCrimber();
