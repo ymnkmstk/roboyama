@@ -8,13 +8,8 @@
 
 #include "crew.hpp"
 
-LimboDancer::LimboDancer(Motor* lm, Motor* rm, Motor* tm, GyroSensor* gs, ColorSensor* cs) {
+LimboDancer::LimboDancer(Motor* lm, Motor* rm, Motor* tm, GyroSensor* gs, ColorSensor* cs) : LineTracer(lm, rm, tm, gs, cs) {
     _debug(syslog(LOG_NOTICE, "%08lu, LimboDancer constructor", clock->now()));
-    leftMotor   = lm;
-    rightMotor  = rm;
-    tailMotor   = tm;
-    gyroSensor  = gs;
-    colorSensor = cs;
 }
 
 void LimboDancer::haveControl() {
@@ -23,6 +18,7 @@ void LimboDancer::haveControl() {
 }
 
 void LimboDancer::operate() {
+    LineTracer::operate();
 }
 
 LimboDancer::~LimboDancer() {

@@ -11,7 +11,7 @@
 
 #include "crew.hpp"
 
-class SeesawCrimber : public Navigator {
+class SeesawCrimber : public LineTracer {
 protected:
 public:
     SeesawCrimber();
