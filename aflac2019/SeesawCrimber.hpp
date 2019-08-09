@@ -32,6 +32,10 @@
 #define SEESAW_13	13	// 状態遷移番号
 
 #define START_SPEED 0  /* START時の各モーターに与える値 */
+#define S_PORT_4 3     // GyroSensorポート
+
+#define PROP_NAME_LEN	48	// プロパティー名の最大長
+#define NUM_PROPS	13	// プロパティーの個数
 
 class SeesawCrimber : public LineTracer {
 private:
@@ -41,6 +45,18 @@ private:
 	int16_t s_mode;
 	int16_t s_angle;
 	int16_t s_trace_counter = 0;
+
+
+	struct property{
+		char name[PROP_NAME_LEN];
+		int value;
+	} ;
+
+	struct property props[NUM_PROPS];
+
+	int readLine( FILE* file, char* dst, size_t len );
+	void readPropFile( const char* filename );
+	int getProp( const char* propname );
 
 protected:
 public:

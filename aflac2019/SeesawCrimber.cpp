@@ -8,8 +8,12 @@
 
 #include "app.h"
 #include "crew.hpp"
+#include <string.h>
+#include <stdlib.h>
+
 
 SeesawCrimber::SeesawCrimber(Motor* lm, Motor* rm, Motor* tm, GyroSensor* gs, ColorSensor* cs) : LineTracer(lm, rm, tm, gs, cs) {
+	readPropFile("/ev3rt/res/Seesaw_prop.txt");
     _debug(syslog(LOG_NOTICE, "%08lu, SeesawCrimber constructor", clock->now()));
 }
 
@@ -40,15 +44,15 @@ void SeesawCrimber::operate() {
 		}
 		pwm_L = 0;
 		pwm_R = 0;
-		s_angle = 80;
+		s_angle = (int16_t)getProp( "SEESAW_ANGLE_01" );
 		break;
 	case SEESAW_01:
 		if ( ++s_counter > PERIOD_SEESAW ){
 			s_mode = SEESAW_02;
 			s_counter = 0;
 		}
-		pwm_L = 50;
-		pwm_R = 50;
+		pwm_L = 15;
+		pwm_R = 15;
 		s_angle = 80;
 		break;
 	case SEESAW_02:
@@ -58,7 +62,7 @@ void SeesawCrimber::operate() {
 		}
 		pwm_L = 15;
 		pwm_R = 15;
-		s_angle = 50;
+		s_angle = 60;
 		break;
 
 	case SEESAW_03:
@@ -68,7 +72,7 @@ void SeesawCrimber::operate() {
 		}
 		pwm_L = 0;
 		pwm_R = 0;
-		s_angle = 40;
+		s_angle = 60;
 		break;
 
 	case SEESAW_04:
@@ -78,7 +82,7 @@ void SeesawCrimber::operate() {
 		}
 		pwm_L = -15;
 		pwm_R = -15;
-		s_angle = 40;
+		s_angle = 60;
 		break;
 
 	case SEESAW_05:
@@ -88,7 +92,7 @@ void SeesawCrimber::operate() {
 		}
 		pwm_L = -15;
 		pwm_R = -15;
-		s_angle = 50;
+		s_angle = 80;
 		break;
 
 	case SEESAW_06:
@@ -98,7 +102,7 @@ void SeesawCrimber::operate() {
 		}
 		pwm_L = 0;
 		pwm_R = 0;
-		s_angle = 50;
+		s_angle = 80;
 		break;
 
 	case SEESAW_07:
@@ -108,7 +112,7 @@ void SeesawCrimber::operate() {
 		}
 		pwm_L = 15;
 		pwm_R = 15;
-		s_angle = 50;
+		s_angle = 80;
 		break;
 
 	case SEESAW_08:
@@ -118,7 +122,7 @@ void SeesawCrimber::operate() {
 		}
 		pwm_L = 15;
 		pwm_R = 15;
-		s_angle = 40;
+		s_angle = 80;
 		break;
 
 	case SEESAW_09:
@@ -128,7 +132,7 @@ void SeesawCrimber::operate() {
 		}
 		pwm_L = 0;
 		pwm_R = 0;
-		s_angle = 40;
+		s_angle = 80;
 		break;
 
 	case SEESAW_10:
@@ -138,7 +142,7 @@ void SeesawCrimber::operate() {
 		}
 		pwm_L = 15;
 		pwm_R = 15;
-		s_angle = 40;
+		s_angle = 80;
 		break;
 
 	case SEESAW_11:
@@ -148,7 +152,7 @@ void SeesawCrimber::operate() {
 		}
 		pwm_L = 0;
 		pwm_R = 0;
-		s_angle = 60;
+		s_angle = 80;
 		break;
 
 	case SEESAW_12:
@@ -179,7 +183,75 @@ void SeesawCrimber::operate() {
 		s_trace_counter = 0;
 		_debug(syslog(LOG_NOTICE, "%08u, SeesawCrimber::operate(): case_no = %d, tail_angle = %d", clock->now(), s_mode, s_angle));
 		_debug(syslog(LOG_NOTICE, "%08u, SeesawCrimber::operate(): pwm_L = %d, pwm_R = %d", clock->now(), pwm_L, pwm_R));
+		_debug(syslog(LOG_NOTICE, "%08u, SeesawCrimber::operate(): prop = %d", clock->now(), (int16_t)getProp( "SEESAW_ANGLE_01" ) ));
+
 	}
+}
+
+int SeesawCrimber::readLine( FILE* file, char* dst, size_t len ){
+    int c = 0;
+    unsigned int i = 0;
+
+    while ((c = fgetc(file)) != EOF) {
+      if (c < 0) {
+        return c;        // error handling
+      }
+      if ( i + 1 == len ) {  // reached end of buffer
+        dst[i] = '\0';
+        break;
+      }
+      if (c == '\n') {   // reached end of line
+        dst[i] = '\0';
+        break;
+      }
+      dst[i] = (char)c;
+      i++;
+    }
+    return i;
+}
+
+void SeesawCrimber::readPropFile( const char* filename ){
+
+	FILE* prop_file = NULL;
+	prop_file = fopen( filename, "r" );
+	if( prop_file==NULL){
+		_debug(syslog(LOG_NOTICE, "%08lu, SeesawCrimber readProfile() file not found", clock->now()));
+		return;
+	}
+
+
+	memset( &props, 0, sizeof(struct property) * NUM_PROPS );
+
+	int retval = 0;
+	int i = 0;
+	char buf[256];
+	memset( &buf, 0, sizeof(buf) );
+
+	while( ( retval = readLine(prop_file, buf, 256)) > 0 ){
+		char* comptr = strstr( buf, "," );
+		if( i < NUM_PROPS && NULL != comptr ){
+			*comptr = '\0';
+			strcpy( props[i].name, buf );
+			props[i].value = atoi(comptr+1);
+			i++;
+		}else
+			break;
+	}
+	fclose( prop_file );
+
+}
+
+int SeesawCrimber::getProp( const char* propname ){
+	if( props == NULL ){
+		return 0;
+	}
+
+	for ( int i = 0; i < NUM_PROPS; i++ ){
+		if( strcmp( propname, props[i].name ) == 0 ){
+			return props[i].value;
+		}
+	}
+	return 0;
 }
 
 SeesawCrimber::~SeesawCrimber() {
