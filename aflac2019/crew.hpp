@@ -125,6 +125,10 @@ const char eventName[][EVT_NAME_LEN] = {
     "EVT_tilt"
 };
 
+// FIR filter parameters
+const int FIR_ORDER = 10;
+const double hn[FIR_ORDER+1] = { 2.993565708123639e-03, 9.143668394023662e-03, -3.564197579813870e-02, -3.996625085414179e-02, 2.852028479250662e-01, 5.600000000000001e-01, 2.852028479250662e-01, -3.996625085414179e-02, -3.564197579813870e-02, 9.143668394023662e-03, 2.993565708123639e-03 };
+
 /* LCDフォントサイズ */
 #define CALIB_FONT (EV3_FONT_SMALL)
 #define CALIB_FONT_WIDTH (6/*TODO: magic number*/)
@@ -153,8 +157,6 @@ private:
     double distance, azimuth, locX, locY;
     int16_t traceCnt;
     int32_t prevAngL, prevAngR, notifyDistance;
-    rgb_raw_t cur_rgb;
-    hsv_raw_t cur_hsv;
     bool touch_flag, sonar_flag, backButton_flag, lost_flag, blue_flag;
     bool check_touch(void);
     bool check_sonar(void);
@@ -223,6 +225,9 @@ private:
     int32_t motor_ang_l, motor_ang_r;
     int32_t gyro, volt;
     bool    frozen;
+    rgb_raw_t cur_rgb;
+    hsv_raw_t cur_hsv;
+    FIR_Transposed<FIR_ORDER> *fir_r, *fir_g, *fir_b;
 protected:
 public:
     LineTracer();

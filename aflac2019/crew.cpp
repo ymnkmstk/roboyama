@@ -10,6 +10,10 @@
 #include "balancer.h"
 #include "crew.hpp"
 
+// global variables to pass FIR-filtered color from LineTracer to Observer
+rgb_raw_t g_rgb;
+hsv_raw_t g_hsv;
+
 Radioman::Radioman() {
     _debug(syslog(LOG_NOTICE, "%08u, Radioman constructor", clock->now()));
     /* Open Bluetooth file */
@@ -182,12 +186,6 @@ void Observer::operate() {
         captain->decide(EVT_backButton_Off);
     }
 
-    // monitor color sensor
-    //
-    // Note:
-    //   check_blue() must be invoked after check_lost()
-    //   as cur_rgb and cur_hsv are set by check_lost()
-    //
     // determine if still tracing the line
     result = check_lost();
     if (result && !lost_flag) {
@@ -222,9 +220,9 @@ void Observer::operate() {
     if (++traceCnt * PERIOD_OBS_TSK >= PERIOD_TRACE_MSG) {
         traceCnt = 0;
         _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): distance = %d, azimuth = %d, x = %d, y = %d", clock->now(), getDistance(), getAzimuth(), getLocX(), getLocY()));
-        _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): hsv = (%03u, %03u, %03u)", clock->now(), cur_hsv.h, cur_hsv.s, cur_hsv.v));
-        _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): rgb = (%03u, %03u, %03u)", clock->now(), cur_rgb.r, cur_rgb.g, cur_rgb.b));
-        
+        _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): hsv = (%03u, %03u, %03u)", clock->now(), g_hsv.h, g_hsv.s, g_hsv.v));
+        _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): rgb = (%03u, %03u, %03u)", clock->now(), g_rgb.r, g_rgb.g, g_rgb.b));
+
         int16_t angle = gyroSensor->getAngle();
         int16_t anglerVelocity = gyroSensor->getAnglerVelocity();
         _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): angle = %d, anglerVelocity = %d", clock->now(), angle, anglerVelocity));
@@ -264,9 +262,7 @@ bool Observer::check_backButton(void) {
 }
 
 bool Observer::check_lost(void) {
-    colorSensor->getRawColor(cur_rgb);
-    rgb_to_hsv(cur_rgb, cur_hsv);
-    if (cur_hsv.v > HSV_V_LOST) {
+    if (g_hsv.v > HSV_V_LOST) {
         return true;
     } else {
         return false;
@@ -274,10 +270,7 @@ bool Observer::check_lost(void) {
 }
 
 bool Observer::check_blue(void) {
-    // assuming that cur_rgb and cur_hsv are already set
-    //colorSensor->getRawColor(cur_rgb);
-    //rgb_to_hsv(cur_rgb, cur_hsv);
-    if (cur_rgb.b > cur_rgb.r && cur_hsv.v > HSV_V_BLUE) {
+    if (g_rgb.b > g_rgb.r && g_hsv.v > HSV_V_BLUE) {
         return true;
     } else {
         return false;
@@ -421,6 +414,10 @@ LineTracer::LineTracer(Motor* lm, Motor* rm, Motor* tm, GyroSensor* gs, ColorSen
     trace_pwmT  = 0;
     trace_pwmLR = 0;
     frozen      = false;
+
+    fir_r = new FIR_Transposed<FIR_ORDER>(hn);
+    fir_g = new FIR_Transposed<FIR_ORDER>(hn);
+    fir_b = new FIR_Transposed<FIR_ORDER>(hn);
 }
 
 void LineTracer::haveControl() {
@@ -430,6 +427,17 @@ void LineTracer::haveControl() {
 
 void LineTracer::operate() {
     controlTail(TAIL_ANGLE_DRIVE); /* バランス走行用角度に制御 */
+    
+    colorSensor->getRawColor(cur_rgb);
+    // process RGB by the Low Pass Filter
+    cur_rgb.r = fir_r->Execute(cur_rgb.r);
+    cur_rgb.g = fir_g->Execute(cur_rgb.g);
+    cur_rgb.b = fir_b->Execute(cur_rgb.b);
+    rgb_to_hsv(cur_rgb, cur_hsv);
+    // save filtered color variables to the global area
+    // ToDo: dirty code - Observer should be responsible for reading color sensor
+    g_rgb = cur_rgb;
+    g_hsv = cur_hsv;
 
     if (frozen) {
         forward = turn = 0; /* 障害物を検知したら停止 */
@@ -449,10 +457,6 @@ void LineTracer::operate() {
         int16_t target = (LIGHT_WHITE + LIGHT_BLACK)/2;
         */
         // PID control by V in HSV
-        rgb_raw_t cur_rgb;
-        hsv_raw_t cur_hsv;
-        colorSensor->getRawColor(cur_rgb);
-        rgb_to_hsv(cur_rgb, cur_hsv);
         int16_t sensor = cur_hsv.v;
         int16_t target = (HSV_V_BLACK + HSV_V_WHITE)/4;  // devisor changed from 2 to 4 as tuning on July 23
 
@@ -572,8 +576,12 @@ void Captain::decide(uint8_t event) {
                     gyroSensor->reset();
                     ev3_led_set_color(LED_GREEN); /* スタート通知 */
                     
+                    lineTracer->freeze();
                     lineTracer->haveControl();
-                    break;
+                    clock->sleep(PERIOD_NAV_TSK*FIR_ORDER); // wait until FIR array is filled
+                    lineTracer->unfreeze();
+                    syslog(LOG_NOTICE, "%08u, Departed", clock->now());
+                   break;
                 default:
                     break;
             }
