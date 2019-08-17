@@ -38,8 +38,8 @@ using namespace ev3api;
 #define HSV_V_BLUE           35
 #define FINAL_APPROACH_LEN  100  // final approch length in milimater
 #define ANG_V_TILT           50  // threshold to determine "tilt"
-#define SONAR_ALERT_DISTANCE 30  /* 超音波センサによる障害物検知距離[cm] */
-#define TAIL_ANGLE_STAND_UP  90  /* 完全停止時の角度[度] */
+#define SONAR_ALERT_DISTANCE 10  /* 超音波センサによる障害物検知距離[cm] */
+#define TAIL_ANGLE_STAND_UP  88  /* 完全停止時の角度[度] */
 #define TAIL_ANGLE_DRIVE      3  /* バランス走行時の角度[度] */
 #define P_GAIN             2.5F  /* 完全停止用モータ制御比例係数 */
 #define PWM_ABS_MAX          60  /* 完全停止用モータ制御PWM絶対最大値 */

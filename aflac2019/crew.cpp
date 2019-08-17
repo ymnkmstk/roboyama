@@ -593,7 +593,12 @@ void Captain::decide(uint8_t event) {
                     triggerLanding();
                     break;
                 case EVT_sonar_On:
-                    lineTracer->freeze();
+		    //lineTracer->freeze();
+		    // During line trancing,
+		    // if sonar is on (limbo sign is near by matchine),
+		    // limbo dance starts.
+                    state = ST_dancing;
+                    limboDancer->haveControl();
                     break;
                 case EVT_sonar_Off:
                     lineTracer->unfreeze();
@@ -645,9 +650,12 @@ void Captain::decide(uint8_t event) {
                     triggerLanding();
                     break;
                 case EVT_bk2bl:
+		    // Don't use "black line to blue line" event.
+  		    /*
                     state = ST_stopping_R;
                     observer->notifyOfDistance(FINAL_APPROACH_LEN);
                     lineTracer->haveControl();
+		    */
                     break;
                 default:
                     break;

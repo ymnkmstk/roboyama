@@ -51,6 +51,7 @@ void main_task(intptr_t unused) {
     clock    = new Clock;
     captain  = new Captain;
     radioman = new Radioman;
+    calibrator = new Calibrator;
 
     captain->takeoff();
     
@@ -60,6 +61,7 @@ void main_task(intptr_t unused) {
 
     captain->land();
 
+    delete calibrator;
     delete radioman;
     delete captain;
     delete clock;
