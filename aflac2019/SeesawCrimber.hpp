@@ -58,6 +58,14 @@ private:
 	void readPropFile( const char* filename );
 	int getProp( const char* propname );
 
+    Motor*          leftMotor;
+    Motor*          rightMotor;
+    Motor*			tailMotor;
+    TouchSensor*    touchSensor;
+    SonarSensor*    sonarSensor;
+    GyroSensor*     gyroSensor;
+    ColorSensor*    colorSensor;
+
 protected:
 public:
     SeesawCrimber();
