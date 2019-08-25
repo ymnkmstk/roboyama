@@ -197,6 +197,7 @@ protected:
     void controlTail(int32_t angle);
     void setPIDconst(long double p, long double i, long double d);
     int16_t math_limit(int16_t input, int16_t min, int16_t max);
+    long double math_limitf(long double input, long double min, long double max);
     int16_t computePID(int16_t sensor, int16_t target);
 public:
     Navigator();
