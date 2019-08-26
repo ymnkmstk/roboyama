@@ -294,7 +294,8 @@ Observer::~Observer() {
 Navigator::Navigator() {
     _debug(syslog(LOG_NOTICE, "%08u, Navigator default constructor", clock->now()));
     setPIDconst(P_CONST, I_CONST, D_CONST); // set default PID constant
-    diff[1] = 0; // initialize diff[1]
+    diff[1] = INT16_MAX; // initialize diff[1]
+    integral = 0.0L;
 }
 
 //*****************************************************************************
@@ -353,16 +354,35 @@ int16_t Navigator::math_limit(int16_t input, int16_t min, int16_t max) {
     return input;
 }
 
+long double Navigator::math_limitf(long double input, long double min, long double max) {
+    if (input < min) {
+        return min;
+    } else if (input > max) {
+        return max;
+    }
+    return input;
+}
+
 int16_t Navigator::computePID(int16_t sensor, int16_t target) {
     long double p, i, d;
-    
-    diff[0] = diff[1];
-    diff[1] = sensor - target;
+
+    if ( diff[1] == INT16_MAX ) {
+	diff[0] = diff[1] = sensor - target;
+    } else {
+	diff[0] = diff[1];
+	diff[1] = sensor - target;
+    }
     integral += (diff[0] + diff[1]) / 2.0 * PERIOD_NAV_TSK / 1000;
+    integral = math_limitf( integral, -100.0L, 100.0L);
     
     p = kp * diff[1];
     i = ki * integral;
     d = kd * (diff[1] - diff[0]) * 1000 / PERIOD_NAV_TSK;
+    /*
+    char buf[256];
+    sprintf(buf,"p = %d, i = %d, d = %d", (int)p, (int)i, (int)d);
+    _debug(syslog(LOG_NOTICE, "%08u, Navigator::computePID(): sensor = %d, target = %d, %s", clock->now(), sensor, target, buf));
+    */
     return math_limit(p + i + d, -100.0, 100.0);
 }
 
@@ -442,7 +462,7 @@ void LineTracer::operate() {
     if (frozen) {
         forward = turn = 0; /* 障害物を検知したら停止 */
     } else {
-        forward = 15; //前進命令  Changed from 30 to 15 as tuning on July 23
+        forward = 30; //前進命令  Changed from 30 to 15 as tuning on July 23
         /*
         // on-off control
         if (colorSensor->getBrightness() >= (LIGHT_WHITE + LIGHT_BLACK)/2) {
