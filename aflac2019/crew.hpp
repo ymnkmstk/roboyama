@@ -38,8 +38,8 @@ using namespace ev3api;
 #define HSV_V_BLUE           35
 #define FINAL_APPROACH_LEN  100  // final approch length in milimater
 #define ANG_V_TILT           50  // threshold to determine "tilt"
-#define SONAR_ALERT_DISTANCE 30  /* 超音波センサによる障害物検知距離[cm] */
-#define TAIL_ANGLE_STAND_UP  60  /* 完全停止時の角度[度] */
+#define SONAR_ALERT_DISTANCE 10  /* 超音波センサによる障害物検知距離[cm] */
+#define TAIL_ANGLE_STAND_UP  88  /* 完全停止時の角度[度] */
 #define TAIL_ANGLE_DRIVE      3  /* バランス走行時の角度[度] */
 #define P_GAIN             2.5F  /* 完全停止用モータ制御比例係数 */
 #define PWM_ABS_MAX          60  /* 完全停止用モータ制御PWM絶対最大値 */
@@ -125,6 +125,10 @@ const char eventName[][EVT_NAME_LEN] = {
     "EVT_tilt"
 };
 
+// FIR filter parameters
+const int FIR_ORDER = 10;
+const double hn[FIR_ORDER+1] = { 2.993565708123639e-03, 9.143668394023662e-03, -3.564197579813870e-02, -3.996625085414179e-02, 2.852028479250662e-01, 5.600000000000001e-01, 2.852028479250662e-01, -3.996625085414179e-02, -3.564197579813870e-02, 9.143668394023662e-03, 2.993565708123639e-03 };
+
 /* LCDフォントサイズ */
 #define CALIB_FONT (EV3_FONT_SMALL)
 #define CALIB_FONT_WIDTH (6/*TODO: magic number*/)
@@ -153,8 +157,6 @@ private:
     double distance, azimuth, locX, locY;
     int16_t traceCnt;
     int32_t prevAngL, prevAngR, notifyDistance;
-    rgb_raw_t cur_rgb;
-    hsv_raw_t cur_hsv;
     bool touch_flag, sonar_flag, backButton_flag, lost_flag, blue_flag;
     bool check_touch(void);
     bool check_sonar(void);
@@ -197,6 +199,7 @@ protected:
     void controlTail(int32_t angle);
     void setPIDconst(long double p, long double i, long double d);
     int16_t math_limit(int16_t input, int16_t min, int16_t max);
+    long double math_limitf(long double input, long double min, long double max);
     int16_t computePID(int16_t sensor, int16_t target);
 public:
     Navigator();
@@ -223,6 +226,9 @@ private:
     int32_t motor_ang_l, motor_ang_r;
     int32_t gyro, volt;
     bool    frozen;
+    rgb_raw_t cur_rgb;
+    hsv_raw_t cur_hsv;
+    FIR_Transposed<FIR_ORDER> *fir_r, *fir_g, *fir_b;
 protected:
 public:
     LineTracer();

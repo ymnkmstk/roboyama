@@ -10,6 +10,10 @@
 #include "balancer.h"
 #include "crew.hpp"
 
+// global variables to pass FIR-filtered color from LineTracer to Observer
+rgb_raw_t g_rgb;
+hsv_raw_t g_hsv;
+
 Radioman::Radioman() {
     _debug(syslog(LOG_NOTICE, "%08u, Radioman constructor", clock->now()));
     /* Open Bluetooth file */
@@ -145,7 +149,7 @@ void Observer::operate() {
         notifyDistance = 0.0; // event to be sent only once
         captain->decide(EVT_dist_reached);
     }
-
+    
     // monitor touch sensor
     bool result = check_touch();
     if (result && !touch_flag) {
@@ -157,7 +161,7 @@ void Observer::operate() {
         touch_flag = false;
         captain->decide(EVT_touch_Off);
     }
-
+    
     // monitor sonar sensor
     result = check_sonar();
     if (result && !sonar_flag) {
@@ -169,7 +173,7 @@ void Observer::operate() {
         sonar_flag = false;
         captain->decide(EVT_sonar_Off);
     }
-
+    
     // monitor Back Button
     result = check_backButton();
     if (result && !backButton_flag) {
@@ -182,12 +186,6 @@ void Observer::operate() {
         captain->decide(EVT_backButton_Off);
     }
 
-    // monitor color sensor
-    //
-    // Note:
-    //   check_blue() must be invoked after check_lost()
-    //   as cur_rgb and cur_hsv are set by check_lost()
-    //
     // determine if still tracing the line
     result = check_lost();
     if (result && !lost_flag) {
@@ -217,13 +215,13 @@ void Observer::operate() {
 
     // determine if tilt
     check_tilt();
-
+    
     // display trace message in every PERIOD_TRACE_MSG ms */
     if (++traceCnt * PERIOD_OBS_TSK >= PERIOD_TRACE_MSG) {
         traceCnt = 0;
         _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): distance = %d, azimuth = %d, x = %d, y = %d", clock->now(), getDistance(), getAzimuth(), getLocX(), getLocY()));
-        _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): hsv = (%03u, %03u, %03u)", clock->now(), cur_hsv.h, cur_hsv.s, cur_hsv.v));
-        _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): rgb = (%03u, %03u, %03u)", clock->now(), cur_rgb.r, cur_rgb.g, cur_rgb.b));
+        _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): hsv = (%03u, %03u, %03u)", clock->now(), g_hsv.h, g_hsv.s, g_hsv.v));
+        _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): rgb = (%03u, %03u, %03u)", clock->now(), g_rgb.r, g_rgb.g, g_rgb.b));
 
         int16_t angle = gyroSensor->getAngle();
         int16_t anglerVelocity = gyroSensor->getAnglerVelocity();
@@ -264,9 +262,7 @@ bool Observer::check_backButton(void) {
 }
 
 bool Observer::check_lost(void) {
-    colorSensor->getRawColor(cur_rgb);
-    rgb_to_hsv(cur_rgb, cur_hsv);
-    if (cur_hsv.v > HSV_V_LOST) {
+    if (g_hsv.v > HSV_V_LOST) {
         return true;
     } else {
         return false;
@@ -274,10 +270,7 @@ bool Observer::check_lost(void) {
 }
 
 bool Observer::check_blue(void) {
-    // assuming that cur_rgb and cur_hsv are already set
-    //colorSensor->getRawColor(cur_rgb);
-    //rgb_to_hsv(cur_rgb, cur_hsv);
-    if (cur_rgb.b > cur_rgb.r && cur_hsv.v > HSV_V_BLUE) {
+    if (g_rgb.b > g_rgb.r && g_hsv.v > HSV_V_BLUE) {
         return true;
     } else {
         return false;
@@ -301,7 +294,8 @@ Observer::~Observer() {
 Navigator::Navigator() {
     _debug(syslog(LOG_NOTICE, "%08u, Navigator default constructor", clock->now()));
     setPIDconst(P_CONST, I_CONST, D_CONST); // set default PID constant
-    diff[1] = 0; // initialize diff[1]
+    diff[1] = INT16_MAX; // initialize diff[1]
+    integral = 0.0L;
 }
 
 //*****************************************************************************
@@ -314,10 +308,10 @@ Navigator::Navigator() {
 //*****************************************************************************
 void Navigator::cancelBacklash(int8_t lpwm, int8_t rpwm, int32_t *lenc, int32_t *renc) {
     const int32_t BACKLASHHALF = 4;   // バックラッシュの半分[deg]
-
+    
     if(lpwm < 0) *lenc += BACKLASHHALF;
     else if(lpwm > 0) *lenc -= BACKLASHHALF;
-
+    
     if(rpwm < 0) *renc += BACKLASHHALF;
     else if(rpwm > 0) *renc -= BACKLASHHALF;
 }
@@ -360,16 +354,35 @@ int16_t Navigator::math_limit(int16_t input, int16_t min, int16_t max) {
     return input;
 }
 
+long double Navigator::math_limitf(long double input, long double min, long double max) {
+    if (input < min) {
+        return min;
+    } else if (input > max) {
+        return max;
+    }
+    return input;
+}
+
 int16_t Navigator::computePID(int16_t sensor, int16_t target) {
     long double p, i, d;
 
-    diff[0] = diff[1];
-    diff[1] = sensor - target;
+    if ( diff[1] == INT16_MAX ) {
+	diff[0] = diff[1] = sensor - target;
+    } else {
+	diff[0] = diff[1];
+	diff[1] = sensor - target;
+    }
     integral += (diff[0] + diff[1]) / 2.0 * PERIOD_NAV_TSK / 1000;
-
+    integral = math_limitf( integral, -100.0L, 100.0L);
+    
     p = kp * diff[1];
     i = ki * integral;
     d = kd * (diff[1] - diff[0]) * 1000 / PERIOD_NAV_TSK;
+    /*
+    char buf[256];
+    sprintf(buf,"p = %d, i = %d, d = %d", (int)p, (int)i, (int)d);
+    _debug(syslog(LOG_NOTICE, "%08u, Navigator::computePID(): sensor = %d, target = %d, %s", clock->now(), sensor, target, buf));
+    */
     return math_limit(p + i + d, -100.0, 100.0);
 }
 
@@ -421,6 +434,10 @@ LineTracer::LineTracer(Motor* lm, Motor* rm, Motor* tm, GyroSensor* gs, ColorSen
     trace_pwmT  = 0;
     trace_pwmLR = 0;
     frozen      = false;
+
+    fir_r = new FIR_Transposed<FIR_ORDER>(hn);
+    fir_g = new FIR_Transposed<FIR_ORDER>(hn);
+    fir_b = new FIR_Transposed<FIR_ORDER>(hn);
 }
 
 void LineTracer::haveControl() {
@@ -430,11 +447,22 @@ void LineTracer::haveControl() {
 
 void LineTracer::operate() {
     controlTail(TAIL_ANGLE_DRIVE); /* バランス走行用角度に制御 */
+    
+    colorSensor->getRawColor(cur_rgb);
+    // process RGB by the Low Pass Filter
+    cur_rgb.r = fir_r->Execute(cur_rgb.r);
+    cur_rgb.g = fir_g->Execute(cur_rgb.g);
+    cur_rgb.b = fir_b->Execute(cur_rgb.b);
+    rgb_to_hsv(cur_rgb, cur_hsv);
+    // save filtered color variables to the global area
+    // ToDo: dirty code - Observer should be responsible for reading color sensor
+    g_rgb = cur_rgb;
+    g_hsv = cur_hsv;
 
     if (frozen) {
         forward = turn = 0; /* 障害物を検知したら停止 */
     } else {
-        forward = 15; //前進命令  Changed from 30 to 15 as tuning on July 23
+        forward = 30; //前進命令  Changed from 30 to 15 as tuning on July 23
         /*
         // on-off control
         if (colorSensor->getBrightness() >= (LIGHT_WHITE + LIGHT_BLACK)/2) {
@@ -449,10 +477,6 @@ void LineTracer::operate() {
         int16_t target = (LIGHT_WHITE + LIGHT_BLACK)/2;
         */
         // PID control by V in HSV
-        rgb_raw_t cur_rgb;
-        hsv_raw_t cur_hsv;
-        colorSensor->getRawColor(cur_rgb);
-        rgb_to_hsv(cur_rgb, cur_hsv);
         int16_t sensor = cur_hsv.v;
         int16_t target = (HSV_V_BLACK + HSV_V_WHITE)/4;  // devisor changed from 2 to 4 as tuning on July 23
 
@@ -471,7 +495,7 @@ void LineTracer::operate() {
 
     /* バックラッシュキャンセル */
     cancelBacklash(pwm_L, pwm_R, &motor_ang_l, &motor_ang_r);
-
+    
     /* 倒立振子制御APIを呼び出し、倒立走行するための */
     /* 左右モータ出力値を得る */
     balance_control((float)forward,
@@ -522,20 +546,20 @@ void Captain::takeoff() {
     leftMotor   = new Motor(PORT_C);
     rightMotor  = new Motor(PORT_B);
     tailMotor   = new Motor(PORT_A);
-
+    
     /* LCD画面表示 */
     ev3_lcd_fill_rect(0, 0, EV3_LCD_WIDTH, EV3_LCD_HEIGHT, EV3_LCD_WHITE);
     ev3_lcd_draw_string("EV3way-ET aflac2019", 0, CALIB_FONT_HEIGHT*1);
-
+    
     observer = new Observer(leftMotor, rightMotor, touchSensor, sonarSensor, gyroSensor, colorSensor);
     observer->goOnDuty();
     limboDancer = new LimboDancer(leftMotor, rightMotor, tailMotor, gyroSensor, colorSensor);
     seesawCrimber = new SeesawCrimber(leftMotor, rightMotor, tailMotor, gyroSensor, colorSensor);
     lineTracer = new LineTracer(leftMotor, rightMotor, tailMotor, gyroSensor, colorSensor);
-
+    
     /* 尻尾モーターのリセット */
     tailMotor->reset();
-
+    
     ev3_led_set_color(LED_ORANGE); /* 初期化完了通知 */
 
     state = ST_takingOff;
@@ -560,20 +584,24 @@ void Captain::decide(uint8_t event) {
                         state = ST_tracing_L;
                     }
                     syslog(LOG_NOTICE, "%08u, Departing...", clock->now());
-
+                    
                     /* 走行モーターエンコーダーリセット */
                     leftMotor->reset();
                     rightMotor->reset();
-
+                    
                     balance_init(); /* 倒立振子API初期化 */
                     observer->reset();
-
+                    
                     /* ジャイロセンサーリセット */
                     gyroSensor->reset();
                     ev3_led_set_color(LED_GREEN); /* スタート通知 */
-
+                    
+                    lineTracer->freeze();
                     lineTracer->haveControl();
-                    break;
+                    clock->sleep(PERIOD_NAV_TSK*FIR_ORDER); // wait until FIR array is filled
+                    lineTracer->unfreeze();
+                    syslog(LOG_NOTICE, "%08u, Departed", clock->now());
+                   break;
                 default:
                     break;
             }
@@ -585,14 +613,18 @@ void Captain::decide(uint8_t event) {
                     triggerLanding();
                     break;
                 case EVT_sonar_On:
-                    lineTracer->freeze();
+		    //lineTracer->freeze();
+		    // During line trancing,
+		    // if sonar is on (limbo sign is near by matchine),
+		    // limbo dance starts.
+                    state = ST_dancing;
+                    limboDancer->haveControl();
                     break;
                 case EVT_sonar_Off:
                     lineTracer->unfreeze();
                     break;
                 case EVT_cmdDance:
                 case EVT_bl2bk:
-                	lineTracer->freeze();
                     state = ST_dancing;
                     limboDancer->haveControl();
                     break;
@@ -619,7 +651,6 @@ void Captain::decide(uint8_t event) {
                     break;
                 case EVT_cmdCrimb:
                 case EVT_bl2bk:
-                	lineTracer->freeze();
                     state = ST_crimbing;
                     seesawCrimber->haveControl();
                     break;
@@ -639,9 +670,12 @@ void Captain::decide(uint8_t event) {
                     triggerLanding();
                     break;
                 case EVT_bk2bl:
+		    // Don't use "black line to blue line" event.
+  		    /*
                     state = ST_stopping_R;
                     observer->notifyOfDistance(FINAL_APPROACH_LEN);
                     lineTracer->haveControl();
+		    */
                     break;
                 default:
                     break;
@@ -699,14 +733,14 @@ void Captain::land() {
     }
     leftMotor->reset();
     rightMotor->reset();
-
+    
     delete anchorWatch;
     delete lineTracer;
     delete seesawCrimber;
     delete limboDancer;
     observer->goOffDuty();
     delete observer;
-
+    
     delete tailMotor;
     delete rightMotor;
     delete leftMotor;
