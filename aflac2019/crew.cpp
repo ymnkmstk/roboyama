@@ -330,12 +330,16 @@ void Navigator::cancelBacklash(int8_t lpwm, int8_t rpwm, int32_t *lenc, int32_t 
 // 概要 : 走行体完全停止用モータの角度制御
 //*****************************************************************************
 void Navigator::controlTail(int32_t angle) {
+    controlTail(angle,PWM_ABS_MAX);
+}
+
+void Navigator::controlTail(int32_t angle, int16_t maxpwm) {
     float pwm = (float)(angle - tailMotor->getCount()) * P_GAIN; /* 比例制御 */
     /* PWM出力飽和処理 */
-    if (pwm > PWM_ABS_MAX) {
-        pwm = PWM_ABS_MAX;
-    } else if (pwm < -PWM_ABS_MAX) {
-        pwm = -PWM_ABS_MAX;
+    if (pwm > maxpwm) {
+        pwm = maxpwm;
+    } else if (pwm < -maxpwm) {
+        pwm = -maxpwm;
     }
 
     tailMotor->setPWM(pwm);
@@ -425,7 +429,7 @@ void AnchorWatch::haveControl() {
 }
 
 void AnchorWatch::operate() {
-    controlTail(TAIL_ANGLE_STAND_UP); /* 完全停止用角度に制御 */
+    controlTail(TAIL_ANGLE_STAND_UP,10); /* 完全停止用角度に制御 */
 }
 
 AnchorWatch::~AnchorWatch() {
@@ -454,7 +458,7 @@ void LineTracer::haveControl() {
 }
 
 void LineTracer::operate() {
-    controlTail(TAIL_ANGLE_DRIVE); /* バランス走行用角度に制御 */
+    controlTail(TAIL_ANGLE_DRIVE,10); /* バランス走行用角度に制御 */
     
     colorSensor->getRawColor(cur_rgb);
     // process RGB by the Low Pass Filter
@@ -470,7 +474,7 @@ void LineTracer::operate() {
     if (frozen) {
         forward = turn = 0; /* 障害物を検知したら停止 */
     } else {
-        forward = 30; //前進命令  Changed from 30 to 15 as tuning on July 23
+        forward = 40; //前進命令  Changed from 30 to 15 as tuning on July 23
         /*
         // on-off control
         if (colorSensor->getBrightness() >= (LIGHT_WHITE + LIGHT_BLACK)/2) {
@@ -486,7 +490,7 @@ void LineTracer::operate() {
         */
         // PID control by V in HSV
         int16_t sensor = cur_hsv.v;
-        int16_t target = (HSV_V_BLACK + HSV_V_WHITE)/4;  // devisor changed from 2 to 4 as tuning on July 23
+        int16_t target = (HSV_V_BLACK + HSV_V_WHITE)/2;  // devisor changed from 2 to 4 as tuning on July 23
 
         if (state == ST_tracing_L || state == ST_stopping_L || state == ST_crimbing) {
             turn = computePID(sensor, target);

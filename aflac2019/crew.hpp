@@ -41,7 +41,7 @@ using namespace ev3api;
 #define FINAL_APPROACH_LEN  100  // final approch length in milimater
 #define ANG_V_TILT           50  // threshold to determine "tilt"
 #define SONAR_ALERT_DISTANCE 10  /* 超音波センサによる障害物検知距離[cm] */
-#define TAIL_ANGLE_STAND_UP  88  /* 完全停止時の角度[度] */
+#define TAIL_ANGLE_STAND_UP  85  /* 完全停止時の角度[度] */
 #define TAIL_ANGLE_DRIVE      3  /* バランス走行時の角度[度] */
 #define P_GAIN             2.5F  /* 完全停止用モータ制御比例係数 */
 #define PWM_ABS_MAX          60  /* 完全停止用モータ制御PWM絶対最大値 */
@@ -202,6 +202,7 @@ protected:
     ColorSensor*    colorSensor;
     void cancelBacklash(int8_t lpwm, int8_t rpwm, int32_t *lenc, int32_t *renc);
     void controlTail(int32_t angle);
+    void controlTail(int32_t angle, int16_t maxpwm);
     void setPIDconst(long double p, long double i, long double d);
     int16_t math_limit(int16_t input, int16_t min, int16_t max);
     long double math_limitf(long double input, long double min, long double max);
@@ -217,6 +218,7 @@ public:
 
 class AnchorWatch : public Navigator {
 private:
+    
 protected:
 public:
     AnchorWatch();
