@@ -56,7 +56,23 @@ void LimboDancer::operate() {
 	break;
     case LIMBO_MODE_FORWARD2: // forward with slow speed by Limbo Style
         controlTail(angle);
-	if ( ++counter > startTime + moveTime*3 + moveTimeAdd ) {
+	if ( ++counter > startTime + moveTime*3 ) {
+	    limboMode = LIMBO_MODE_BACKWARD2;
+	}
+        forward = moveSpeed;
+	turn = 0;
+	break;
+    case LIMBO_MODE_BACKWARD2: // Back with slow speed by Limbo Style
+        controlTail(angle);
+	if ( ++counter > startTime + moveTime*4 ) {
+	    limboMode = LIMBO_MODE_FORWARD3;
+	}
+        forward = -moveSpeed;
+	turn = 0;
+	break;
+    case LIMBO_MODE_FORWARD3: // forward with slow speed by Limbo Style
+        controlTail(angle);
+	if ( ++counter > startTime + moveTime*5 + moveTimeAdd ) {
 	  limboMode = LIMBO_MODE_STOP;
 	}
         forward = moveSpeed;

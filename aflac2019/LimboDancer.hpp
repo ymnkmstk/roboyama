@@ -24,8 +24,10 @@
 #define LIMBO_MODE_START       1  /* リンボーの態勢になる */
 #define LIMBO_MODE_FORWARD1    2  /* 前進１回目 */
 #define LIMBO_MODE_BACKWARD1   3  /* 後退１回目 */
-#define LIMBO_MODE_FORWARD2    4  /* 前進１回目 */
-#define LIMBO_MODE_STOP        5  /* 後退１回目 */
+#define LIMBO_MODE_FORWARD2    4  /* 前進２回目 */
+#define LIMBO_MODE_BACKWARD2   5  /* 後退２回目 */
+#define LIMBO_MODE_FORWARD3    6  /* 前進３回目 */
+#define LIMBO_MODE_STOP        7  /* 停止 */
 
 class LimboDancer : public LineTracer {
 private:
