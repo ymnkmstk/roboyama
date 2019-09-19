@@ -49,8 +49,9 @@ typedef struct {
 } hsv_raw_t;
 
 void rgb_to_hsv(rgb_raw_t rgb, hsv_raw_t& hsv) {
-    uint16_t max, min, cr, cg, cb, h;
-
+    uint16_t max, min;
+    double cr, cg, cb, h;  // must be double
+    
     max = rgb.r;
     if(max < rgb.g) max = rgb.g;
     if(max < rgb.b) max = rgb.b;
@@ -59,13 +60,13 @@ void rgb_to_hsv(rgb_raw_t rgb, hsv_raw_t& hsv) {
     if(min > rgb.g) min = rgb.g;
     if(min > rgb.b) min = rgb.b;
 
-    hsv.v = max;
+    hsv.v = 100 * max / (double)255.0;
     
     if (!max) {
         hsv.s = 0;
         hsv.h = 0;
     } else {
-        hsv.s = 255 * (max - min) / (double)max;
+        hsv.s = 100 * (max - min) / (double)max;
         cr = (max - rgb.r) / (double)(max - min);
         cg = (max - rgb.g) / (double)(max - min);
         cb = (max - rgb.b) / (double)(max - min);
@@ -114,8 +115,8 @@ void main_task(intptr_t unused)
 
         colorSensor->getRawColor(cur_rgb);
         rgb_to_hsv(cur_rgb, cur_hsv);
-        syslog(LOG_NOTICE, "%06lu: r = %03d, g = %03d, b = %03d", clock->now(), cur_rgb.r, cur_rgb.g, cur_rgb.b);
-        syslog(LOG_NOTICE, "%06lu: h = %03d, s = %03d, v = %03d", clock->now(), cur_hsv.h, cur_hsv.s, cur_hsv.v);
+        syslog(LOG_NOTICE, "%08u, hsv = (%03u, %03u, %03u)", clock->now(), cur_hsv.h, cur_hsv.s, cur_hsv.v);
+        syslog(LOG_NOTICE, "%08u, rgb = (%03u, %03u, %03u)", clock->now(), cur_rgb.r, cur_rgb.g, cur_rgb.b);
         clock->sleep(500); /* execute in every 500 msec */
     }
     //ter_tsk(BT_TASK);
