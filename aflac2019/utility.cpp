@@ -75,3 +75,41 @@ int16_t PIDcalculator::compute(int16_t sensor, int16_t target) {
     d = kd * (diff[1] - diff[0]) * 1000 / deltaT;
     return math_limit(p + i + d, minimum, maximum);
 }
+
+OutlierTester::OutlierTester(uint32_t skipCount, uint32_t initCount) {
+    cnt = 0L;
+    n   = 0L;
+    sumSQ = 0.0;
+    sum   = 0.0;
+    skipCnt = skipCount;
+    initCnt = initCount;
+}
+
+int8_t OutlierTester::test(double sample) { // sample is an outlier when true is returned
+    if (++cnt <= skipCnt) { // skip initial samples
+        return NOT_OUTLIER;
+    } else if (cnt <= initCnt) { // do not test until variance gets stable enough
+        n++;
+        sumSQ += (sample * sample);
+        sum   += sample;
+        return NOT_OUTLIER;
+    }
+    double average  = sum / n;
+    double variance = (sumSQ / n) - (average * average);
+    double diff     = sample - average;
+    double diffSQ   = diff * diff;
+    //cout << " n=" << n << " a=" << average << " v=" << variance << " ds=" << deltaSQ;
+    if ( diffSQ > 2 * 2 * variance ) { // diff > 2 * Sigma then outlier
+        // sample is an outlier
+        if (diff >= 0) {
+            return POS_OUTLIER;
+        } else {
+            return NEG_OUTLIER;
+        }
+    } else {
+        n++;
+        sumSQ += (sample * sample);
+        sum   += sample;
+        return NOT_OUTLIER; // sample is NOT an outlier
+    }
+}

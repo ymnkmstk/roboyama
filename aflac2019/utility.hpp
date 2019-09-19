@@ -13,6 +13,10 @@
 #include "ColorSensor.h"
 using namespace ev3api;
 
+#define NOT_OUTLIER          0
+#define POS_OUTLIER          1
+#define NEG_OUTLIER          2
+
 typedef struct {
     uint16_t h; // Hue
     uint16_t s; // Saturation
@@ -76,6 +80,16 @@ public:
     PIDcalculator(long double p, long double i, long double d, int16_t t, int16_t min, int16_t max);
     int16_t compute(int16_t sensor, int16_t target);
     ~PIDcalculator();
+};
+
+class OutlierTester {
+private:
+    double sum, sumSQ;
+    uint32_t cnt, n, skipCnt, initCnt;
+public:
+    OutlierTester(uint32_t skipCount, uint32_t initCount);
+    int8_t test(double sample);
+    ~OutlierTester();
 };
 
 #endif /* utility_hpp */

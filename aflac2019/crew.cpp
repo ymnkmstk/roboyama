@@ -81,6 +81,9 @@ Observer::Observer(Motor* lm, Motor* rm, TouchSensor* ts, SonarSensor* ss, GyroS
     sonar_flag = false;
     backButton_flag = false;
     lost_flag = false;
+    ot_r = new OutlierTester(OLT_SKIP_PERIOD/PERIOD_OBS_TSK, OLT_INIT_PERIOD/PERIOD_OBS_TSK);
+    ot_g = new OutlierTester(OLT_SKIP_PERIOD/PERIOD_OBS_TSK, OLT_INIT_PERIOD/PERIOD_OBS_TSK);
+    ot_b = new OutlierTester(OLT_SKIP_PERIOD/PERIOD_OBS_TSK, OLT_INIT_PERIOD/PERIOD_OBS_TSK);
 }
 
 void Observer::goOnDuty() {
@@ -198,7 +201,6 @@ void Observer::operate() {
         captain->decide(EVT_line_found);
     }
     // determine blue when being on the line
-    /*
     if (!lost_flag) {
         result = check_blue();
         if (result && !blue_flag) {
@@ -211,7 +213,6 @@ void Observer::operate() {
             captain->decide(EVT_bl2bk);
         }
     }
-    */
 
     // determine if tilt
     check_tilt();
@@ -262,7 +263,14 @@ bool Observer::check_backButton(void) {
 }
 
 bool Observer::check_lost(void) {
-    if (g_hsv.v > HSV_V_LOST) {
+    int8_t otRes_r, otRes_g, otRes_b;
+    otRes_r = ot_r->test(g_rgb.r);
+    otRes_g = ot_g->test(g_rgb.g);
+    otRes_b = ot_b->test(g_rgb.b);
+    //if (g_hsv.v > HSV_V_LOST) {
+    if ((otRes_r == POS_OUTLIER && otRes_g == POS_OUTLIER) ||
+        (otRes_g == POS_OUTLIER && otRes_b == POS_OUTLIER) ||
+        (otRes_b == POS_OUTLIER && otRes_r == POS_OUTLIER)) {
         return true;
     } else {
         return false;

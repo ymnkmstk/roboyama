@@ -33,9 +33,11 @@ using namespace ev3api;
 #define LIGHT_WHITE          60  /* 白色の光センサ値 */
 #define LIGHT_BLACK           3  /* 黒色の光センサ値 */
 #define HSV_V_WHITE         100
-#define HSV_V_LOST           90  // threshold to determine "line lost"
+//#define HSV_V_LOST           90  // threshold to determine "line lost"
 #define HSV_V_BLACK           0
 #define HSV_V_BLUE           35
+#define OLT_SKIP_PERIOD    1000  // period to skip outlier test in miliseconds
+#define OLT_INIT_PERIOD    3000  // period before starting outlier test in miliseconds
 #define FINAL_APPROACH_LEN  100  // final approch length in milimater
 #define ANG_V_TILT           50  // threshold to determine "tilt"
 #define SONAR_ALERT_DISTANCE 10  /* 超音波センサによる障害物検知距離[cm] */
@@ -164,6 +166,9 @@ private:
     bool check_lost(void);
     bool check_blue(void);
     bool check_tilt(void);
+    OutlierTester*  ot_r;
+    OutlierTester*  ot_g;
+    OutlierTester*  ot_b;
 protected:
 public:
     Observer();

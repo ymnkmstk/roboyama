@@ -9,7 +9,6 @@
 /* Begin PBXFileReference section */
 		6338F6072311EF5D00CBBFD0 /* Seesaw_prop.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Seesaw_prop.txt; sourceTree = "<group>"; };
 		6338F6082311EF5D00CBBFD0 /* Logger.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Logger.hpp; sourceTree = "<group>"; };
-		6338F6092311EF5E00CBBFD0 /* test.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = test.txt; sourceTree = "<group>"; };
 		6338F60A2311EF5E00CBBFD0 /* Logger.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Logger.cpp; sourceTree = "<group>"; };
 		636D51762272C9A9000BF529 /* ev3way-cpp */ = {isa = PBXFileReference; lastKnownFileType = folder; path = "ev3way-cpp"; sourceTree = "<group>"; };
 		636EB8B622AB1BE40046CCFC /* app.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = app.cfg; sourceTree = "<group>"; };
@@ -73,7 +72,6 @@
 				6338F60A2311EF5E00CBBFD0 /* Logger.cpp */,
 				6338F6082311EF5D00CBBFD0 /* Logger.hpp */,
 				6338F6072311EF5D00CBBFD0 /* Seesaw_prop.txt */,
-				6338F6092311EF5E00CBBFD0 /* test.txt */,
 				636EB8BC22B07A2C0046CCFC /* SeesawCrimber.cpp */,
 				636EB8BD22B07A2C0046CCFC /* SeesawCrimber.hpp */,
 				636EB8BA22B079F60046CCFC /* LimboDancer.cpp */,
