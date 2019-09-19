@@ -31,6 +31,11 @@
 #define SEESAW_12	12	// 状態遷移番号
 #define SEESAW_13	13	// 状態遷移番号
 
+//チューニング用定数（準備中）
+#define STOP_WHEEL		0	// 停止時の車輪の値
+#define STOP_TAIL_FLAT	80	// 平面で停止時の尻尾の値
+
+
 #define START_SPEED 0  /* START時の各モーターに与える値 */
 #define S_PORT_4 3     // GyroSensorポート
 
@@ -45,6 +50,10 @@ private:
 	int16_t s_mode;
 	int16_t s_angle;
 	int16_t s_trace_counter = 0;
+	int16_t angleNow = 0;
+	int16_t angleBef = 0;
+	int16_t collisiontime = 0;
+	int16_t waitflg = 0;
 
 
 	struct property{
