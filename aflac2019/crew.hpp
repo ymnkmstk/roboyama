@@ -159,7 +159,7 @@ private:
     double distance, azimuth, locX, locY;
     int16_t traceCnt;
     int32_t prevAngL, prevAngR, notifyDistance;
-    bool touch_flag, sonar_flag, backButton_flag, lost_flag, blue_flag;
+    bool touch_flag, sonar_flag, backButton_flag, lost_flag, blue_flag, frozen;
     bool check_touch(void);
     bool check_sonar(void);
     bool check_backButton(void);
@@ -182,6 +182,8 @@ public:
     int32_t getLocY();
     void operate(); // method to invoke from the cyclic handler
     void goOffDuty();
+    void freeze();
+    void unfreeze();
     ~Observer();
 };
 

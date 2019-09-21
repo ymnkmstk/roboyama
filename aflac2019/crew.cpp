@@ -189,33 +189,35 @@ void Observer::operate() {
         captain->decide(EVT_backButton_Off);
     }
 
-    // determine if still tracing the line
-    result = check_lost();
-    if (result && !lost_flag) {
-        syslog(LOG_NOTICE, "%08u, line lost", clock->now());
-        lost_flag = true;
-        captain->decide(EVT_line_lost);
-    } else if (!result && lost_flag) {
-        syslog(LOG_NOTICE, "%08u, line found", clock->now());
-        lost_flag = false;
-        captain->decide(EVT_line_found);
-    }
-    // determine blue when being on the line
-    if (!lost_flag) {
-        result = check_blue();
-        if (result && !blue_flag) {
-            syslog(LOG_NOTICE, "%08u, line color changed black to blue", clock->now());
-            blue_flag = true;
-            captain->decide(EVT_bk2bl);
-        } else if (!result && blue_flag) {
-            syslog(LOG_NOTICE, "%08u, line color changed blue to black", clock->now());
-            blue_flag = false;
-            captain->decide(EVT_bl2bk);
+    if (!frozen) { // these checks are meaningless thus bypassed when frozen
+        // determine if still tracing the line
+        result = check_lost();
+        if (result && !lost_flag) {
+            syslog(LOG_NOTICE, "%08u, line lost", clock->now());
+            lost_flag = true;
+            captain->decide(EVT_line_lost);
+        } else if (!result && lost_flag) {
+            syslog(LOG_NOTICE, "%08u, line found", clock->now());
+            lost_flag = false;
+            captain->decide(EVT_line_found);
         }
-    }
+        // determine blue when being on the line
+        if (!lost_flag) {
+            result = check_blue();
+            if (result && !blue_flag) {
+                syslog(LOG_NOTICE, "%08u, line color changed black to blue", clock->now());
+                blue_flag = true;
+                captain->decide(EVT_bk2bl);
+            } else if (!result && blue_flag) {
+                syslog(LOG_NOTICE, "%08u, line color changed blue to black", clock->now());
+                blue_flag = false;
+                captain->decide(EVT_bl2bk);
+            }
+        }
 
-    // determine if tilt
-    check_tilt();
+        // determine if tilt
+        check_tilt();
+    }
     
     // display trace message in every PERIOD_TRACE_MSG ms */
     if (++traceCnt * PERIOD_OBS_TSK >= PERIOD_TRACE_MSG) {
@@ -293,6 +295,14 @@ bool Observer::check_tilt(void) {
         _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): TILT anglerVelocity = %d", clock->now(), anglerVelocity));
         return true;
     }
+}
+
+void Observer::freeze() {
+    frozen = true;
+}
+
+void Observer::unfreeze() {
+    frozen = false;
 }
 
 Observer::~Observer() {
@@ -608,10 +618,12 @@ void Captain::decide(uint8_t event) {
                     gyroSensor->reset();
                     ev3_led_set_color(LED_GREEN); /* スタート通知 */
                     
+                    observer->freeze();
                     lineTracer->freeze();
                     lineTracer->haveControl();
                     clock->sleep(PERIOD_NAV_TSK*FIR_ORDER); // wait until FIR array is filled
                     lineTracer->unfreeze();
+                    observer->unfreeze();
                     syslog(LOG_NOTICE, "%08u, Departed", clock->now());
                    break;
                 default:
