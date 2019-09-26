@@ -202,8 +202,8 @@ void Observer::operate() {
             captain->decide(EVT_line_found);
         }
         // determine blue when being on the line
-        if (!lost_flag) {
-            result = check_blue();
+        // if (!lost_flag) {
+            /* result = check_blue();
             if (result && !blue_flag) {
                 syslog(LOG_NOTICE, "%08u, line color changed black to blue", clock->now());
                 blue_flag = true;
@@ -212,9 +212,9 @@ void Observer::operate() {
                 syslog(LOG_NOTICE, "%08u, line color changed blue to black", clock->now());
                 blue_flag = false;
                 captain->decide(EVT_bl2bk);
-            }
-        }
-
+             }
+        // }
+         */
         // determine if tilt
         check_tilt();
     }
@@ -500,7 +500,8 @@ void LineTracer::operate() {
         */
         // PID control by V in HSV
         int16_t sensor = cur_hsv.v;
-        int16_t target = (HSV_V_BLACK + HSV_V_WHITE)/2;  // devisor changed from 2 to 4 as tuning on July 23
+        // int16_t target = (HSV_V_BLACK + HSV_V_WHITE)/2;  // devisor changed from 2 to 4 as tuning on July 23
+        int16_t target = (HSV_V_BLACK + HSV_V_WHITE)/4;  // devisor changed from 2 to 4 as tuning on July 23
 
         if (state == ST_tracing_L || state == ST_stopping_L || state == ST_crimbing) {
             turn = computePID(sensor, target);
