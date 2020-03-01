@@ -18,6 +18,7 @@ void Tracer::terminate() {
 void Tracer::run() {
   const float Kp = 0.83;        // 比例係数
   const int target = 10;        // 白・黒の中間値
+  const int8_t pwm = (Motor::PWM_MAX) * 2 / 10;
   const int bias = 0;
 
   msg_f("running...", 1);
