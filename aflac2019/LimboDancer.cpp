@@ -27,7 +27,6 @@ void LimboDancer::haveControl() {
 }
 
 void LimboDancer::operate() {
-    _debug(syslog(LOG_NOTICE, "%08u, LimboDancer::operate(): distance = %u, mode = %d", clock->now(), observer->getDistance(), limboMode));
 
     switch ( limboMode ) {
     case LIMBO_MODE_INIT:
@@ -93,6 +92,7 @@ void LimboDancer::operate() {
     // display pwm in every PERIOD_TRACE_MSG ms */
     if (++trace_pwmLR * PERIOD_NAV_TSK >= PERIOD_TRACE_MSG) {
         trace_pwmLR = 0;
+        _debug(syslog(LOG_NOTICE, "%08u, LimboDancer::operate(): distance = %u, mode = %d", clock->now(), observer->getDistance(), limboMode));
         _debug(syslog(LOG_NOTICE, "%08u, LimboDancer::operate(): pwm_L = %d, pwm_R = %d", clock->now(), pwm_L, pwm_R));
     }
 }

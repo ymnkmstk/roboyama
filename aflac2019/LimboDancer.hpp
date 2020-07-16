@@ -15,7 +15,7 @@
 
 #define LIMBO_TIME_START      30  /* リンボーの態勢になる時間[回] */
 #define LIMBO_TIME_MOVE     1000  /* リンボーの前進・後退時間[回] */
-#define LIMBO_TIME_MOVE_ADD  300  /* リンボー終了前に進む時間[回] */
+#define LIMBO_TIME_MOVE_ADD  500  /* リンボー終了前に進む時間[回] */
 
 #define LIMBO_SPEED_START     30  /* リンボーの態勢になる時の速度 */
 #define LIMBO_SPEED_MOVE      10  /* リンボーの移動時の速度 */
