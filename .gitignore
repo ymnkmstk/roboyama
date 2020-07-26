@@ -1,16 +1,13 @@
 /*
 !.gitignore
 !/aflac2019/
+!/aflac2020/
 !/test-sensor/
 !/ev3way-cpp/
 !/EV3way_EV3RT/
-!/EV3RT.xcodeproj/
 !/loganalysis/
 !/sample03/
 !/sample04/
-/EV3RT.xcodeproj/project.xcworkspace/
-/EV3RT.xcodeproj/xcuserdata/
-/EV3RT.xcodeproj/build/
 *~
 *.swp
 .DS_Store
