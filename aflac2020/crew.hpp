@@ -197,7 +197,7 @@ protected:
     int8_t forward;      /* 前後進命令 */
     int8_t turn;         /* 旋回命令 */
     int8_t pwm_L, pwm_R; /* 左右モータPWM出力 */
-    int16_t         trace_pwmT, trace_pwmLR;
+    int16_t         trace_pwmT, trace_pwmLR, trace_pid;
     Motor*          leftMotor;
     Motor*          rightMotor;
     Motor*          tailMotor;

@@ -89,7 +89,8 @@ Observer::Observer(Motor* lm, Motor* rm, TouchSensor* ts, SonarSensor* ss, GyroS
 void Observer::goOnDuty() {
     // register cyclic handler to EV3RT
     sta_cyc(CYC_OBS_TSK);
-    clock->sleep(PERIOD_OBS_TSK/2); // wait a while
+    //clock->sleep() seems to be still taking milisec parm
+    clock->sleep(PERIOD_OBS_TSK/2/1000); // wait a while
     _debug(syslog(LOG_NOTICE, "%08u, Observer handler set", clock->now()));
 }
 
@@ -235,7 +236,8 @@ void Observer::operate() {
 void Observer::goOffDuty() {
     // deregister cyclic handler from EV3RT
     stp_cyc(CYC_OBS_TSK);
-    clock->sleep(PERIOD_OBS_TSK/2); // wait a while
+    //clock->sleep() seems to be still taking milisec parm
+    clock->sleep(PERIOD_OBS_TSK/2/1000); // wait a while
     _debug(syslog(LOG_NOTICE, "%08u, Observer handler unset", clock->now()));
 }
 
@@ -400,18 +402,22 @@ int16_t Navigator::computePID(int16_t sensor, int16_t target) {
     p = kp * diff[1];
     i = ki * integral;
     d = kd * (diff[1] - diff[0]) * 1000 / PERIOD_NAV_TSK;
-    /*
-    char buf[256];
-    sprintf(buf,"p = %d, i = %d, d = %d", (int)p, (int)i, (int)d);
-    _debug(syslog(LOG_NOTICE, "%08u, Navigator::computePID(): sensor = %d, target = %d, %s", clock->now(), sensor, target, buf));
-    */
+    ///*
+    if (++trace_pid * PERIOD_NAV_TSK >= PERIOD_TRACE_MSG) {
+        trace_pid = 0;
+        char buf[256];
+        sprintf(buf,"p = %d, i = %d, d = %d", (int)p, (int)i, (int)d);
+        _debug(syslog(LOG_NOTICE, "%08u, Navigator::computePID(): sensor = %d, target = %d, %s", clock->now(), sensor, target, buf));
+    }
+    //*/
     return math_limit(p + i + d, -100.0, 100.0);
 }
 
 void Navigator::goOnDuty() {
     // register cyclic handler to EV3RT
     sta_cyc(CYC_NAV_TSK);
-    clock->sleep(PERIOD_NAV_TSK/2); // wait a while
+    //clock->sleep() seems to be still taking milisec parm
+    clock->sleep(PERIOD_NAV_TSK/2/1000); // wait a while
     _debug(syslog(LOG_NOTICE, "%08u, Navigator handler set", clock->now()));
 }
 
@@ -419,7 +425,8 @@ void Navigator::goOffDuty() {
     activeNavigator = NULL;
     // deregister cyclic handler from EV3RT
     stp_cyc(CYC_NAV_TSK);
-    clock->sleep(PERIOD_NAV_TSK/2); // wait a while
+    //clock->sleep() seems to be still taking milisec parm
+    clock->sleep(PERIOD_NAV_TSK/2/1000); // wait a while
     _debug(syslog(LOG_NOTICE, "%08u, Navigator handler unset", clock->now()));
 }
 
@@ -439,7 +446,7 @@ void AnchorWatch::haveControl() {
 }
 
 void AnchorWatch::operate() {
-    controlTail(TAIL_ANGLE_STAND_UP,10); /* 完全停止用角度に制御 */
+    //controlTail(TAIL_ANGLE_STAND_UP,10); /* 完全停止用角度に制御 */
 }
 
 AnchorWatch::~AnchorWatch() {
@@ -456,6 +463,7 @@ LineTracer::LineTracer(Motor* lm, Motor* rm, Motor* tm, Steering* s, GyroSensor*
     colorSensor = cs;
     trace_pwmT  = 0;
     trace_pwmLR = 0;
+    trace_pid   = 0;
     frozen      = false;
 
     fir_r = new FIR_Transposed<FIR_ORDER>(hn);
@@ -578,7 +586,7 @@ void Captain::takeoff() {
     
     /* LCD画面表示 */
     ev3_lcd_fill_rect(0, 0, EV3_LCD_WIDTH, EV3_LCD_HEIGHT, EV3_LCD_WHITE);
-    ev3_lcd_draw_string("EV3way-ET aflac2019", 0, CALIB_FONT_HEIGHT*1);
+    ev3_lcd_draw_string("EV3way-ET aflac2020", 0, CALIB_FONT_HEIGHT*1);
     
     observer = new Observer(leftMotor, rightMotor, touchSensor, sonarSensor, gyroSensor, colorSensor);
     observer->goOnDuty();
@@ -587,7 +595,7 @@ void Captain::takeoff() {
     lineTracer = new LineTracer(leftMotor, rightMotor, tailMotor, steering, gyroSensor, colorSensor);
     
     /* 尻尾モーターのリセット */
-    tailMotor->reset();
+    //tailMotor->reset();
     
     ev3_led_set_color(LED_ORANGE); /* 初期化完了通知 */
 
@@ -628,7 +636,8 @@ void Captain::decide(uint8_t event) {
                     observer->freeze();
                     lineTracer->freeze();
                     lineTracer->haveControl();
-                    clock->sleep(PERIOD_NAV_TSK*FIR_ORDER); // wait until FIR array is filled
+                    //clock->sleep() seems to be still taking milisec parm
+                    clock->sleep(PERIOD_NAV_TSK*FIR_ORDER/1000); // wait until FIR array is filled
                     lineTracer->unfreeze();
                     observer->unfreeze();
                     syslog(LOG_NOTICE, "%08u, Departed", clock->now());
