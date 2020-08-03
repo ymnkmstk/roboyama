@@ -9,7 +9,7 @@
 #include "app.h"
 #include "crew.hpp"
 
-LimboDancer::LimboDancer(Motor* lm, Motor* rm, Motor* tm, Steering* s, GyroSensor* gs, ColorSensor* cs) : LineTracer(lm, rm, tm, s, gs, cs) {
+LimboDancer::LimboDancer(Motor* lm, Motor* rm, Motor* tm, GyroSensor* gs, ColorSensor* cs) : LineTracer(lm, rm, tm, gs, cs) {
     limboMode = LIMBO_MODE_INIT;
     counter = 0;
     angle = calibrator->getPropByInt16("tail.angle.limbo",TAIL_ANGLE_LIMBO);
@@ -38,7 +38,7 @@ void LimboDancer::operate() {
 	turn = 0;
 	break;
     case LIMBO_MODE_FORWARD1: // Forward with slow speed by Limbo Style
-        controlTail(angle);
+        //controlTail(angle);
 	if ( ++counter > startTime + moveTime ) {
 	    limboMode = LIMBO_MODE_BACKWARD1;
 	}
@@ -46,7 +46,7 @@ void LimboDancer::operate() {
 	turn = 0;
 	break;
     case LIMBO_MODE_BACKWARD1: // Back with slow speed by Limbo Style
-        controlTail(angle);
+        //controlTail(angle);
 	if ( ++counter > startTime + moveTime*2 ) {
 	    limboMode = LIMBO_MODE_FORWARD2;
 	}
@@ -54,7 +54,7 @@ void LimboDancer::operate() {
 	turn = 0;
 	break;
     case LIMBO_MODE_FORWARD2: // forward with slow speed by Limbo Style
-        controlTail(angle);
+        //controlTail(angle);
 	if ( ++counter > startTime + moveTime*3 ) {
 	    limboMode = LIMBO_MODE_BACKWARD2;
 	}
@@ -62,7 +62,7 @@ void LimboDancer::operate() {
 	turn = 0;
 	break;
     case LIMBO_MODE_BACKWARD2: // Back with slow speed by Limbo Style
-        controlTail(angle);
+        //controlTail(angle);
 	if ( ++counter > startTime + moveTime*4 ) {
 	    limboMode = LIMBO_MODE_FORWARD3;
 	}
@@ -70,7 +70,7 @@ void LimboDancer::operate() {
 	turn = 0;
 	break;
     case LIMBO_MODE_FORWARD3: // forward with slow speed by Limbo Style
-        controlTail(angle);
+        //controlTail(angle);
 	if ( ++counter > startTime + moveTime*5 + moveTimeAdd ) {
 	  limboMode = LIMBO_MODE_STOP;
 	}
@@ -79,7 +79,7 @@ void LimboDancer::operate() {
 	break;
     case LIMBO_MODE_STOP: // stop by Limbo Style
     default:
-        controlTail(angle);
+        //controlTail(angle);
         forward = 0;
 	turn = 0;
 	break;

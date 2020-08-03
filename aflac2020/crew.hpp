@@ -189,28 +189,16 @@ public:
 
 class Navigator {
 private:
-    double kp, ki, kd;   /* PID constant */
-    int16_t diff[2];
-    double integral;
 protected:
     int8_t forward;      /* 前後進命令 */
     int8_t turn;         /* 旋回命令 */
     int8_t pwm_L, pwm_R; /* 左右モータPWM出力 */
-    int16_t         trace_pwmT, trace_pwmLR, trace_pid;
+    int16_t         trace_pwmLR;
     Motor*          leftMotor;
     Motor*          rightMotor;
-    Motor*          tailMotor;
-    Steering*       steering;
     GyroSensor*     gyroSensor;
     ColorSensor*    colorSensor;
     PIDcalculator*  ltPid;
-    void cancelBacklash(int8_t lpwm, int8_t rpwm, int32_t *lenc, int32_t *renc);
-    void controlTail(int32_t angle);
-    void controlTail(int32_t angle, int16_t maxpwm);
-    void setPIDconst(double p, double i, double d);
-    int16_t math_limit(int16_t input, int16_t min, int16_t max);
-    double math_limitd(double input, double min, double max);
-    int16_t computePID(int16_t sensor, int16_t target);
 public:
     Navigator();
     void goOnDuty();
@@ -243,7 +231,7 @@ private:
 protected:
 public:
     LineTracer();
-    LineTracer(Motor* lm, Motor* rm, Motor* tm, Steering* s, GyroSensor* gs, ColorSensor* cs);
+    LineTracer(Motor* lm, Motor* rm, Motor* tm, GyroSensor* gs, ColorSensor* cs);
     void haveControl();
     void operate(); // method to invoke from the cyclic handler
     void freeze();

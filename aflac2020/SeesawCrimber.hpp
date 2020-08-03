@@ -78,7 +78,7 @@ private:
 protected:
 public:
     SeesawCrimber();
-    SeesawCrimber(Motor* lm, Motor* rm, Motor* tm, Steering* s, GyroSensor* gs, ColorSensor* cs);
+    SeesawCrimber(Motor* lm, Motor* rm, Motor* tm, GyroSensor* gs, ColorSensor* cs);
     void haveControl();
     void operate(); // method to invoke from the cyclic handler
     ~SeesawCrimber();

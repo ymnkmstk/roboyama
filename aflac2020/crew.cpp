@@ -7,7 +7,6 @@
 //
 
 #include "app.h"
-//#include "balancer.h"
 #include "crew.hpp"
 
 // global variables to pass FIR-filtered color from LineTracer to Observer
@@ -313,105 +312,7 @@ Observer::~Observer() {
 
 Navigator::Navigator() {
     _debug(syslog(LOG_NOTICE, "%08u, Navigator default constructor", clock->now()));
-    //setPIDconst(P_CONST, I_CONST, D_CONST); // set default PID constant
-    //diff[1] = INT16_MAX; // initialize diff[1]
     ltPid = new PIDcalculator(P_CONST, 0.0D, 0.0D, PERIOD_NAV_TSK, -16, 16); 
-}
-
-//*****************************************************************************
-// 引数 : lpwm (左モーターPWM値 ※前回の出力値)
-//        rpwm (右モーターPWM値 ※前回の出力値)
-//        lenc (左モーターエンコーダー値)
-//        renc (右モーターエンコーダー値)
-// 返り値 : なし
-// 概要 : 直近のPWM値に応じてエンコーダー値にバックラッシュ分の値を追加します。
-//*****************************************************************************
-void Navigator::cancelBacklash(int8_t lpwm, int8_t rpwm, int32_t *lenc, int32_t *renc) {
-    const int32_t BACKLASHHALF = 4;   // バックラッシュの半分[deg]
-    
-    if(lpwm < 0) *lenc += BACKLASHHALF;
-    else if(lpwm > 0) *lenc -= BACKLASHHALF;
-    
-    if(rpwm < 0) *renc += BACKLASHHALF;
-    else if(rpwm > 0) *renc -= BACKLASHHALF;
-}
-
-//*****************************************************************************
-// 引数 : angle (モータ目標角度[度])
-// 返り値 : 無し
-// 概要 : 走行体完全停止用モータの角度制御
-//*****************************************************************************
-void Navigator::controlTail(int32_t angle) {
-    controlTail(angle,PWM_ABS_MAX);
-}
-
-void Navigator::controlTail(int32_t angle, int16_t maxpwm) {
-    float pwm = (float)(angle - tailMotor->getCount()) * P_GAIN; /* 比例制御 */
-    /* PWM出力飽和処理 */
-    if (pwm > maxpwm) {
-        pwm = maxpwm;
-    } else if (pwm < -maxpwm) {
-        pwm = -maxpwm;
-    }
-
-    tailMotor->setPWM(pwm);
-
-    // display pwm in every PERIOD_TRACE_MSG ms */
-    if (++trace_pwmT * PERIOD_NAV_TSK >= PERIOD_TRACE_MSG) {
-       trace_pwmT = 0;
-        _debug(syslog(LOG_NOTICE, "%08u, Navigator::controlTail(): pwm = %d", clock->now(), (int16_t)pwm));
-    }
-}
-
-void Navigator::setPIDconst(double p, double i, double d) {
-    kp = p;
-    ki = i;
-    kd = d;
-    integral = 0;
-}
-
-int16_t Navigator::math_limit(int16_t input, int16_t min, int16_t max) {
-    if (input < min) {
-        return min;
-    } else if (input > max) {
-        return max;
-    }
-    return input;
-}
-
-double Navigator::math_limitd(double input, double min, double max) {
-    if (input < min) {
-        return min;
-    } else if (input > max) {
-        return max;
-    }
-    return input;
-}
-
-int16_t Navigator::computePID(int16_t sensor, int16_t target) {
-    double p, i, d;
-
-    if ( diff[1] == INT16_MAX ) {
-	    diff[0] = diff[1] = sensor - target;
-    } else {
-	    diff[0] = diff[1];
-	    diff[1] = sensor - target;
-    }
-    integral += (double)(diff[0] + diff[1]) * PERIOD_NAV_TSK / 2 / 1000;
-    
-    p = kp * diff[1];
-    i = ki * integral;
-    d = kd * (diff[1] - diff[0]) * 1000 / PERIOD_NAV_TSK;
-    ///*
-    if (++trace_pid * PERIOD_NAV_TSK >= PERIOD_TRACE_MSG) {
-        trace_pid = 0;
-        char buf[128];
-        snprintf(buf, sizeof(buf), "p = %lf, i = %lf, d = %lf", p, i, d);
-        _debug(syslog(LOG_NOTICE, "%08u, Navigator::computePID(): sensor = %d, target = %d, d0 = %d, d1 = %d +", clock->now(), sensor, target, diff[0], diff[1]));
-        _debug(syslog(LOG_NOTICE, "%08u, Navigator::computePID(): sensor = %d, target = %d, %s", clock->now(), sensor, target, buf));
-    }
-    //*/
-    return math_limitd(p + i + d, -10.0D, 10.0D);
 }
 
 void Navigator::goOnDuty() {
@@ -437,8 +338,6 @@ Navigator::~Navigator() {
 
 AnchorWatch::AnchorWatch(Motor* tm) {
     _debug(syslog(LOG_NOTICE, "%08u, AnchorWatch constructor", clock->now()));
-    tailMotor   = tm;
-    trace_pwmT  = 0;
 }
 
 void AnchorWatch::haveControl() {
@@ -454,17 +353,13 @@ AnchorWatch::~AnchorWatch() {
     _debug(syslog(LOG_NOTICE, "%08u, AnchorWatch destructor", clock->now()));
 }
 
-LineTracer::LineTracer(Motor* lm, Motor* rm, Motor* tm, Steering* s, GyroSensor* gs, ColorSensor* cs) {
+LineTracer::LineTracer(Motor* lm, Motor* rm, Motor* tm, GyroSensor* gs, ColorSensor* cs) {
     _debug(syslog(LOG_NOTICE, "%08u, LineTracer constructor", clock->now()));
     leftMotor   = lm;
     rightMotor  = rm;
-    tailMotor   = tm;
-    steering    = s;
     gyroSensor  = gs;
     colorSensor = cs;
-    trace_pwmT  = 0;
     trace_pwmLR = 0;
-    trace_pid   = 0;
     frozen      = false;
 
     fir_r = new FIR_Transposed<FIR_ORDER>(hn);
@@ -494,7 +389,7 @@ void LineTracer::operate() {
     if (frozen) {
         forward = turn = 0; /* 障害物を検知したら停止 */
     } else {
-        forward = (Motor::PWM_MAX) / 6; //前進命令
+        forward = 20; //前進命令
         /*
         // on-off control
         if (colorSensor->getBrightness() >= (LIGHT_WHITE + LIGHT_BLACK)/2) {
@@ -514,40 +409,16 @@ void LineTracer::operate() {
         int16_t target = (HSV_V_BLACK + HSV_V_WHITE)/4;  // devisor changed from 2 to 4 as tuning on July 23
 
         if (state == ST_tracing_L || state == ST_stopping_L || state == ST_crimbing) {
-            //turn = computePID(sensor, target);
             turn = (-1) * ltPid->compute(sensor, target);
         } else {
             // state == ST_tracing_R || state == ST_stopping_R || state == ST_dancing
-            //turn = (-1) * computePID(sensor, target);
             turn = ltPid->compute(sensor, target);
         }
     }
 
     /* 左右モータでロボットのステアリング操作を行う */
-    //steering->setPower((int)forward, (int)turn);
     pwm_L = forward - turn;
     pwm_R = forward + turn;
-
-    /* 倒立振子制御API に渡すパラメータを取得する */
-    //motor_ang_l = leftMotor->getCount();
-    //motor_ang_r = rightMotor->getCount();
-    //gyro = gyroSensor->getAnglerVelocity();
-    //volt = ev3_battery_voltage_mV();
-
-    /* バックラッシュキャンセル */
-    //cancelBacklash(pwm_L, pwm_R, &motor_ang_l, &motor_ang_r);
-    
-    /* 倒立振子制御APIを呼び出し、倒立走行するための */
-    /* 左右モータ出力値を得る */
-    //balance_control((float)forward,
-    //                (float)turn,
-    //                (float)gyro,
-    //                (float)GYRO_OFFSET,
-    //                (float)motor_ang_l,
-    //                (float)motor_ang_r,
-    //                (float)volt,
-    //                (int8_t *)&pwm_L,
-    //                (int8_t *)&pwm_R);
 
     leftMotor->setPWM(pwm_L);
     rightMotor->setPWM(pwm_R);
@@ -596,9 +467,9 @@ void Captain::takeoff() {
     observer = new Observer(leftMotor, rightMotor, touchSensor, sonarSensor, gyroSensor, colorSensor);
     observer->freeze(); // Do NOT attempt to collect sensor data until unfreeze() is invoked
     observer->goOnDuty();
-    limboDancer = new LimboDancer(leftMotor, rightMotor, tailMotor, steering, gyroSensor, colorSensor);
-    seesawCrimber = new SeesawCrimber(leftMotor, rightMotor, tailMotor, steering, gyroSensor, colorSensor);
-    lineTracer = new LineTracer(leftMotor, rightMotor, tailMotor, steering, gyroSensor, colorSensor);
+    limboDancer = new LimboDancer(leftMotor, rightMotor, tailMotor, gyroSensor, colorSensor);
+    seesawCrimber = new SeesawCrimber(leftMotor, rightMotor, tailMotor, gyroSensor, colorSensor);
+    lineTracer = new LineTracer(leftMotor, rightMotor, tailMotor, gyroSensor, colorSensor);
     
     /* 尻尾モーターのリセット */
     //tailMotor->reset();

@@ -12,13 +12,12 @@
 #include <stdlib.h>
 //#include "balancer.h"
 
-SeesawCrimber::SeesawCrimber(Motor* lm, Motor* rm, Motor* tm, Steering* s, GyroSensor* gs, ColorSensor* cs) : LineTracer(lm, rm, tm, s, gs, cs) {
+SeesawCrimber::SeesawCrimber(Motor* lm, Motor* rm, Motor* tm, GyroSensor* gs, ColorSensor* cs) : LineTracer(lm, rm, tm, gs, cs) {
 	readPropFile("/ev3rt/res/Seesaw_prop.txt");
 	gyroSensor = gs;
 	leftMotor = lm;
 	rightMotor = rm;
 	tailMotor = tm;
-	steering = s;
 	
 	s_trace_counter = 0;
 	angleNow = 0;
@@ -40,7 +39,7 @@ void SeesawCrimber::haveControl() {
     s_angle = 100;
 
 	// 初期状態での尻尾角度をTAIL_ANGLE_NORMAL_RUNに合わせて設定
-	controlTail(TAIL_ANGLE_NORMAL_RUN);
+	//controlTail(TAIL_ANGLE_NORMAL_RUN);
 
 	// ジャイロセンサーの角速度を0にセットする
 	gyroSensor->reset();
@@ -267,7 +266,7 @@ void SeesawCrimber::operate() {
 	// 左右モーターと尻尾モーターへ値を渡す
 	leftMotor->setPWM(pwm_L);
 	rightMotor->setPWM(pwm_R);
-	controlTail(s_angle);
+	//controlTail(s_angle);
 
 	// ログを PERIOD_TRAVE_MSG ms で出力する
 	if (++s_trace_counter * PERIOD_NAV_TSK >= PERIOD_TRACE_MSG ) {
