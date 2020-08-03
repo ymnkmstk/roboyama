@@ -313,9 +313,9 @@ Observer::~Observer() {
 
 Navigator::Navigator() {
     _debug(syslog(LOG_NOTICE, "%08u, Navigator default constructor", clock->now()));
-    setPIDconst(P_CONST, I_CONST, D_CONST); // set default PID constant
-    diff[1] = INT16_MAX; // initialize diff[1]
-    integral = 0.0L;
+    //setPIDconst(P_CONST, I_CONST, D_CONST); // set default PID constant
+    //diff[1] = INT16_MAX; // initialize diff[1]
+    ltPid = new PIDcalculator(P_CONST, 0.0D, 0.0D, PERIOD_NAV_TSK, -16, 16); 
 }
 
 //*****************************************************************************
@@ -363,10 +363,11 @@ void Navigator::controlTail(int32_t angle, int16_t maxpwm) {
     }
 }
 
-void Navigator::setPIDconst(long double p, long double i, long double d) {
+void Navigator::setPIDconst(double p, double i, double d) {
     kp = p;
     ki = i;
     kd = d;
+    integral = 0;
 }
 
 int16_t Navigator::math_limit(int16_t input, int16_t min, int16_t max) {
@@ -378,7 +379,7 @@ int16_t Navigator::math_limit(int16_t input, int16_t min, int16_t max) {
     return input;
 }
 
-long double Navigator::math_limitf(long double input, long double min, long double max) {
+double Navigator::math_limitd(double input, double min, double max) {
     if (input < min) {
         return min;
     } else if (input > max) {
@@ -388,16 +389,15 @@ long double Navigator::math_limitf(long double input, long double min, long doub
 }
 
 int16_t Navigator::computePID(int16_t sensor, int16_t target) {
-    long double p, i, d;
+    double p, i, d;
 
     if ( diff[1] == INT16_MAX ) {
-	diff[0] = diff[1] = sensor - target;
+	    diff[0] = diff[1] = sensor - target;
     } else {
-	diff[0] = diff[1];
-	diff[1] = sensor - target;
+	    diff[0] = diff[1];
+	    diff[1] = sensor - target;
     }
-    integral += (diff[0] + diff[1]) / 2.0 * PERIOD_NAV_TSK / 1000;
-    integral = math_limitf( integral, -100.0L, 100.0L);
+    integral += (double)(diff[0] + diff[1]) * PERIOD_NAV_TSK / 2 / 1000;
     
     p = kp * diff[1];
     i = ki * integral;
@@ -405,12 +405,13 @@ int16_t Navigator::computePID(int16_t sensor, int16_t target) {
     ///*
     if (++trace_pid * PERIOD_NAV_TSK >= PERIOD_TRACE_MSG) {
         trace_pid = 0;
-        char buf[256];
-        sprintf(buf,"p = %d, i = %d, d = %d", (int)p, (int)i, (int)d);
+        char buf[128];
+        snprintf(buf, sizeof(buf), "p = %lf, i = %lf, d = %lf", p, i, d);
+        _debug(syslog(LOG_NOTICE, "%08u, Navigator::computePID(): sensor = %d, target = %d, d0 = %d, d1 = %d +", clock->now(), sensor, target, diff[0], diff[1]));
         _debug(syslog(LOG_NOTICE, "%08u, Navigator::computePID(): sensor = %d, target = %d, %s", clock->now(), sensor, target, buf));
     }
     //*/
-    return math_limit(p + i + d, -100.0, 100.0);
+    return math_limitd(p + i + d, -10.0D, 10.0D);
 }
 
 void Navigator::goOnDuty() {
@@ -493,7 +494,7 @@ void LineTracer::operate() {
     if (frozen) {
         forward = turn = 0; /* 障害物を検知したら停止 */
     } else {
-        forward = 40; //前進命令  Changed from 30 to 15 as tuning on July 23
+        forward = (Motor::PWM_MAX) / 6; //前進命令
         /*
         // on-off control
         if (colorSensor->getBrightness() >= (LIGHT_WHITE + LIGHT_BLACK)/2) {
@@ -509,19 +510,23 @@ void LineTracer::operate() {
         */
         // PID control by V in HSV
         int16_t sensor = cur_hsv.v;
-        // int16_t target = (HSV_V_BLACK + HSV_V_WHITE)/2;  // devisor changed from 2 to 4 as tuning on July 23
+        //int16_t target = (HSV_V_BLACK + HSV_V_WHITE)/2;  // devisor changed from 2 to 4 as tuning on July 23
         int16_t target = (HSV_V_BLACK + HSV_V_WHITE)/4;  // devisor changed from 2 to 4 as tuning on July 23
 
         if (state == ST_tracing_L || state == ST_stopping_L || state == ST_crimbing) {
-            turn = computePID(sensor, target);
+            //turn = computePID(sensor, target);
+            turn = (-1) * ltPid->compute(sensor, target);
         } else {
             // state == ST_tracing_R || state == ST_stopping_R || state == ST_dancing
-            turn = (-1) * computePID(sensor, target);
+            //turn = (-1) * computePID(sensor, target);
+            turn = ltPid->compute(sensor, target);
         }
     }
 
     /* 左右モータでロボットのステアリング操作を行う */
-    steering->setPower((int)forward, (int)turn);
+    //steering->setPower((int)forward, (int)turn);
+    pwm_L = forward - turn;
+    pwm_R = forward + turn;
 
     /* 倒立振子制御API に渡すパラメータを取得する */
     //motor_ang_l = leftMotor->getCount();
@@ -544,8 +549,8 @@ void LineTracer::operate() {
     //                (int8_t *)&pwm_L,
     //                (int8_t *)&pwm_R);
 
-    //leftMotor->setPWM(pwm_L);
-    //rightMotor->setPWM(pwm_R);
+    leftMotor->setPWM(pwm_L);
+    rightMotor->setPWM(pwm_R);
 
     // display pwm in every PERIOD_TRACE_MSG ms */
     if (++trace_pwmLR * PERIOD_NAV_TSK >= PERIOD_TRACE_MSG) {
@@ -589,6 +594,7 @@ void Captain::takeoff() {
     ev3_lcd_draw_string("EV3way-ET aflac2020", 0, CALIB_FONT_HEIGHT*1);
     
     observer = new Observer(leftMotor, rightMotor, touchSensor, sonarSensor, gyroSensor, colorSensor);
+    observer->freeze(); // Do NOT attempt to collect sensor data until unfreeze() is invoked
     observer->goOnDuty();
     limboDancer = new LimboDancer(leftMotor, rightMotor, tailMotor, steering, gyroSensor, colorSensor);
     seesawCrimber = new SeesawCrimber(leftMotor, rightMotor, tailMotor, steering, gyroSensor, colorSensor);
@@ -615,9 +621,9 @@ void Captain::decide(uint8_t event) {
                 case EVT_cmdStart_R:
                 case EVT_cmdStart_L:
                 case EVT_touch_On:
-                    if (event == EVT_cmdStart_R) {
+                    if (event == EVT_cmdStart_R || event == EVT_touch_On) {
                         state = ST_tracing_R;
-                    } else {  // event == EVT_cmdStart_L || event == EVT_touch_On
+                    } else {  // event == EVT_cmdStart_L
                         state = ST_tracing_L;
                     }
                     syslog(LOG_NOTICE, "%08u, Departing...", clock->now());

@@ -9,6 +9,14 @@
 #ifndef utility_hpp
 #define utility_hpp
 
+#define DEBUG
+
+#ifdef DEBUG
+#define _debug(x) (x)
+#else
+#define _debug(x)
+#endif
+
 //#include <cinttypes>
 #include "ColorSensor.h"
 using namespace ev3api;
@@ -72,12 +80,12 @@ void rgb_to_hsv(rgb_raw_t rgb, hsv_raw_t& hsv);
 
 class PIDcalculator {
 private:
-    long double kp, ki, kd;   /* PID constant */
-    int16_t diff[2], deltaT, minimum, maximum;
-    long double integral;
+    double kp, ki, kd;   /* PID constant */
+    int16_t diff[2], deltaT, minimum, maximum, traceCnt;
+    double integral;
     int16_t math_limit(int16_t input, int16_t min, int16_t max);
 public:
-    PIDcalculator(long double p, long double i, long double d, int16_t t, int16_t min, int16_t max);
+    PIDcalculator(double p, double i, double d, int16_t t, int16_t min, int16_t max);
     int16_t compute(int16_t sensor, int16_t target);
     ~PIDcalculator();
 };

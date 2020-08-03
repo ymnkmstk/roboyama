@@ -49,9 +49,9 @@ using namespace ev3api;
 
 #define TIRE_DIAMETER    100.0F  // diameter of tire in milimater
 #define WHEEL_TREAD      175.0F  // distance between the right and left wheels
-#define P_CONST           0.38L  // PID constants determined by Ultimate Gain method
-#define I_CONST           0.06L
-#define D_CONST          0.027L
+#define P_CONST           0.38D  // PID constants determined by Ultimate Gain method
+#define I_CONST           0.06D
+#define D_CONST          0.027D
 
 //#define DEVICE_NAME     "ET0"  /* Bluetooth名 hrp2/target/ev3.h BLUETOOTH_LOCAL_NAMEで設定 */
 //#define PASS_KEY        "1234" /* パスキー    hrp2/target/ev3.h BLUETOOTH_PIN_CODEで設定 */
@@ -137,7 +137,6 @@ const double hn[FIR_ORDER+1] = { 2.993565708123639e-03, 9.143668394023662e-03, -
 #define CALIB_FONT_WIDTH (6/*TODO: magic number*/)
 #define CALIB_FONT_HEIGHT (8/*TODO: magic number*/)
 
-#define PERIOD_TRACE_MSG    1000 * 1000   /* Trace message in every 1000 ms */
 #define M_2PI    (2.0 * M_PI)
 
 class Radioman {
@@ -190,9 +189,9 @@ public:
 
 class Navigator {
 private:
-    long double kp, ki, kd;   /* PID constant */
+    double kp, ki, kd;   /* PID constant */
     int16_t diff[2];
-    long double integral;
+    double integral;
 protected:
     int8_t forward;      /* 前後進命令 */
     int8_t turn;         /* 旋回命令 */
@@ -204,12 +203,13 @@ protected:
     Steering*       steering;
     GyroSensor*     gyroSensor;
     ColorSensor*    colorSensor;
+    PIDcalculator*  ltPid;
     void cancelBacklash(int8_t lpwm, int8_t rpwm, int32_t *lenc, int32_t *renc);
     void controlTail(int32_t angle);
     void controlTail(int32_t angle, int16_t maxpwm);
-    void setPIDconst(long double p, long double i, long double d);
+    void setPIDconst(double p, double i, double d);
     int16_t math_limit(int16_t input, int16_t min, int16_t max);
-    long double math_limitf(long double input, long double min, long double max);
+    double math_limitd(double input, double min, double max);
     int16_t computePID(int16_t sensor, int16_t target);
 public:
     Navigator();
