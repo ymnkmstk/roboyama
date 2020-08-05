@@ -17,6 +17,18 @@
 #define _debug(x)
 #endif
 
+/**
+ * 左コース/右コース向けの設定を定義します
+ * デフォルトは左コース(ラインの右エッジをトレース)です
+ */
+#if defined(MAKE_RIGHT)
+    static const int _LEFT = 0;
+    #define _EDGE -1
+#else
+    static const int _LEFT = 1;
+    #define _EDGE 1
+#endif
+
 //#include <cinttypes>
 #include <cmath>
 #include "TouchSensor.h"

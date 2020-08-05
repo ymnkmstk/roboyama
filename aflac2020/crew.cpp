@@ -409,10 +409,10 @@ void LineTracer::operate() {
         int16_t target = (HSV_V_BLACK + HSV_V_WHITE)/4;  // devisor changed from 2 to 4 as tuning on July 23
 
         if (state == ST_tracing_L || state == ST_stopping_L || state == ST_crimbing) {
-            turn = (-1) * ltPid->compute(sensor, target);
+            turn = _EDGE * ltPid->compute(sensor, target);
         } else {
             // state == ST_tracing_R || state == ST_stopping_R || state == ST_dancing
-            turn = ltPid->compute(sensor, target);
+            turn = (-1) * ltPid->compute(sensor, target);
         }
     }
 
@@ -492,10 +492,10 @@ void Captain::decide(uint8_t event) {
                 case EVT_cmdStart_R:
                 case EVT_cmdStart_L:
                 case EVT_touch_On:
-                    if (event == EVT_cmdStart_R || event == EVT_touch_On) {
-                        state = ST_tracing_R;
-                    } else {  // event == EVT_cmdStart_L
+                    if (event == EVT_cmdStart_L || (event == EVT_touch_On && _LEFT)) {
                         state = ST_tracing_L;
+                    } else {  // event == EVT_cmdStart_R || (event == EVT_touch_On && !_LEFT)
+                        state = ST_tracing_R;
                     }
                     syslog(LOG_NOTICE, "%08u, Departing...", clock->now());
                     
@@ -534,16 +534,16 @@ void Captain::decide(uint8_t event) {
 		    // During line trancing,
 		    // if sonar is on (limbo sign is near by matchine),
 		    // limbo dance starts.
-                    state = ST_dancing;
-                    limboDancer->haveControl();
+                    //state = ST_dancing;
+                    //limboDancer->haveControl();
                     break;
                 case EVT_sonar_Off:
-                    lineTracer->unfreeze();
+                    //lineTracer->unfreeze();
                     break;
                 case EVT_cmdDance:
                 case EVT_bl2bk:
-                    state = ST_dancing;
-                    limboDancer->haveControl();
+                    //state = ST_dancing;
+                    //limboDancer->haveControl();
                     break;
                 case EVT_cmdStop:
                     state = ST_stopping_R;
@@ -561,15 +561,15 @@ void Captain::decide(uint8_t event) {
                     triggerLanding();
                     break;
                 case EVT_sonar_On:
-                    lineTracer->freeze();
+                    //lineTracer->freeze();
                     break;
                 case EVT_sonar_Off:
-                    lineTracer->unfreeze();
+                    //lineTracer->unfreeze();
                     break;
                 case EVT_cmdCrimb:
                 case EVT_bl2bk:
-                    state = ST_crimbing;
-                    seesawCrimber->haveControl();
+                    //state = ST_crimbing;
+                    //seesawCrimber->haveControl();
                     break;
                 case EVT_cmdStop:
                     state = ST_stopping_L;
