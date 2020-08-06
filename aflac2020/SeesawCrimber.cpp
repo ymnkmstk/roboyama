@@ -12,9 +12,8 @@
 #include <stdlib.h>
 //#include "balancer.h"
 
-SeesawCrimber::SeesawCrimber(Motor* lm, Motor* rm, Motor* tm, GyroSensor* gs, ColorSensor* cs) : LineTracer(lm, rm, tm, gs, cs) {
+SeesawCrimber::SeesawCrimber(Motor* lm, Motor* rm, Motor* tm) : LineTracer(lm, rm, tm) {
 	readPropFile("/ev3rt/res/Seesaw_prop.txt");
-	gyroSensor = gs;
 	leftMotor = lm;
 	rightMotor = rm;
 	tailMotor = tm;
@@ -42,7 +41,7 @@ void SeesawCrimber::haveControl() {
 	//controlTail(TAIL_ANGLE_NORMAL_RUN);
 
 	// ジャイロセンサーの角速度を0にセットする
-	gyroSensor->reset();
+	//gyroSensor->reset();
 
 
     // ログ出力
@@ -98,7 +97,7 @@ void SeesawCrimber::operate() {
 		++s_counter; //カウントアップ
 
 		//現在の角速度を取得
-		angleNow = gyroSensor->getAnglerVelocity();
+		angleNow = g_anglerVelocity;
 
 		//初回に限り、角速度の差分に大きな値が出る可能性があるため、差分が出ないように値を補正する
 		if(angleBef == 0){
@@ -171,7 +170,7 @@ void SeesawCrimber::operate() {
 		++s_counter;	 //カウントアップ
 
 		//現在の角速度を取得
-		angleNow = gyroSensor->getAnglerVelocity();
+		angleNow = g_anglerVelocity;
 
 		//初回に限り、角速度の差分に大きな値が出る可能性があるため、差分が出ないように値を補正する
 		if(angleBef == 0){
@@ -207,7 +206,7 @@ void SeesawCrimber::operate() {
 		++s_counter; //カウントアップ
 
 		//現在の角速度を取得
-		angleNow = gyroSensor->getAnglerVelocity();
+		angleNow = g_anglerVelocity;
 
 		//初回に限り、角速度の差分に大きな値が出る可能性があるため、差分が出ないように値を補正する
 		if(angleBef == 0){

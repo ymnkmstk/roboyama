@@ -40,7 +40,7 @@ private:
 protected:
 public:
     LimboDancer();
-    LimboDancer(Motor* lm, Motor* rm, Motor* tm, GyroSensor* gs, ColorSensor* cs);
+    LimboDancer(Motor* lm, Motor* rm, Motor* tm);
     void haveControl();
     void operate(); // method to invoke from the cyclic handler
     ~LimboDancer();

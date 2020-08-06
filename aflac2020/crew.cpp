@@ -9,9 +9,11 @@
 #include "app.h"
 #include "crew.hpp"
 
-// global variables to pass FIR-filtered color from LineTracer to Observer
+// global variables to pass FIR-filtered color from Observer to Navigator and its sub-classes
 rgb_raw_t g_rgb;
 hsv_raw_t g_hsv;
+// global variables to gyro sensor output from Observer to  Navigator and its sub-classes
+int16_t g_angle, g_anglerVelocity;
 
 Radioman::Radioman() {
     _debug(syslog(LOG_NOTICE, "%08u, Radioman constructor", clock->now()));
@@ -83,6 +85,10 @@ Observer::Observer(Motor* lm, Motor* rm, TouchSensor* ts, SonarSensor* ss, GyroS
     ot_r = new OutlierTester(OLT_SKIP_PERIOD/PERIOD_OBS_TSK, OLT_INIT_PERIOD/PERIOD_OBS_TSK);
     ot_g = new OutlierTester(OLT_SKIP_PERIOD/PERIOD_OBS_TSK, OLT_INIT_PERIOD/PERIOD_OBS_TSK);
     ot_b = new OutlierTester(OLT_SKIP_PERIOD/PERIOD_OBS_TSK, OLT_INIT_PERIOD/PERIOD_OBS_TSK);
+
+    fir_r = new FIR_Transposed<FIR_ORDER>(hn);
+    fir_g = new FIR_Transposed<FIR_ORDER>(hn);
+    fir_b = new FIR_Transposed<FIR_ORDER>(hn);
 }
 
 void Observer::goOnDuty() {
@@ -125,6 +131,19 @@ int32_t Observer::getLocY() {
 }
 
 void Observer::operate() {
+    colorSensor->getRawColor(cur_rgb);
+    // process RGB by the Low Pass Filter
+    cur_rgb.r = fir_r->Execute(cur_rgb.r);
+    cur_rgb.g = fir_g->Execute(cur_rgb.g);
+    cur_rgb.b = fir_b->Execute(cur_rgb.b);
+    rgb_to_hsv(cur_rgb, cur_hsv);
+    // save filtered color variables to the global area
+    g_rgb = cur_rgb;
+    g_hsv = cur_hsv;
+    // save gyro sensor output to the global area
+    g_angle = gyroSensor->getAngle();
+    g_anglerVelocity = gyroSensor->getAnglerVelocity();
+
     // accumulate distance
     int32_t curAngL = leftMotor->getCount();
     int32_t curAngR = rightMotor->getCount();
@@ -202,19 +221,19 @@ void Observer::operate() {
             captain->decide(EVT_line_found);
         }
         // determine blue when being on the line
-        // if (!lost_flag) {
-            /* result = check_blue();
+        if (!lost_flag) {
+            result = check_blue();
             if (result && !blue_flag) {
                 syslog(LOG_NOTICE, "%08u, line color changed black to blue", clock->now());
                 blue_flag = true;
-                captain->decide(EVT_bk2bl);
+                //captain->decide(EVT_bk2bl);
             } else if (!result && blue_flag) {
                 syslog(LOG_NOTICE, "%08u, line color changed blue to black", clock->now());
                 blue_flag = false;
-                captain->decide(EVT_bl2bk);
-             }
-        // }
-         */
+                //captain->decide(EVT_bl2bk);
+            }
+        }
+
         // determine if tilt
         check_tilt();
     }
@@ -225,10 +244,7 @@ void Observer::operate() {
         _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): distance = %d, azimuth = %d, x = %d, y = %d", clock->now(), getDistance(), getAzimuth(), getLocX(), getLocY()));
         _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): hsv = (%03u, %03u, %03u)", clock->now(), g_hsv.h, g_hsv.s, g_hsv.v));
         _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): rgb = (%03u, %03u, %03u)", clock->now(), g_rgb.r, g_rgb.g, g_rgb.b));
-
-        int16_t angle = gyroSensor->getAngle();
-        int16_t anglerVelocity = gyroSensor->getAnglerVelocity();
-        _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): angle = %d, anglerVelocity = %d", clock->now(), angle, anglerVelocity));
+        _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): angle = %d, anglerVelocity = %d", clock->now(), g_angle, g_anglerVelocity));
     }
 }
 
@@ -267,9 +283,9 @@ bool Observer::check_backButton(void) {
 
 bool Observer::check_lost(void) {
     int8_t otRes_r, otRes_g, otRes_b;
-    otRes_r = ot_r->test(g_rgb.r);
-    otRes_g = ot_g->test(g_rgb.g);
-    otRes_b = ot_b->test(g_rgb.b);
+    otRes_r = ot_r->test(cur_rgb.r);
+    otRes_g = ot_g->test(cur_rgb.g);
+    otRes_b = ot_b->test(cur_rgb.b);
     //if (g_hsv.v > HSV_V_LOST) {
     if ((otRes_r == POS_OUTLIER && otRes_g == POS_OUTLIER) ||
         (otRes_g == POS_OUTLIER && otRes_b == POS_OUTLIER) ||
@@ -281,7 +297,7 @@ bool Observer::check_lost(void) {
 }
 
 bool Observer::check_blue(void) {
-    if (g_rgb.b > g_rgb.r && g_hsv.v > HSV_V_BLUE) {
+    if (cur_rgb.b > cur_rgb.r && cur_hsv.v > HSV_V_BLUE) {
         return true;
     } else {
         return false;
@@ -353,18 +369,12 @@ AnchorWatch::~AnchorWatch() {
     _debug(syslog(LOG_NOTICE, "%08u, AnchorWatch destructor", clock->now()));
 }
 
-LineTracer::LineTracer(Motor* lm, Motor* rm, Motor* tm, GyroSensor* gs, ColorSensor* cs) {
+LineTracer::LineTracer(Motor* lm, Motor* rm, Motor* tm) {
     _debug(syslog(LOG_NOTICE, "%08u, LineTracer constructor", clock->now()));
     leftMotor   = lm;
     rightMotor  = rm;
-    gyroSensor  = gs;
-    colorSensor = cs;
     trace_pwmLR = 0;
     frozen      = false;
-
-    fir_r = new FIR_Transposed<FIR_ORDER>(hn);
-    fir_g = new FIR_Transposed<FIR_ORDER>(hn);
-    fir_b = new FIR_Transposed<FIR_ORDER>(hn);
 }
 
 void LineTracer::haveControl() {
@@ -375,17 +385,6 @@ void LineTracer::haveControl() {
 void LineTracer::operate() {
     //controlTail(TAIL_ANGLE_DRIVE,10); /* バランス走行用角度に制御 */
     
-    colorSensor->getRawColor(cur_rgb);
-    // process RGB by the Low Pass Filter
-    cur_rgb.r = fir_r->Execute(cur_rgb.r);
-    cur_rgb.g = fir_g->Execute(cur_rgb.g);
-    cur_rgb.b = fir_b->Execute(cur_rgb.b);
-    rgb_to_hsv(cur_rgb, cur_hsv);
-    // save filtered color variables to the global area
-    // ToDo: dirty code - Observer should be responsible for reading color sensor
-    g_rgb = cur_rgb;
-    g_hsv = cur_hsv;
-
     if (frozen) {
         forward = turn = 0; /* 障害物を検知したら停止 */
     } else {
@@ -404,12 +403,12 @@ void LineTracer::operate() {
         int16_t target = (LIGHT_WHITE + LIGHT_BLACK)/2;
         */
         // PID control by V in HSV
-        int16_t sensor = cur_hsv.v;
+        int16_t sensor = g_hsv.v;
         //int16_t target = (HSV_V_BLACK + HSV_V_WHITE)/2;  // devisor changed from 2 to 4 as tuning on July 23
         int16_t target = (HSV_V_BLACK + HSV_V_WHITE)/4;  // devisor changed from 2 to 4 as tuning on July 23
 
         if (state == ST_tracing_L || state == ST_stopping_L || state == ST_crimbing) {
-            turn = _EDGE * ltPid->compute(sensor, target);
+            turn = ltPid->compute(sensor, target);
         } else {
             // state == ST_tracing_R || state == ST_stopping_R || state == ST_dancing
             turn = (-1) * ltPid->compute(sensor, target);
@@ -467,9 +466,9 @@ void Captain::takeoff() {
     observer = new Observer(leftMotor, rightMotor, touchSensor, sonarSensor, gyroSensor, colorSensor);
     observer->freeze(); // Do NOT attempt to collect sensor data until unfreeze() is invoked
     observer->goOnDuty();
-    limboDancer = new LimboDancer(leftMotor, rightMotor, tailMotor, gyroSensor, colorSensor);
-    seesawCrimber = new SeesawCrimber(leftMotor, rightMotor, tailMotor, gyroSensor, colorSensor);
-    lineTracer = new LineTracer(leftMotor, rightMotor, tailMotor, gyroSensor, colorSensor);
+    limboDancer = new LimboDancer(leftMotor, rightMotor, tailMotor);
+    seesawCrimber = new SeesawCrimber(leftMotor, rightMotor, tailMotor);
+    lineTracer = new LineTracer(leftMotor, rightMotor, tailMotor);
     
     /* 尻尾モーターのリセット */
     //tailMotor->reset();

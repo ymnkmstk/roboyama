@@ -41,6 +41,11 @@
 using namespace ev3api;
 #include "utility.hpp"
 
+// global variables
+extern rgb_raw_t g_rgb;
+extern hsv_raw_t g_hsv;
+extern int16_t g_angle, g_anglerVelocity;
+
 /* 下記のマクロは個体/環境に合わせて変更する必要があります */
 #define GYRO_OFFSET           0  /* ジャイロセンサオフセット値(角速度0[deg/sec]時) */
 #define LIGHT_WHITE          60  /* 白色の光センサ値 */
@@ -172,15 +177,19 @@ private:
     int16_t traceCnt;
     int32_t prevAngL, prevAngR, notifyDistance;
     bool touch_flag, sonar_flag, backButton_flag, lost_flag, blue_flag, frozen;
+    rgb_raw_t cur_rgb;
+    hsv_raw_t cur_hsv;
+    FIR_Transposed<FIR_ORDER> *fir_r, *fir_g, *fir_b;
+    OutlierTester*  ot_r;
+    OutlierTester*  ot_g;
+    OutlierTester*  ot_b;
+
     bool check_touch(void);
     bool check_sonar(void);
     bool check_backButton(void);
     bool check_lost(void);
     bool check_blue(void);
     bool check_tilt(void);
-    OutlierTester*  ot_r;
-    OutlierTester*  ot_g;
-    OutlierTester*  ot_b;
 protected:
 public:
     Observer();
@@ -208,8 +217,6 @@ protected:
     int16_t         trace_pwmLR;
     Motor*          leftMotor;
     Motor*          rightMotor;
-    GyroSensor*     gyroSensor;
-    ColorSensor*    colorSensor;
     PIDcalculator*  ltPid;
 public:
     Navigator();
@@ -235,15 +242,11 @@ public:
 class LineTracer : public Navigator {
 private:
     int32_t motor_ang_l, motor_ang_r;
-    int32_t gyro, volt;
     bool    frozen;
-    rgb_raw_t cur_rgb;
-    hsv_raw_t cur_hsv;
-    FIR_Transposed<FIR_ORDER> *fir_r, *fir_g, *fir_b;
 protected:
 public:
     LineTracer();
-    LineTracer(Motor* lm, Motor* rm, Motor* tm, GyroSensor* gs, ColorSensor* cs);
+    LineTracer(Motor* lm, Motor* rm, Motor* tm);
     void haveControl();
     void operate(); // method to invoke from the cyclic handler
     void freeze();

@@ -9,7 +9,7 @@
 #include "app.h"
 #include "crew.hpp"
 
-LimboDancer::LimboDancer(Motor* lm, Motor* rm, Motor* tm, GyroSensor* gs, ColorSensor* cs) : LineTracer(lm, rm, tm, gs, cs) {
+LimboDancer::LimboDancer(Motor* lm, Motor* rm, Motor* tm) : LineTracer(lm, rm, tm) {
     limboMode = LIMBO_MODE_INIT;
     counter = 0;
     angle = calibrator->getPropByInt16("tail.angle.limbo",TAIL_ANGLE_LIMBO);
