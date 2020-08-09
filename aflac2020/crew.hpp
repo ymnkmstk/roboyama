@@ -67,9 +67,12 @@ extern int16_t g_angle, g_anglerVelocity;
 
 #define TIRE_DIAMETER    100.0F  // diameter of tire in milimater
 #define WHEEL_TREAD      175.0F  // distance between the right and left wheels
-#define P_CONST           0.38D  // PID constants determined by Ultimate Gain method
-#define I_CONST           0.06D
-#define D_CONST          0.027D
+//#define P_CONST           0.38D  // PID constants determined by Ultimate Gain method
+//#define I_CONST           0.06D
+//#define D_CONST          0.027D
+#define P_CONST           1.00D  // PID constants determined by Ultimate Gain method
+#define I_CONST            0.0D
+#define D_CONST            0.0D
 
 //#define DEVICE_NAME     "ET0"  /* Bluetooth名 hrp2/target/ev3.h BLUETOOTH_LOCAL_NAMEで設定 */
 //#define PASS_KEY        "1234" /* パスキー    hrp2/target/ev3.h BLUETOOTH_PIN_CODEで設定 */

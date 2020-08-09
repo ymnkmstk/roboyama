@@ -339,7 +339,7 @@ Observer::~Observer() {
 
 Navigator::Navigator() {
     _debug(syslog(LOG_NOTICE, "%08u, Navigator default constructor", clock->now()));
-    ltPid = new PIDcalculator(P_CONST, 0.0D, 0.0D, PERIOD_NAV_TSK, -16, 16); 
+    ltPid = new PIDcalculator(P_CONST, I_CONST, D_CONST, PERIOD_NAV_TSK, -16, 16); 
 }
 
 void Navigator::goOnDuty() {
@@ -399,7 +399,7 @@ void LineTracer::operate() {
     if (frozen) {
         forward = turn = 0; /* 障害物を検知したら停止 */
     } else {
-        forward = 20; //前進命令
+        forward = 35; //前進命令
         /*
         // on-off control
         if (colorSensor->getBrightness() >= (LIGHT_WHITE + LIGHT_BLACK)/2) {
