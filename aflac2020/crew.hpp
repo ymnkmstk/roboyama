@@ -44,6 +44,7 @@ using namespace ev3api;
 // global variables
 extern rgb_raw_t g_rgb;
 extern hsv_raw_t g_hsv;
+extern int16_t g_grayScale, g_grayScaleBlueless;
 extern int16_t g_angle, g_anglerVelocity;
 
 /* 下記のマクロは個体/環境に合わせて変更する必要があります */

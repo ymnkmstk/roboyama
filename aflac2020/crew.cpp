@@ -12,6 +12,7 @@
 // global variables to pass FIR-filtered color from Observer to Navigator and its sub-classes
 rgb_raw_t g_rgb;
 hsv_raw_t g_hsv;
+int16_t g_grayScale, g_grayScaleBlueless;
 // global variables to gyro sensor output from Observer to  Navigator and its sub-classes
 int16_t g_angle, g_anglerVelocity;
 
@@ -140,6 +141,9 @@ void Observer::operate() {
     // save filtered color variables to the global area
     g_rgb = cur_rgb;
     g_hsv = cur_hsv;
+    // calculate gray scale and save them to the global area
+    g_grayScale = (cur_rgb.r * 77 + cur_rgb.g * 150 + cur_rgb.b * 29) / 256;
+    g_grayScaleBlueless = (cur_rgb.r * 77 + cur_rgb.g * 150 + (cur_rgb.b - cur_rgb.g) * 29) / 256; // B - G cuts off blue
     // save gyro sensor output to the global area
     g_angle = gyroSensor->getAngle();
     g_anglerVelocity = gyroSensor->getAnglerVelocity();
@@ -239,12 +243,19 @@ void Observer::operate() {
     }
     
     // display trace message in every PERIOD_TRACE_MSG ms */
+    int32_t d = getDistance();
     if (++traceCnt * PERIOD_OBS_TSK >= PERIOD_TRACE_MSG) {
+    //if ((++traceCnt * PERIOD_OBS_TSK >= PERIOD_TRACE_MSG) && (d < 11000)) {
         traceCnt = 0;
-        _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): distance = %d, azimuth = %d, x = %d, y = %d", clock->now(), getDistance(), getAzimuth(), getLocX(), getLocY()));
+        //_debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): distance = %d, azimuth = %d, x = %d, y = %d", clock->now(), getDistance(), getAzimuth(), getLocX(), getLocY()));
+        _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): distance = %d, azimuth = %d, x = %d, y = %d", clock->now(), d, getAzimuth(), getLocX(), getLocY()));
         _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): hsv = (%03u, %03u, %03u)", clock->now(), g_hsv.h, g_hsv.s, g_hsv.v));
         _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): rgb = (%03u, %03u, %03u)", clock->now(), g_rgb.r, g_rgb.g, g_rgb.b));
         _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): angle = %d, anglerVelocity = %d", clock->now(), g_angle, g_anglerVelocity));
+    //} else if (d >= 11000) {
+    //    _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): distance = %d, azimuth = %d, x = %d, y = %d", clock->now(), d, getAzimuth(), getLocX(), getLocY()));
+    //    _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): hsv = (%03u, %03u, %03u)", clock->now(), g_hsv.h, g_hsv.s, g_hsv.v));
+    //    _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): rgb = (%03u, %03u, %03u)", clock->now(), g_rgb.r, g_rgb.g, g_rgb.b));
     }
 }
 
@@ -403,9 +414,12 @@ void LineTracer::operate() {
         int16_t target = (LIGHT_WHITE + LIGHT_BLACK)/2;
         */
         // PID control by V in HSV
-        int16_t sensor = g_hsv.v;
+        //int16_t sensor = g_hsv.v;
+        // PID control by Gray Scale with blue cut
+        int16_t sensor = g_grayScaleBlueless;
         //int16_t target = (HSV_V_BLACK + HSV_V_WHITE)/2;  // devisor changed from 2 to 4 as tuning on July 23
-        int16_t target = (HSV_V_BLACK + HSV_V_WHITE)/4;  // devisor changed from 2 to 4 as tuning on July 23
+        //int16_t target = (HSV_V_BLACK + HSV_V_WHITE)/4;  // devisor changed from 2 to 4 as tuning on July 23
+        int16_t target = 46; // temporarily hard-coded
 
         if (state == ST_tracing_L || state == ST_stopping_L || state == ST_crimbing) {
             turn = ltPid->compute(sensor, target);
