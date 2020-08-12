@@ -71,6 +71,7 @@ extern int16_t g_angle, g_anglerVelocity;
 #define I_CONST            0.0D
 #define D_CONST            0.0D
 #define SPEED_NORM           40
+#define GS_TARGET            46
 
 //#define DEVICE_NAME     "ET0"  /* Bluetooth名 hrp2/target/ev3.h BLUETOOTH_LOCAL_NAMEで設定 */
 //#define PASS_KEY        "1234" /* パスキー    hrp2/target/ev3.h BLUETOOTH_PIN_CODEで設定 */

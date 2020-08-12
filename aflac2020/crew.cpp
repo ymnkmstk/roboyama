@@ -430,7 +430,7 @@ void LineTracer::operate() {
         */
         // PID control by Gray Scale with blue cut
         int16_t sensor = g_grayScaleBlueless;
-        int16_t target = 46; // temporarily hard-coded
+        int16_t target = GS_TARGET;
 
         if (state == ST_tracing_L || state == ST_stopping_L || state == ST_crimbing) {
             turn = ltPid->compute(sensor, target);
