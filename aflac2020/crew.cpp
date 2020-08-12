@@ -609,11 +609,13 @@ void Captain::decide(uint8_t event) {
                     //seesawCrimber->haveControl();
                     break;
                 case EVT_bk2bl:
+                    observer->freeze();
                     lineTracer->freeze();
                     //lineTracer->setSpeed(Motor::PWM_MAX);
                     //clock->sleep() seems to be still taking milisec parm
-                    clock->sleep(1000); // wait a little
+                    clock->sleep(5000); // wait a little
                     lineTracer->unfreeze();
+                    observer->unfreeze();
                     break;
                 case EVT_cmdStop:
                     state = ST_stopping_L;
