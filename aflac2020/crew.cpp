@@ -79,17 +79,20 @@ Observer::Observer(Motor* lm, Motor* rm, TouchSensor* ts, SonarSensor* ss, GyroS
     prevAngR = 0;
     notifyDistance = 0;
     traceCnt = 0;
+    prevGS = INT16_MAX;
     touch_flag = false;
     sonar_flag = false;
     backButton_flag = false;
     lost_flag = false;
-    ot_r = new OutlierTester(OLT_SKIP_PERIOD/PERIOD_OBS_TSK, OLT_INIT_PERIOD/PERIOD_OBS_TSK);
-    ot_g = new OutlierTester(OLT_SKIP_PERIOD/PERIOD_OBS_TSK, OLT_INIT_PERIOD/PERIOD_OBS_TSK);
-    ot_b = new OutlierTester(OLT_SKIP_PERIOD/PERIOD_OBS_TSK, OLT_INIT_PERIOD/PERIOD_OBS_TSK);
+    blue_flag = false;
+    //ot_r = new OutlierTester(OLT_SKIP_PERIOD/PERIOD_OBS_TSK, OLT_INIT_PERIOD/PERIOD_OBS_TSK);
+    //ot_g = new OutlierTester(OLT_SKIP_PERIOD/PERIOD_OBS_TSK, OLT_INIT_PERIOD/PERIOD_OBS_TSK);
+    //ot_b = new OutlierTester(OLT_SKIP_PERIOD/PERIOD_OBS_TSK, OLT_INIT_PERIOD/PERIOD_OBS_TSK);
 
     fir_r = new FIR_Transposed<FIR_ORDER>(hn);
     fir_g = new FIR_Transposed<FIR_ORDER>(hn);
     fir_b = new FIR_Transposed<FIR_ORDER>(hn);
+    ma = new MovingAverage<int32_t, MA_CAP>();
 }
 
 void Observer::goOnDuty() {
@@ -224,22 +227,35 @@ void Observer::operate() {
             lost_flag = false;
             captain->decide(EVT_line_found);
         }
-        // determine blue when being on the line
-        if (!lost_flag) {
-            result = check_blue();
-            if (result && !blue_flag) {
-                syslog(LOG_NOTICE, "%08u, line color changed black to blue", clock->now());
+
+        // temporary dirty logic to detect the second black to blue change
+        int32_t ma_gs;
+        if (prevGS == INT16_MAX) {
+            prevTime = clock->now();
+            prevGS = g_grayScale;
+            ma_gs = ma->add(0);
+        } else {
+            curTime = clock->now();
+            gsDiff = g_grayScale - prevGS;
+            timeDiff = curTime - prevTime;
+            ma_gs = ma->add(gsDiff * 1000000 / timeDiff);
+            prevTime = curTime;
+            prevGS = g_grayScale;
+        }
+        int32_t x = getLocX();
+        if ( (ma_gs > 150) || (ma_gs < -150) ){
+            syslog(LOG_NOTICE, "gs = %d, MA = %d, gsDiff = %d, timeDiff = %d", g_grayScale, ma_gs, gsDiff, timeDiff);
+            if ( !blue_flag && (ma_gs > 150) && ((x > 4300) || (x < -4300)) ) {
                 blue_flag = true;
-                //captain->decide(EVT_bk2bl);
-            } else if (!result && blue_flag) {
-                syslog(LOG_NOTICE, "%08u, line color changed blue to black", clock->now());
-                blue_flag = false;
-                //captain->decide(EVT_bl2bk);
+                syslog(LOG_NOTICE, "%08u, line color changed black to blue", clock->now());
+                captain->decide(EVT_bk2bl);
             }
         }
 
         // determine if tilt
-        check_tilt();
+        if ( check_tilt() ) {
+            //captain->decide(EVT_cmdStop);
+        }
     }
     
     // display trace message in every PERIOD_TRACE_MSG ms */
@@ -293,11 +309,16 @@ bool Observer::check_backButton(void) {
 }
 
 bool Observer::check_lost(void) {
+    if (g_grayScale > GS_LOST) {
+        return true;
+    } else {
+        return false;
+    }
+    /*
     int8_t otRes_r, otRes_g, otRes_b;
     otRes_r = ot_r->test(cur_rgb.r);
     otRes_g = ot_g->test(cur_rgb.g);
     otRes_b = ot_b->test(cur_rgb.b);
-    //if (g_hsv.v > HSV_V_LOST) {
     if ((otRes_r == POS_OUTLIER && otRes_g == POS_OUTLIER) ||
         (otRes_g == POS_OUTLIER && otRes_b == POS_OUTLIER) ||
         (otRes_b == POS_OUTLIER && otRes_r == POS_OUTLIER)) {
@@ -305,14 +326,7 @@ bool Observer::check_lost(void) {
     } else {
         return false;
     }
-}
-
-bool Observer::check_blue(void) {
-    if (cur_rgb.b > cur_rgb.r && cur_hsv.v > HSV_V_BLUE) {
-        return true;
-    } else {
-        return false;
-    }
+    */
 }
 
 bool Observer::check_tilt(void) {
@@ -385,6 +399,7 @@ LineTracer::LineTracer(Motor* lm, Motor* rm, Motor* tm) {
     leftMotor   = lm;
     rightMotor  = rm;
     trace_pwmLR = 0;
+    speed       = SPEED_NORM;
     frozen      = false;
 }
 
@@ -399,7 +414,7 @@ void LineTracer::operate() {
     if (frozen) {
         forward = turn = 0; /* 障害物を検知したら停止 */
     } else {
-        forward = 35; //前進命令
+        forward = speed; //前進命令
         /*
         // on-off control
         if (colorSensor->getBrightness() >= (LIGHT_WHITE + LIGHT_BLACK)/2) {
@@ -413,12 +428,8 @@ void LineTracer::operate() {
         int16_t sensor = colorSensor->getBrightness();
         int16_t target = (LIGHT_WHITE + LIGHT_BLACK)/2;
         */
-        // PID control by V in HSV
-        //int16_t sensor = g_hsv.v;
         // PID control by Gray Scale with blue cut
         int16_t sensor = g_grayScaleBlueless;
-        //int16_t target = (HSV_V_BLACK + HSV_V_WHITE)/2;  // devisor changed from 2 to 4 as tuning on July 23
-        //int16_t target = (HSV_V_BLACK + HSV_V_WHITE)/4;  // devisor changed from 2 to 4 as tuning on July 23
         int16_t target = 46; // temporarily hard-coded
 
         if (state == ST_tracing_L || state == ST_stopping_L || state == ST_crimbing) {
@@ -444,6 +455,10 @@ void LineTracer::operate() {
         _debug(syslog(LOG_NOTICE, "%08u, LineTracer::operate(): distance = %d, azimuth = %d, x = %d, y = %d", clock->now(), observer->getDistance(), observer->getAzimuth(), observer->getLocX(), observer->getLocY()));
         */
     }
+}
+
+void LineTracer::setSpeed(int8_t s) {
+    speed = s;
 }
 
 void LineTracer::freeze() {
@@ -558,6 +573,15 @@ void Captain::decide(uint8_t event) {
                     //state = ST_dancing;
                     //limboDancer->haveControl();
                     break;
+                case EVT_bk2bl:
+                    observer->freeze();
+                    lineTracer->freeze();
+                    //lineTracer->setSpeed(Motor::PWM_MAX);
+                    //clock->sleep() seems to be still taking milisec parm
+                    clock->sleep(5000); // wait a little
+                    lineTracer->unfreeze();
+                    observer->unfreeze();
+                    break;
                 case EVT_cmdStop:
                     state = ST_stopping_R;
                     observer->notifyOfDistance(FINAL_APPROACH_LEN);
@@ -583,6 +607,13 @@ void Captain::decide(uint8_t event) {
                 case EVT_bl2bk:
                     //state = ST_crimbing;
                     //seesawCrimber->haveControl();
+                    break;
+                case EVT_bk2bl:
+                    lineTracer->freeze();
+                    //lineTracer->setSpeed(Motor::PWM_MAX);
+                    //clock->sleep() seems to be still taking milisec parm
+                    clock->sleep(1000); // wait a little
+                    lineTracer->unfreeze();
                     break;
                 case EVT_cmdStop:
                     state = ST_stopping_L;

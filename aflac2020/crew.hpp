@@ -51,10 +51,7 @@ extern int16_t g_angle, g_anglerVelocity;
 #define GYRO_OFFSET           0  /* ジャイロセンサオフセット値(角速度0[deg/sec]時) */
 #define LIGHT_WHITE          60  /* 白色の光センサ値 */
 #define LIGHT_BLACK           3  /* 黒色の光センサ値 */
-#define HSV_V_WHITE         100
-//#define HSV_V_LOST           90  // threshold to determine "line lost"
-#define HSV_V_BLACK           0
-#define HSV_V_BLUE           35
+#define GS_LOST              90  // threshold to determine "line lost"
 #define OLT_SKIP_PERIOD    1000 * 1000 // period to skip outlier test in miliseconds
 #define OLT_INIT_PERIOD    3000 * 1000 // period before starting outlier test in miliseconds
 #define FINAL_APPROACH_LEN  100  // final approch length in milimater
@@ -73,6 +70,7 @@ extern int16_t g_angle, g_anglerVelocity;
 #define P_CONST           1.00D  // PID constants determined by Ultimate Gain method
 #define I_CONST            0.0D
 #define D_CONST            0.0D
+#define SPEED_NORM           40
 
 //#define DEVICE_NAME     "ET0"  /* Bluetooth名 hrp2/target/ev3.h BLUETOOTH_LOCAL_NAMEで設定 */
 //#define PASS_KEY        "1234" /* パスキー    hrp2/target/ev3.h BLUETOOTH_PIN_CODEで設定 */
@@ -153,6 +151,9 @@ const char eventName[][EVT_NAME_LEN] = {
 const int FIR_ORDER = 10;
 const double hn[FIR_ORDER+1] = { 2.993565708123639e-03, 9.143668394023662e-03, -3.564197579813870e-02, -3.996625085414179e-02, 2.852028479250662e-01, 5.600000000000001e-01, 2.852028479250662e-01, -3.996625085414179e-02, -3.564197579813870e-02, 9.143668394023662e-03, 2.993565708123639e-03 };
 
+// moving average parameter
+const int MA_CAP = 10;
+
 /* LCDフォントサイズ */
 #define CALIB_FONT (EV3_FONT_SMALL)
 #define CALIB_FONT_WIDTH (6/*TODO: magic number*/)
@@ -178,21 +179,22 @@ private:
     GyroSensor*     gyroSensor;
     ColorSensor*    colorSensor;
     double distance, azimuth, locX, locY;
-    int16_t traceCnt;
-    int32_t prevAngL, prevAngR, notifyDistance;
-    bool touch_flag, sonar_flag, backButton_flag, lost_flag, blue_flag, frozen;
+    int16_t traceCnt, prevGS;
+    int32_t prevAngL, prevAngR, notifyDistance, gsDiff, timeDiff;
+    uint64_t curTime, prevTime;
+    bool touch_flag, sonar_flag, backButton_flag, lost_flag, frozen, blue_flag;
     rgb_raw_t cur_rgb;
     hsv_raw_t cur_hsv;
     FIR_Transposed<FIR_ORDER> *fir_r, *fir_g, *fir_b;
-    OutlierTester*  ot_r;
-    OutlierTester*  ot_g;
-    OutlierTester*  ot_b;
+    MovingAverage<int32_t, MA_CAP> *ma;
+    //OutlierTester*  ot_r;
+    //OutlierTester*  ot_g;
+    //OutlierTester*  ot_b;
 
     bool check_touch(void);
     bool check_sonar(void);
     bool check_backButton(void);
     bool check_lost(void);
-    bool check_blue(void);
     bool check_tilt(void);
 protected:
 public:
@@ -218,6 +220,7 @@ protected:
     int8_t forward;      /* 前後進命令 */
     int8_t turn;         /* 旋回命令 */
     int8_t pwm_L, pwm_R; /* 左右モータPWM出力 */
+    int8_t speed;
     int16_t         trace_pwmLR;
     Motor*          leftMotor;
     Motor*          rightMotor;
@@ -253,6 +256,7 @@ public:
     LineTracer(Motor* lm, Motor* rm, Motor* tm);
     void haveControl();
     void operate(); // method to invoke from the cyclic handler
+    void setSpeed(int8_t s);
     void freeze();
     void unfreeze();
     ~LineTracer();

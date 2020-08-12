@@ -32,6 +32,62 @@ typedef struct {
     
 } hsv_raw_t;
 
+template<typename T, int CAPACITY> class MovingAverage {
+private:
+    T elements[CAPACITY];
+    int index;
+    bool filled;
+    T sum;
+public:
+    MovingAverage();
+    void clear();
+    T add(T element);
+    T get();
+};
+
+template<typename T, int CAPACITY>
+MovingAverage<T, CAPACITY>::MovingAverage() {
+    assert (CAPACITY > 0);
+    clear();
+}
+
+template<typename T, int CAPACITY>
+void MovingAverage<T, CAPACITY>::clear() {
+    index = 0;
+    sum = 0;
+    filled = false;
+}
+
+template<typename T, int CAPACITY>
+T MovingAverage<T, CAPACITY>::add(T element) {
+    if (index == CAPACITY) {
+        index = 0;
+        filled = true;
+    }
+    if (filled) {
+        sum = sum - elements[index] + element;
+        elements[index++] = element;
+        return sum / CAPACITY;
+    } else {
+        sum = sum + element;
+        elements[index++] = element;
+        return sum / index;
+    }
+}
+
+template<typename T, int CAPACITY>
+T MovingAverage<T, CAPACITY>::get() {
+    if (filled) {
+        return sum / CAPACITY;
+    } else {
+        if (index == 0) {
+            return 0;
+        } else {
+            return sum / index;
+        }
+    }
+}
+
 template<int ORDER> class FIR_Direct {
 private:
     const double *const hm;
