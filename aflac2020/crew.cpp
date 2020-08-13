@@ -9,6 +9,15 @@
 #include "app.h"
 #include "crew.hpp"
 
+#define HISTARRAYSIZE (((PERIOD_TRACE_MSG)/(PERIOD_OBS_TSK))+50)
+int32_t dist_hist[HISTARRAYSIZE];
+int32_t locX_hist[HISTARRAYSIZE];
+int32_t locY_hist[HISTARRAYSIZE];
+const char *BASE64STR = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+char dist_str[HISTARRAYSIZE];
+char locX_str[HISTARRAYSIZE];
+char locY_str[HISTARRAYSIZE];
+
 // global variables to pass FIR-filtered color from Observer to Navigator and its sub-classes
 rgb_raw_t g_rgb;
 hsv_raw_t g_hsv;
@@ -260,11 +269,31 @@ void Observer::operate() {
     
     // display trace message in every PERIOD_TRACE_MSG ms */
     int32_t d = getDistance();
+
+    dist_hist[traceCnt] = d;
+    locX_hist[traceCnt] = getLocX();
+    locY_hist[traceCnt] = getLocY();
+
     if (++traceCnt * PERIOD_OBS_TSK >= PERIOD_TRACE_MSG) {
     //if ((++traceCnt * PERIOD_OBS_TSK >= PERIOD_TRACE_MSG) && (d < 11000)) {
+        int iii;
+        for ( iii = 1; iii < traceCnt; ++iii ) {
+            int32_t numdist = dist_hist[iii-1] - dist_hist[iii];
+            int32_t numlocX = locX_hist[iii-1] - locX_hist[iii];
+            int32_t numlocY = locY_hist[iii-1] - locY_hist[iii];
+            dist_str[iii-1] = ( numdist < -32 ) ? '-' : ( 31 < numdist ) ? '!' : BASE64STR[numdist & 0x3F];
+            locX_str[iii-1] = ( numlocX < -32 ) ? '-' : ( 31 < numlocX ) ? '!' : BASE64STR[numlocX & 0x3F];
+            locY_str[iii-1] = ( numlocY < -32 ) ? '-' : ( 31 < numlocY ) ? '!' : BASE64STR[numlocY & 0x3F];
+        }
+        dist_str[traceCnt-1] = 0;
+        locX_str[traceCnt-1] = 0;
+        locY_str[traceCnt-1] = 0;
         traceCnt = 0;
         //_debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): distance = %d, azimuth = %d, x = %d, y = %d", clock->now(), getDistance(), getAzimuth(), getLocX(), getLocY()));
         _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): distance = %d, azimuth = %d, x = %d, y = %d", clock->now(), d, getAzimuth(), getLocX(), getLocY()));
+        _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): disthist = %s", clock->now(), dist_str));
+        _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): locXhist = %s", clock->now(), locX_str));
+        _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): locYhist = %s", clock->now(), locY_str));
         _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): hsv = (%03u, %03u, %03u)", clock->now(), g_hsv.h, g_hsv.s, g_hsv.v));
         _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): rgb = (%03u, %03u, %03u)", clock->now(), g_rgb.r, g_rgb.g, g_rgb.b));
         _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): angle = %d, anglerVelocity = %d", clock->now(), g_angle, g_anglerVelocity));
