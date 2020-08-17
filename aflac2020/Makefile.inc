@@ -6,6 +6,7 @@ APPL_CXXOBJS += \
 crew.o \
 SeesawCrimber.o \
 LimboDancer.o \
+DataLogger.o \
 utility.o
 
 SRCLANG := c++

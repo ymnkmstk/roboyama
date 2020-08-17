@@ -63,14 +63,14 @@ extern int16_t g_angle, g_anglerVelocity;
 #define PWM_ABS_MAX          60  /* 完全停止用モータ制御PWM絶対最大値 */
 
 #define TIRE_DIAMETER    100.0F  // diameter of tire in milimater
-#define WHEEL_TREAD      175.0F  // distance between the right and left wheels
+#define WHEEL_TREAD      150.0F  // distance between the right and left wheels
 //#define P_CONST           0.38D  // PID constants determined by Ultimate Gain method
 //#define I_CONST           0.06D
 //#define D_CONST          0.027D
 #define P_CONST           1.00D  // PID constants determined by Ultimate Gain method
 #define I_CONST            0.0D
 #define D_CONST            0.0D
-#define SPEED_NORM           40
+#define SPEED_NORM           50
 #define GS_TARGET            46
 
 //#define DEVICE_NAME     "ET0"  /* Bluetooth名 hrp2/target/ev3.h BLUETOOTH_LOCAL_NAMEで設定 */
