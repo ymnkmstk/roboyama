@@ -1,20 +1,23 @@
 #include "app.h"
 #include "DataLogger.hpp"
 
-DataLogger::DataLogger()
+DataLogger::DataLogger( int32_t offs )
 {
+    offset = offs;
     latest = 0;
     count = 0;
 }
 
-const char *BASE64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+//const char *BASE64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 void DataLogger::logging( int32_t value )
 {
     int32_t diff = value - latest;
-    hist_str[count] = ( diff < -32 ) ? '-' : ( 31 < diff ) ? '!' : BASE64[diff & 0x3F];
+    diff += (0x22 + offset);
+    hist_str[count] = ( diff < 0x21 ) ? 0x21 : ( diff > 0x7e ) ? 0x7e : diff;
     latest = value;
     ++count;
+    if ( count >= HISTARRAYSIZE*2 ) count = 0;
 }
 
 char* DataLogger::getHistByString()

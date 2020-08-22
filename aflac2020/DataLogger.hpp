@@ -9,12 +9,13 @@
 
 class DataLogger {
 private:
+    int32_t offset;
     int32_t latest;
     char hist_str[HISTARRAYSIZE*2];
     int count;
     char* prevptr;
 public:
-    DataLogger();
+    DataLogger( int32_t offs );
     void logging( int32_t value );
     int32_t lastValue();
     char* getHistByString();

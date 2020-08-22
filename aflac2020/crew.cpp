@@ -10,9 +10,11 @@
 #include "crew.hpp"
 #include "DataLogger.hpp"
 
-DataLogger distLogger;
-DataLogger locXLogger;
-DataLogger locYLogger;
+DataLogger distLogger(46);
+DataLogger locXLogger(46);
+DataLogger locYLogger(46);
+DataLogger angLLogger(10);
+DataLogger angRLogger(10);
 
 // global variables to pass FIR-filtered color from Observer to Navigator and its sub-classes
 rgb_raw_t g_rgb;
@@ -68,10 +70,11 @@ Radioman::~Radioman() {
     fclose(bt);
 }
 
-Observer::Observer(Motor* lm, Motor* rm, TouchSensor* ts, SonarSensor* ss, GyroSensor* gs, ColorSensor* cs) {
+Observer::Observer(Motor* lm, Motor* rm, Motor* am, TouchSensor* ts, SonarSensor* ss, GyroSensor* gs, ColorSensor* cs) {
     _debug(syslog(LOG_NOTICE, "%08u, Observer constructor", clock->now()));
     leftMotor   = lm;
     rightMotor  = rm;
+    armMotor  = am;
     touchSensor = ts;
     sonarSensor = ss;
     gyroSensor  = gs;
@@ -158,7 +161,9 @@ void Observer::operate() {
 
     // accumulate distance
     int32_t curAngL = leftMotor->getCount();
+    angLLogger.logging(curAngL);
     int32_t curAngR = rightMotor->getCount();
+    angRLogger.logging(curAngR);
     double deltaDistL = M_PI * TIRE_DIAMETER * (curAngL - prevAngL) / 360.0;
     double deltaDistR = M_PI * TIRE_DIAMETER * (curAngR - prevAngR) / 360.0;
     double deltaDist = (deltaDistL + deltaDistR) / 2.0;
@@ -276,6 +281,9 @@ void Observer::operate() {
         _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): disthist = %s", clock->now(), distLogger.getHistByString()));
         _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): locXhist = %s", clock->now(), locXLogger.getHistByString()));
         _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): locYhist = %s", clock->now(), locYLogger.getHistByString()));
+        _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): angL = %d, angR = %d", clock->now(), prevAngL, prevAngR ));
+        _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): angLhist = %s", clock->now(), angLLogger.getHistByString()));
+	_debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): angRhist = %s", clock->now(), angRLogger.getHistByString()));
         _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): hsv = (%03u, %03u, %03u)", clock->now(), g_hsv.h, g_hsv.s, g_hsv.v));
         _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): rgb = (%03u, %03u, %03u)", clock->now(), g_rgb.r, g_rgb.g, g_rgb.b));
         _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): angle = %d, anglerVelocity = %d", clock->now(), g_angle, g_anglerVelocity));
@@ -496,14 +504,15 @@ void Captain::takeoff() {
     gyroSensor  = new GyroSensor(PORT_4);
     leftMotor   = new Motor(PORT_C);
     rightMotor  = new Motor(PORT_B);
-    tailMotor   = new Motor(PORT_A);
+    tailMotor   = new Motor(PORT_D);
+    armMotor   = new Motor(PORT_A);
     steering    = new Steering(*leftMotor, *rightMotor);
     
     /* LCD画面表示 */
     ev3_lcd_fill_rect(0, 0, EV3_LCD_WIDTH, EV3_LCD_HEIGHT, EV3_LCD_WHITE);
     ev3_lcd_draw_string("EV3way-ET aflac2020", 0, CALIB_FONT_HEIGHT*1);
     
-    observer = new Observer(leftMotor, rightMotor, touchSensor, sonarSensor, gyroSensor, colorSensor);
+    observer = new Observer(leftMotor, rightMotor, armMotor, touchSensor, sonarSensor, gyroSensor, colorSensor);
     observer->freeze(); // Do NOT attempt to collect sensor data until unfreeze() is invoked
     observer->goOnDuty();
     limboDancer = new LimboDancer(leftMotor, rightMotor, tailMotor);
@@ -718,6 +727,7 @@ void Captain::land() {
     delete tailMotor;
     delete rightMotor;
     delete leftMotor;
+    delete armMotor;
     delete gyroSensor;
     delete colorSensor;
     delete sonarSensor;
