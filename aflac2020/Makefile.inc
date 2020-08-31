@@ -4,8 +4,7 @@ APPL_COBJS +=
 
 APPL_CXXOBJS += \
 crew.o \
-SeesawCrimber.o \
-LimboDancer.o \
+BlindRunner.o \
 utility.o
 
 SRCLANG := c++

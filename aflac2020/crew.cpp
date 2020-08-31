@@ -38,16 +38,6 @@ void Radioman::operate() {
             syslog(LOG_NOTICE, "%08u, StartCMD L-mode received", clock->now());
             captain->decide(EVT_cmdStart_L);
             break;
-        case CMD_DANCE_D:
-        case CMD_DANCE_d:
-            syslog(LOG_NOTICE, "%08u, LimboDancer forced by command", clock->now());
-            captain->decide(EVT_cmdDance);
-            break;
-        case CMD_CRIMB_C:
-        case CMD_CRIMB_c:
-            syslog(LOG_NOTICE, "%08u, SeesawCrimber forced by command", clock->now());
-            captain->decide(EVT_cmdCrimb);
-            break;
         case CMD_STOP_S:
         case CMD_STOP_s:
             syslog(LOG_NOTICE, "%08u, stop forced by command", clock->now());
@@ -495,8 +485,7 @@ void Captain::takeoff() {
     observer = new Observer(leftMotor, rightMotor, touchSensor, sonarSensor, gyroSensor, colorSensor);
     observer->freeze(); // Do NOT attempt to collect sensor data until unfreeze() is invoked
     observer->goOnDuty();
-    limboDancer = new LimboDancer(leftMotor, rightMotor, tailMotor);
-    seesawCrimber = new SeesawCrimber(leftMotor, rightMotor, tailMotor);
+    blindRunner = new BlindRunner(leftMotor, rightMotor, tailMotor);
     lineTracer = new LineTracer(leftMotor, rightMotor, tailMotor);
     
     /* 尻尾モーターのリセット */
@@ -699,8 +688,7 @@ void Captain::land() {
     
     delete anchorWatch;
     delete lineTracer;
-    delete seesawCrimber;
-    delete limboDancer;
+    delete blindRunner;
     observer->goOffDuty();
     delete observer;
     

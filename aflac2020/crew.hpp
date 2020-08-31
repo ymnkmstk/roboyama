@@ -79,10 +79,6 @@ extern int16_t g_angle, g_anglerVelocity;
 #define CMD_START_r     'r' // R-mode start command
 #define CMD_START_L     'L' // L-mode start command
 #define CMD_START_l     'l' // L-mode start command
-#define CMD_DANCE_D     'D'
-#define CMD_DANCE_d     'd'
-#define CMD_CRIMB_C     'C'
-#define CMD_CRIMB_c     'c'
 #define CMD_STOP_S      'S'
 #define CMD_STOP_s      's'
 
@@ -264,8 +260,7 @@ public:
     ~LineTracer();
 };
 
-#include "SeesawCrimber.hpp"
-#include "LimboDancer.hpp"
+#include "BlindRunner.hpp"
 
 class Captain {
 private:
@@ -279,8 +274,7 @@ private:
     Steering*       steering;
     AnchorWatch*    anchorWatch;
     LineTracer*     lineTracer;
-    SeesawCrimber*  seesawCrimber;
-    LimboDancer*    limboDancer;
+    BlindRunner*    blindRunner;
 protected:
 public:
     Captain();
