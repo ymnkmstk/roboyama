@@ -16,43 +16,6 @@ int16_t g_grayScale, g_grayScaleBlueless;
 // global variables to gyro sensor output from Observer to  Navigator and its sub-classes
 int16_t g_angle, g_anglerVelocity;
 
-Radioman::Radioman() {
-    _debug(syslog(LOG_NOTICE, "%08u, Radioman constructor", clock->now()));
-    /* Open Bluetooth file */
-    bt = ev3_serial_open_file(EV3_SERIAL_BT);
-    assert(bt != NULL);
-}
-
-void Radioman::operate() {
-    uint8_t c = fgetc(bt); /* 受信 */
-    fputc(c, bt); /* エコーバック */
-    switch(c)
-    {
-        case CMD_START_R:
-        case CMD_START_r:
-            syslog(LOG_NOTICE, "%08u, StartCMD R-mode received", clock->now());
-            captain->decide(EVT_cmdStart_R);
-            break;
-        case CMD_START_L:
-        case CMD_START_l:
-            syslog(LOG_NOTICE, "%08u, StartCMD L-mode received", clock->now());
-            captain->decide(EVT_cmdStart_L);
-            break;
-        case CMD_STOP_S:
-        case CMD_STOP_s:
-            syslog(LOG_NOTICE, "%08u, stop forced by command", clock->now());
-            captain->decide(EVT_cmdStop);
-            break;
-        default:
-            break;
-    }
-}
-
-Radioman::~Radioman() {
-    _debug(syslog(LOG_NOTICE, "%08u, Radioman destructor", clock->now()));
-    fclose(bt);
-}
-
 Observer::Observer(Motor* lm, Motor* rm, TouchSensor* ts, SonarSensor* ss, GyroSensor* gs, ColorSensor* cs) {
     _debug(syslog(LOG_NOTICE, "%08u, Observer constructor", clock->now()));
     leftMotor   = lm;
@@ -483,8 +446,6 @@ void Captain::takeoff() {
     ev3_led_set_color(LED_ORANGE); /* 初期化完了通知 */
 
     state = ST_takingOff;
-
-    act_tsk(RADIO_TASK);
 }
 
 void Captain::decide(uint8_t event) {
@@ -667,8 +628,6 @@ void Captain::triggerLanding() {
 }
 
 void Captain::land() {
-    ter_tsk(RADIO_TASK);
-
     if (activeNavigator != NULL) {
         activeNavigator->goOffDuty();
     }

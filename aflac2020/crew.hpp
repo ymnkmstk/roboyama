@@ -159,15 +159,6 @@ const int MA_CAP = 10;
 
 #define M_2PI    (2.0 * M_PI)
 
-class Radioman {
-private:
-    FILE*           bt;      /* Bluetoothファイルハンドル */
-public:
-    Radioman();
-    void operate(); // method to invoke from the task handler
-    ~Radioman();
-};
-
 class Observer {
 private:
     Motor*          leftMotor;
