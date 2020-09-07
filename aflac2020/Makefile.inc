@@ -4,6 +4,7 @@ APPL_COBJS +=
 
 APPL_CXXOBJS += \
 crew.o \
+Observer.o \
 BlindRunner.o \
 utility.o
 
