@@ -6,7 +6,7 @@
 //
 
 #include "app.h"
-#include "crew.hpp"
+#include "LineTracer.hpp"
 
 LineTracer::LineTracer(Motor* lm, Motor* rm, Motor* tm) {
     _debug(syslog(LOG_NOTICE, "%08u, LineTracer constructor", clock->now()));

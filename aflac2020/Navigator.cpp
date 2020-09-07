@@ -6,7 +6,7 @@
 //
 
 #include "app.h"
-#include "crew.hpp"
+#include "Navigator.hpp"
 
 Navigator::Navigator() {
     _debug(syslog(LOG_NOTICE, "%08u, Navigator default constructor", clock->now()));

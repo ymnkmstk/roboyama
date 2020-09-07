@@ -8,7 +8,8 @@
 #ifndef BlindRunner_hpp
 #define BlindRunner_hpp
 
-#include "crew.hpp"
+#include "aflac_common.hpp"
+#include "LineTracer.hpp"
 
 #define PROP_NAME_LEN	48	// プロパティー名の最大長
 #define NUM_PROPS	13	// プロパティーの個数

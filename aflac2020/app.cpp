@@ -8,7 +8,9 @@
 
 #include "app.h"
 
-#include "crew.hpp"
+#include "aflac_common.hpp"
+#include "Captain.hpp"
+#include "Observer.hpp"
 
 Clock*      clock;
 Captain*    captain;

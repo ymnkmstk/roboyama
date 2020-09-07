@@ -6,7 +6,9 @@
 //
 
 #include "app.h"
-#include "crew.hpp"
+#include "Captain.hpp"
+#include "Observer.hpp"
+#include "LineTracer.hpp"
 
 Captain::Captain() {
     _debug(syslog(LOG_NOTICE, "%08u, Captain default constructor", clock->now()));
