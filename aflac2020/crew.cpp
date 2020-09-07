@@ -232,13 +232,17 @@ void Observer::operate() {
             prevTime = curTime;
             prevGS = g_grayScale;
         }
-        int32_t x = getLocX();
+
         if ( (ma_gs > 150) || (ma_gs < -150) ){
-            syslog(LOG_NOTICE, "gs = %d, MA = %d, gsDiff = %d, timeDiff = %d", g_grayScale, ma_gs, gsDiff, timeDiff);
-            if ( !blue_flag && (ma_gs > 150) && ((x > 4300) || (x < -4300)) ) {
+            //syslog(LOG_NOTICE, "gs = %d, MA = %d, gsDiff = %d, timeDiff = %d", g_grayScale, ma_gs, gsDiff, timeDiff);
+            if ( !blue_flag && ma_gs > 150 && g_rgb.b - g_rgb.r > 60 && g_rgb.b <= 255 && g_rgb.r <= 255 ) {
                 blue_flag = true;
                 syslog(LOG_NOTICE, "%08u, line color changed black to blue", clock->now());
                 captain->decide(EVT_bk2bl);
+            } else if ( blue_flag && ma_gs < -150 && g_rgb.b - g_rgb.r < 40 ) {
+                blue_flag = false;
+                syslog(LOG_NOTICE, "%08u, line color changed blue to black", clock->now());
+                captain->decide(EVT_bl2bk);
             }
         }
 
@@ -248,21 +252,25 @@ void Observer::operate() {
         }
     }
     
-    // display trace message in every PERIOD_TRACE_MSG ms */
-    int32_t d = getDistance();
+    /*
+    int32_t iDeltaD  = (int32_t)(1000.0 * deltaDist );
+    int32_t iDeltaDL = (int32_t)(1000.0 * deltaDistL);
+    int32_t iDeltaDR = (int32_t)(1000.0 * deltaDistR);
+    if (iDeltaDL != 0 && iDeltaDR != 0) {
+        _debug(syslog(LOG_NOTICE, "%08u, %06d, %06d, %06d, %06d", clock->now(), getDistance(), iDeltaD, iDeltaDL, iDeltaDR));
+    }
+    */
+
+    /*
+    // display trace message in every PERIOD_TRACE_MSG ms
     if (++traceCnt * PERIOD_OBS_TSK >= PERIOD_TRACE_MSG) {
-    //if ((++traceCnt * PERIOD_OBS_TSK >= PERIOD_TRACE_MSG) && (d < 11000)) {
         traceCnt = 0;
-        //_debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): distance = %d, azimuth = %d, x = %d, y = %d", clock->now(), getDistance(), getAzimuth(), getLocX(), getLocY()));
-        _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): distance = %d, azimuth = %d, x = %d, y = %d", clock->now(), d, getAzimuth(), getLocX(), getLocY()));
+        _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): distance = %d, azimuth = %d, x = %d, y = %d", clock->now(), getDistance(), getAzimuth(), getLocX(), getLocY()));
         _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): hsv = (%03u, %03u, %03u)", clock->now(), g_hsv.h, g_hsv.s, g_hsv.v));
         _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): rgb = (%03u, %03u, %03u)", clock->now(), g_rgb.r, g_rgb.g, g_rgb.b));
         _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): angle = %d, anglerVelocity = %d", clock->now(), g_angle, g_anglerVelocity));
-    //} else if (d >= 11000) {
-    //    _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): distance = %d, azimuth = %d, x = %d, y = %d", clock->now(), d, getAzimuth(), getLocX(), getLocY()));
-    //    _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): hsv = (%03u, %03u, %03u)", clock->now(), g_hsv.h, g_hsv.s, g_hsv.v));
-    //    _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): rgb = (%03u, %03u, %03u)", clock->now(), g_rgb.r, g_rgb.g, g_rgb.b));
     }
+    */
 }
 
 void Observer::goOffDuty() {
@@ -563,13 +571,15 @@ void Captain::decide(uint8_t event) {
                     //limboDancer->haveControl();
                     break;
                 case EVT_bk2bl:
+                    /*
+                    // stop at the start of blue line
                     observer->freeze();
                     lineTracer->freeze();
-                    //lineTracer->setSpeed(Motor::PWM_MAX);
                     //clock->sleep() seems to be still taking milisec parm
                     clock->sleep(5000); // wait a little
                     lineTracer->unfreeze();
                     observer->unfreeze();
+                    */
                     break;
                 case EVT_cmdStop:
                     state = ST_stopping_R;
@@ -598,13 +608,15 @@ void Captain::decide(uint8_t event) {
                     //seesawCrimber->haveControl();
                     break;
                 case EVT_bk2bl:
+                    /*
+                    // stop at the start of blue line
                     observer->freeze();
                     lineTracer->freeze();
-                    //lineTracer->setSpeed(Motor::PWM_MAX);
                     //clock->sleep() seems to be still taking milisec parm
                     clock->sleep(5000); // wait a little
                     lineTracer->unfreeze();
                     observer->unfreeze();
+                    */
                     break;
                 case EVT_cmdStop:
                     state = ST_stopping_L;

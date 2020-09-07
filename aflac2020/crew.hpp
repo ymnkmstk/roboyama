@@ -70,7 +70,7 @@ extern int16_t g_angle, g_anglerVelocity;
 #define P_CONST           0.46D  // PID constants determined by Ultimate Gain method
 #define I_CONST     0.00000013D
 #define D_CONST          0.075D
-#define SPEED_NORM           50
+#define SPEED_NORM           45
 #define GS_TARGET            45
 
 //#define DEVICE_NAME     "ET0"  /* Bluetooth名 hrp2/target/ev3.h BLUETOOTH_LOCAL_NAMEで設定 */
