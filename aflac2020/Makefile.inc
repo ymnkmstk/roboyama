@@ -3,9 +3,11 @@ mkfile_path := $(dir $(lastword $(MAKEFILE_LIST)))
 APPL_COBJS +=
 
 APPL_CXXOBJS += \
-crew.o \
-SeesawCrimber.o \
-LimboDancer.o \
+StateMachine.o \
+Observer.o \
+Navigator.o \
+LineTracer.o \
+BlindRunner.o \
 utility.o
 
 SRCLANG := c++

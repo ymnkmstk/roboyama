@@ -79,7 +79,7 @@ int16_t PIDcalculator::compute(int16_t sensor, int16_t target) {
     p = kp * diff[1];
     i = ki * integral;
     d = kd * (diff[1] - diff[0]) * 1000.0 / deltaT;
-    ///*
+    /*
     if (++traceCnt * PERIOD_NAV_TSK >= PERIOD_TRACE_MSG) {
         traceCnt = 0;
         char buf[128];
@@ -87,7 +87,7 @@ int16_t PIDcalculator::compute(int16_t sensor, int16_t target) {
         _debug(syslog(LOG_NOTICE, "%08u, PIDcalculator::compute(): sensor = %d, target = %d, d0 = %d, d1 = %d +", 0, sensor, target, diff[0], diff[1]));
         _debug(syslog(LOG_NOTICE, "%08u, PIDcalculator::compute(): sensor = %d, target = %d, %s", 0, sensor, target, buf));
     }
-    //*/
+    */
     return math_limit(p + i + d, minimum, maximum);
 }
 
