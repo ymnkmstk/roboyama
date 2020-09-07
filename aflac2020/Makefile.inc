@@ -3,8 +3,10 @@ mkfile_path := $(dir $(lastword $(MAKEFILE_LIST)))
 APPL_COBJS +=
 
 APPL_CXXOBJS += \
-crew.o \
+Captain.o \
 Observer.o \
+Navigator.o \
+LineTracer.o \
 BlindRunner.o \
 utility.o
 
