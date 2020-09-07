@@ -232,18 +232,6 @@ public:
     virtual ~Navigator();
 };
 
-class AnchorWatch : public Navigator {
-private:
-    
-protected:
-public:
-    AnchorWatch();
-    AnchorWatch(Motor* tm);
-    void haveControl();
-    void operate(); // method to invoke from the cyclic handler
-    ~AnchorWatch();
-};
-
 class LineTracer : public Navigator {
 private:
     int32_t motor_ang_l, motor_ang_r;
@@ -272,7 +260,6 @@ private:
     Motor*          rightMotor;
     Motor*          tailMotor;
     Steering*       steering;
-    AnchorWatch*    anchorWatch;
     LineTracer*     lineTracer;
     BlindRunner*    blindRunner;
 protected:

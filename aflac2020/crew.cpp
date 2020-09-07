@@ -375,23 +375,6 @@ Navigator::~Navigator() {
     _debug(syslog(LOG_NOTICE, "%08u, Navigator destructor", clock->now()));
 }
 
-AnchorWatch::AnchorWatch(Motor* tm) {
-    _debug(syslog(LOG_NOTICE, "%08u, AnchorWatch constructor", clock->now()));
-}
-
-void AnchorWatch::haveControl() {
-    activeNavigator = this;
-    syslog(LOG_NOTICE, "%08u, AnchorWatch has control", clock->now());
-}
-
-void AnchorWatch::operate() {
-    //controlTail(TAIL_ANGLE_STAND_UP,10); /* 完全停止用角度に制御 */
-}
-
-AnchorWatch::~AnchorWatch() {
-    _debug(syslog(LOG_NOTICE, "%08u, AnchorWatch destructor", clock->now()));
-}
-
 LineTracer::LineTracer(Motor* lm, Motor* rm, Motor* tm) {
     _debug(syslog(LOG_NOTICE, "%08u, LineTracer constructor", clock->now()));
     leftMotor   = lm;
@@ -495,16 +478,11 @@ void Captain::takeoff() {
     observer->goOnDuty();
     blindRunner = new BlindRunner(leftMotor, rightMotor, tailMotor);
     lineTracer = new LineTracer(leftMotor, rightMotor, tailMotor);
-    
-    /* 尻尾モーターのリセット */
-    //tailMotor->reset();
+    lineTracer->goOnDuty();
     
     ev3_led_set_color(LED_ORANGE); /* 初期化完了通知 */
 
     state = ST_takingOff;
-    anchorWatch = new AnchorWatch(tailMotor);
-    anchorWatch->goOnDuty();
-    anchorWatch->haveControl();
 
     act_tsk(RADIO_TASK);
 }
@@ -669,7 +647,6 @@ void Captain::decide(uint8_t event) {
                     break;
                 case EVT_dist_reached:
                     state = ST_landing;
-                    anchorWatch->haveControl(); // does robot stand still?
                     triggerLanding();
                     break;
                 default:
@@ -698,7 +675,6 @@ void Captain::land() {
     leftMotor->reset();
     rightMotor->reset();
     
-    delete anchorWatch;
     delete lineTracer;
     delete blindRunner;
     observer->goOffDuty();
