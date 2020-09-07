@@ -7,7 +7,7 @@
 
 #include "app.h"
 #include "Observer.hpp"
-#include "Captain.hpp"
+#include "StateMachine.hpp"
 
 // global variables to pass FIR-filtered color from Observer to Navigator and its sub-classes
 rgb_raw_t g_rgb;
@@ -48,7 +48,7 @@ Observer::Observer(Motor* lm, Motor* rm, TouchSensor* ts, SonarSensor* ss, GyroS
     ma = new MovingAverage<int32_t, MA_CAP>();
 }
 
-void Observer::goOnDuty() {
+void Observer::activate() {
     // register cyclic handler to EV3RT
     sta_cyc(CYC_OBS_TSK);
     //clock->sleep() seems to be still taking milisec parm
@@ -129,7 +129,7 @@ void Observer::operate() {
     if ((notifyDistance != 0.0) && (distance > notifyDistance)) {
         syslog(LOG_NOTICE, "%08u, distance reached", clock->now());
         notifyDistance = 0.0; // event to be sent only once
-        captain->decide(EVT_dist_reached);
+        stateMachine->sendTrigger(EVT_dist_reached);
     }
     
     // monitor touch sensor
@@ -137,11 +137,11 @@ void Observer::operate() {
     if (result && !touch_flag) {
         syslog(LOG_NOTICE, "%08u, TouchSensor flipped on", clock->now());
         touch_flag = true;
-        captain->decide(EVT_touch_On);
+        stateMachine->sendTrigger(EVT_touch_On);
     } else if (!result && touch_flag) {
         syslog(LOG_NOTICE, "%08u, TouchSensor flipped off", clock->now());
         touch_flag = false;
-        captain->decide(EVT_touch_Off);
+        stateMachine->sendTrigger(EVT_touch_Off);
     }
     
     // monitor sonar sensor
@@ -149,11 +149,11 @@ void Observer::operate() {
     if (result && !sonar_flag) {
         syslog(LOG_NOTICE, "%08u, SonarSensor flipped on", clock->now());
         sonar_flag = true;
-        captain->decide(EVT_sonar_On);
+        stateMachine->sendTrigger(EVT_sonar_On);
     } else if (!result && sonar_flag) {
         syslog(LOG_NOTICE, "%08u, SonarSensor flipped off", clock->now());
         sonar_flag = false;
-        captain->decide(EVT_sonar_Off);
+        stateMachine->sendTrigger(EVT_sonar_Off);
     }
     
     // monitor Back Button
@@ -161,11 +161,11 @@ void Observer::operate() {
     if (result && !backButton_flag) {
         syslog(LOG_NOTICE, "%08u, Back button flipped on", clock->now());
         backButton_flag = true;
-        captain->decide(EVT_backButton_On);
+        stateMachine->sendTrigger(EVT_backButton_On);
     } else if (!result && backButton_flag) {
         syslog(LOG_NOTICE, "%08u, Back button flipped off", clock->now());
         backButton_flag = false;
-        captain->decide(EVT_backButton_Off);
+        stateMachine->sendTrigger(EVT_backButton_Off);
     }
 
     if (!frozen) { // these checks are meaningless thus bypassed when frozen
@@ -174,11 +174,11 @@ void Observer::operate() {
         if (result && !lost_flag) {
             syslog(LOG_NOTICE, "%08u, line lost", clock->now());
             lost_flag = true;
-            captain->decide(EVT_line_lost);
+            stateMachine->sendTrigger(EVT_line_lost);
         } else if (!result && lost_flag) {
             syslog(LOG_NOTICE, "%08u, line found", clock->now());
             lost_flag = false;
-            captain->decide(EVT_line_found);
+            stateMachine->sendTrigger(EVT_line_found);
         }
 
         // temporary dirty logic to detect the second black to blue change
@@ -201,17 +201,17 @@ void Observer::operate() {
             if ( !blue_flag && ma_gs > 150 && g_rgb.b - g_rgb.r > 60 && g_rgb.b <= 255 && g_rgb.r <= 255 ) {
                 blue_flag = true;
                 syslog(LOG_NOTICE, "%08u, line color changed black to blue", clock->now());
-                captain->decide(EVT_bk2bl);
+                stateMachine->sendTrigger(EVT_bk2bl);
             } else if ( blue_flag && ma_gs < -150 && g_rgb.b - g_rgb.r < 40 ) {
                 blue_flag = false;
                 syslog(LOG_NOTICE, "%08u, line color changed blue to black", clock->now());
-                captain->decide(EVT_bl2bk);
+                stateMachine->sendTrigger(EVT_bl2bk);
             }
         }
 
         // determine if tilt
         if ( check_tilt() ) {
-            //captain->decide(EVT_cmdStop);
+            //stateMachine->sendTrigger(EVT_cmdStop);
         }
     }
     
@@ -236,7 +236,7 @@ void Observer::operate() {
     */
 }
 
-void Observer::goOffDuty() {
+void Observer::deactivate() {
     // deregister cyclic handler from EV3RT
     stp_cyc(CYC_OBS_TSK);
     //clock->sleep() seems to be still taking milisec parm

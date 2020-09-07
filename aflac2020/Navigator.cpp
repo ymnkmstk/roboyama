@@ -10,10 +10,10 @@
 
 Navigator::Navigator() {
     _debug(syslog(LOG_NOTICE, "%08u, Navigator default constructor", clock->now()));
-    ltPid = new PIDcalculator(P_CONST, I_CONST, D_CONST, PERIOD_NAV_TSK, -16, 16); 
+    ltPid = new PIDcalculator(P_CONST, I_CONST, D_CONST, PERIOD_NAV_TSK, TURN_MIN, TURN_MAX); 
 }
 
-void Navigator::goOnDuty() {
+void Navigator::activate() {
     // register cyclic handler to EV3RT
     sta_cyc(CYC_NAV_TSK);
     //clock->sleep() seems to be still taking milisec parm
@@ -21,7 +21,7 @@ void Navigator::goOnDuty() {
     _debug(syslog(LOG_NOTICE, "%08u, Navigator handler set", clock->now()));
 }
 
-void Navigator::goOffDuty() {
+void Navigator::deactivate() {
     activeNavigator = NULL;
     // deregister cyclic handler from EV3RT
     stp_cyc(CYC_NAV_TSK);

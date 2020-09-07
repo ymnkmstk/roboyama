@@ -62,6 +62,8 @@ using namespace ev3api;
 #define I_CONST     0.00000013D
 #define D_CONST          0.075D
 #define SPEED_NORM           45
+#define TURN_MIN            -16  // minimum value PID calculator returns
+#define TURN_MAX             16  // maximum value PID calculator returns
 #define GS_TARGET            45
 
 #define M_2PI    (2.0 * M_PI)
@@ -76,25 +78,25 @@ using namespace ev3api;
 #define CMD_STOP_s      's'
 
 // machine state
-#define ST_takingOff    0
+#define ST_start    0
 #define ST_tracing_L    1
 #define ST_crimbing     2
 #define ST_tracing_R    3
 #define ST_dancing      4
 #define ST_stopping_L   5
 #define ST_stopping_R   6
-#define ST_landing      7
+#define ST_ending      7
 
 #define ST_NAME_LEN     20  // maximum number of characters for a machine state name
 const char stateName[][ST_NAME_LEN] = {
-    "ST_takingOff",
+    "ST_start",
     "ST_tracing_L",
     "ST_crimbing",
     "ST_tracing_R",
     "ST_dancing",
     "ST_stopping_L",
     "ST_stopping_R",
-    "ST_landing"
+    "ST_ending"
 };
 
 // event

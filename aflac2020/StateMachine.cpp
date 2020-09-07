@@ -1,20 +1,20 @@
 //
-//  Captain.cpp
+//  StateMachine.cpp
 //  aflac2020
 //
 //  Copyright © 2019 Ahiruchan Koubou. All rights reserved.
 //
 
 #include "app.h"
-#include "Captain.hpp"
+#include "StateMachine.hpp"
 #include "Observer.hpp"
 #include "LineTracer.hpp"
 
-Captain::Captain() {
-    _debug(syslog(LOG_NOTICE, "%08u, Captain default constructor", clock->now()));
+StateMachine::StateMachine() {
+    _debug(syslog(LOG_NOTICE, "%08u, StateMachine default constructor", clock->now()));
 }
 
-void Captain::takeoff() {
+void StateMachine::initialize() {
     /* 各オブジェクトを生成・初期化する */
     touchSensor = new TouchSensor(PORT_1);
     sonarSensor = new SonarSensor(PORT_2);
@@ -31,20 +31,20 @@ void Captain::takeoff() {
     
     observer = new Observer(leftMotor, rightMotor, touchSensor, sonarSensor, gyroSensor, colorSensor);
     observer->freeze(); // Do NOT attempt to collect sensor data until unfreeze() is invoked
-    observer->goOnDuty();
+    observer->activate();
     blindRunner = new BlindRunner(leftMotor, rightMotor, tailMotor);
     lineTracer = new LineTracer(leftMotor, rightMotor, tailMotor);
-    lineTracer->goOnDuty();
+    lineTracer->activate();
     
     ev3_led_set_color(LED_ORANGE); /* 初期化完了通知 */
 
-    state = ST_takingOff;
+    state = ST_start;
 }
 
-void Captain::decide(uint8_t event) {
-    syslog(LOG_NOTICE, "%08u, Captain::decide(): event %s received by state %s", clock->now(), eventName[event], stateName[state]);
+void StateMachine::sendTrigger(uint8_t event) {
+    syslog(LOG_NOTICE, "%08u, StateMachine::sendTrigger(): event %s received by state %s", clock->now(), eventName[event], stateName[state]);
     switch (state) {
-        case ST_takingOff:
+        case ST_start:
             switch (event) {
                 case EVT_cmdStart_R:
                 case EVT_cmdStart_L:
@@ -60,7 +60,6 @@ void Captain::decide(uint8_t event) {
                     leftMotor->reset();
                     rightMotor->reset();
                     
-                    //balance_init(); /* 倒立振子API初期化 */
                     observer->reset();
                     
                     /* ジャイロセンサーリセット */
@@ -83,8 +82,8 @@ void Captain::decide(uint8_t event) {
         case ST_tracing_R:
             switch (event) {
                 case EVT_backButton_On:
-                    state = ST_landing;
-                    triggerLanding();
+                    state = ST_ending;
+                    wakeupMain();
                     break;
                 case EVT_sonar_On:
 		    //lineTracer->freeze();
@@ -97,7 +96,6 @@ void Captain::decide(uint8_t event) {
                 case EVT_sonar_Off:
                     //lineTracer->unfreeze();
                     break;
-                case EVT_cmdDance:
                 case EVT_bl2bk:
                     //state = ST_dancing;
                     //limboDancer->haveControl();
@@ -125,8 +123,8 @@ void Captain::decide(uint8_t event) {
         case ST_tracing_L:
             switch (event) {
                 case EVT_backButton_On:
-                    state = ST_landing;
-                    triggerLanding();
+                    state = ST_ending;
+                    wakeupMain();
                     break;
                 case EVT_sonar_On:
                     //lineTracer->freeze();
@@ -134,7 +132,6 @@ void Captain::decide(uint8_t event) {
                 case EVT_sonar_Off:
                     //lineTracer->unfreeze();
                     break;
-                case EVT_cmdCrimb:
                 case EVT_bl2bk:
                     //state = ST_crimbing;
                     //seesawCrimber->haveControl();
@@ -162,8 +159,8 @@ void Captain::decide(uint8_t event) {
         case ST_dancing:
             switch (event) {
                 case EVT_backButton_On:
-                    state = ST_landing;
-                    triggerLanding();
+                    state = ST_ending;
+                    wakeupMain();
                     break;
                 case EVT_bk2bl:
 		    // Don't use "black line to blue line" event.
@@ -180,8 +177,8 @@ void Captain::decide(uint8_t event) {
         case ST_crimbing:
             switch (event) {
                 case EVT_backButton_On:
-                    state = ST_landing;
-                    triggerLanding();
+                    state = ST_ending;
+                    wakeupMain();
                     break;
                 case EVT_bk2bl:
                     state = ST_stopping_L;
@@ -196,40 +193,40 @@ void Captain::decide(uint8_t event) {
         case ST_stopping_L:
             switch (event) {
                 case EVT_backButton_On:
-                    state = ST_landing;
-                    triggerLanding();
+                    state = ST_ending;
+                    wakeupMain();
                     break;
                 case EVT_dist_reached:
-                    state = ST_landing;
-                    triggerLanding();
+                    state = ST_ending;
+                    wakeupMain();
                     break;
                 default:
                     break;
             }
             break;
-        case ST_landing:
+        case ST_ending:
             break;
         default:
             break;
     }
 }
 
-void Captain::triggerLanding() {
-    syslog(LOG_NOTICE, "%08u, Landing...", clock->now());
+void StateMachine::wakeupMain() {
+    syslog(LOG_NOTICE, "%08u, Ending...", clock->now());
     ER ercd = wup_tsk(MAIN_TASK); // wake up the main task
     assert(ercd == E_OK);
 }
 
-void Captain::land() {
+void StateMachine::exit() {
     if (activeNavigator != NULL) {
-        activeNavigator->goOffDuty();
+        activeNavigator->deactivate();
     }
     leftMotor->reset();
     rightMotor->reset();
     
     delete lineTracer;
     delete blindRunner;
-    observer->goOffDuty();
+    observer->deactivate();
     delete observer;
     
     delete tailMotor;
@@ -241,6 +238,6 @@ void Captain::land() {
     delete touchSensor;
 }
 
-Captain::~Captain() {
-    _debug(syslog(LOG_NOTICE, "%08u, Captain destructor", clock->now()));
+StateMachine::~StateMachine() {
+    _debug(syslog(LOG_NOTICE, "%08u, StateMachine destructor", clock->now()));
 }

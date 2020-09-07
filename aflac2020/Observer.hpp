@@ -51,7 +51,7 @@ protected:
 public:
     Observer();
     Observer(Motor* lm, Motor* rm, TouchSensor* ts, SonarSensor* ss, GyroSensor* gs, ColorSensor* cs);
-    void goOnDuty();
+    void activate();
     void reset();
     void notifyOfDistance(int32_t delta);
     int32_t getDistance();
@@ -59,7 +59,7 @@ public:
     int32_t getLocX();
     int32_t getLocY();
     void operate(); // method to invoke from the cyclic handler
-    void goOffDuty();
+    void deactivate();
     void freeze();
     void unfreeze();
     ~Observer();

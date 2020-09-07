@@ -1,12 +1,12 @@
 //
-//  Captain.hpp
+//  StateMachine.hpp
 //  aflac2020
 //
 //  Copyright © 2020 Ahiruchan Koubou. All rights reserved.
 //
 
-#ifndef Captain_hpp
-#define Captain_hpp
+#ifndef StateMachine_hpp
+#define StateMachine_hpp
 
 #include "aflac_common.hpp"
 #include "BlindRunner.hpp"
@@ -16,7 +16,7 @@
 #define CALIB_FONT_WIDTH (6/*TODO: magic number*/)
 #define CALIB_FONT_HEIGHT (8/*TODO: magic number*/)
 
-class Captain {
+class StateMachine {
 private:
     TouchSensor*    touchSensor;
     SonarSensor*    sonarSensor;
@@ -30,14 +30,14 @@ private:
     BlindRunner*    blindRunner;
 protected:
 public:
-    Captain();
-    void takeoff();
-    void decide(uint8_t event);
-    void triggerLanding();
-    void land();
-    ~Captain();
+    StateMachine();
+    void initialize();
+    void sendTrigger(uint8_t event);
+    void wakeupMain();
+    void exit();
+    ~StateMachine();
 };
 
-extern Captain* captain;
+extern StateMachine* stateMachine;
 
-#endif /* Captain_hpp */
+#endif /* StateMachine_hpp */

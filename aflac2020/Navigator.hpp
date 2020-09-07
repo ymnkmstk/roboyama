@@ -23,10 +23,10 @@ protected:
     PIDcalculator*  ltPid;
 public:
     Navigator();
-    void goOnDuty();
+    void activate();
     virtual void haveControl() = 0;
     virtual void operate() = 0;
-    void goOffDuty();
+    void deactivate();
     virtual ~Navigator();
 };
 

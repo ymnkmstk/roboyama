@@ -8,15 +8,15 @@
 
 #include "app.h"
 
-#include "aflac_common.hpp"
-#include "Captain.hpp"
 #include "Observer.hpp"
+#include "Navigator.hpp"
+#include "StateMachine.hpp"
 
-Clock*      clock;
-Captain*    captain;
-Observer*   observer;
-Navigator*  activeNavigator = NULL;
-uint8_t     state = ST_takingOff;
+Clock*          clock;
+StateMachine*   stateMachine;
+Observer*       observer;
+Navigator*      activeNavigator = NULL;
+uint8_t         state = ST_start;
 
 // a cyclic handler to activate a task
 void task_activator(intptr_t tskid) {
@@ -41,17 +41,17 @@ void navigator_task(intptr_t unused) {
 
 void main_task(intptr_t unused) {
     clock    = new Clock;
-    captain  = new Captain;
+    stateMachine  = new StateMachine;
 
-    captain->takeoff();
+    stateMachine->initialize();
     
     // sleep until being waken up
     ER ercd = slp_tsk();
     assert(ercd == E_OK);
 
-    captain->land();
+    stateMachine->exit();
 
-    delete captain;
+    delete stateMachine;
     delete clock;
     ext_tsk();
 }
