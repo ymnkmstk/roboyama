@@ -22,10 +22,10 @@
  */
 #if defined(MAKE_RIGHT)
     static const int _LEFT = 0;
-    #define _EDGE -1
+    static const int _EDGE = -1;
 #else
     static const int _LEFT = 1;
-    #define _EDGE 1
+    static const int _EDGE = 1;
 #endif
 
 //#include <cinttypes>
@@ -78,25 +78,17 @@ using namespace ev3api;
 #define CMD_STOP_s      's'
 
 // machine state
-#define ST_start    0
-#define ST_tracing_L    1
-#define ST_crimbing     2
-#define ST_tracing_R    3
-#define ST_dancing      4
-#define ST_stopping_L   5
-#define ST_stopping_R   6
-#define ST_ending      7
+#define ST_start        0
+#define ST_tracing      1
+#define ST_stopping     2
+#define ST_end          3
 
 #define ST_NAME_LEN     20  // maximum number of characters for a machine state name
 const char stateName[][ST_NAME_LEN] = {
     "ST_start",
-    "ST_tracing_L",
-    "ST_crimbing",
-    "ST_tracing_R",
-    "ST_dancing",
-    "ST_stopping_L",
-    "ST_stopping_R",
-    "ST_ending"
+    "ST_tracing",
+    "ST_stopping",
+    "ST_end"
 };
 
 // event
@@ -110,13 +102,11 @@ const char stateName[][ST_NAME_LEN] = {
 #define EVT_backButton_Off  7
 #define EVT_bk2bl           8
 #define EVT_bl2bk           9
-#define EVT_cmdDance        10
-#define EVT_cmdCrimb        11
-#define EVT_cmdStop         12
-#define EVT_line_lost       13
-#define EVT_line_found      14
-#define EVT_dist_reached    15
-#define EVT_tilt            16
+#define EVT_cmdStop         10
+#define EVT_line_lost       11
+#define EVT_line_found      12
+#define EVT_dist_reached    13
+#define EVT_tilt            14
 
 #define EVT_NAME_LEN        20  // maximum number of characters for an event name
 const char eventName[][EVT_NAME_LEN] = {
@@ -130,8 +120,6 @@ const char eventName[][EVT_NAME_LEN] = {
     "EVT_backButton_Off",
     "EVT_bk2bl",
     "EVT_bl2bk",
-    "EVT_cmdDance",
-    "EVT_cmdCrimb",
     "EVT_cmdStop",
     "EVT_line_lost",
     "EVT_line_found",

@@ -49,11 +49,7 @@ void StateMachine::sendTrigger(uint8_t event) {
                 case EVT_cmdStart_R:
                 case EVT_cmdStart_L:
                 case EVT_touch_On:
-                    if (event == EVT_cmdStart_L || (event == EVT_touch_On && _LEFT)) {
-                        state = ST_tracing_L;
-                    } else {  // event == EVT_cmdStart_R || (event == EVT_touch_On && !_LEFT)
-                        state = ST_tracing_R;
-                    }
+                    state = ST_tracing;
                     syslog(LOG_NOTICE, "%08u, Departing...", clock->now());
                     
                     /* 走行モーターエンコーダーリセット */
@@ -79,19 +75,13 @@ void StateMachine::sendTrigger(uint8_t event) {
                     break;
             }
             break;
-        case ST_tracing_R:
+        case ST_tracing:
             switch (event) {
                 case EVT_backButton_On:
-                    state = ST_ending;
+                    state = ST_end;
                     wakeupMain();
                     break;
                 case EVT_sonar_On:
-		    //lineTracer->freeze();
-		    // During line trancing,
-		    // if sonar is on (limbo sign is near by matchine),
-		    // limbo dance starts.
-                    //state = ST_dancing;
-                    //limboDancer->haveControl();
                     break;
                 case EVT_sonar_Off:
                     //lineTracer->unfreeze();
@@ -112,7 +102,7 @@ void StateMachine::sendTrigger(uint8_t event) {
                     */
                     break;
                 case EVT_cmdStop:
-                    state = ST_stopping_R;
+                    state = ST_stopping;
                     observer->notifyOfDistance(FINAL_APPROACH_LEN);
                     lineTracer->haveControl();
                     break;
@@ -120,91 +110,18 @@ void StateMachine::sendTrigger(uint8_t event) {
                     break;
             }
             break;
-        case ST_tracing_L:
+        case ST_stopping:
             switch (event) {
                 case EVT_backButton_On:
-                    state = ST_ending;
-                    wakeupMain();
-                    break;
-                case EVT_sonar_On:
-                    //lineTracer->freeze();
-                    break;
-                case EVT_sonar_Off:
-                    //lineTracer->unfreeze();
-                    break;
-                case EVT_bl2bk:
-                    //state = ST_crimbing;
-                    //seesawCrimber->haveControl();
-                    break;
-                case EVT_bk2bl:
-                    /*
-                    // stop at the start of blue line
-                    observer->freeze();
-                    lineTracer->freeze();
-                    //clock->sleep() seems to be still taking milisec parm
-                    clock->sleep(5000); // wait a little
-                    lineTracer->unfreeze();
-                    observer->unfreeze();
-                    */
-                    break;
-                case EVT_cmdStop:
-                    state = ST_stopping_L;
-                    observer->notifyOfDistance(FINAL_APPROACH_LEN);
-                    lineTracer->haveControl();
-                    break;
-                default:
-                    break;
-            }
-            break;
-        case ST_dancing:
-            switch (event) {
-                case EVT_backButton_On:
-                    state = ST_ending;
-                    wakeupMain();
-                    break;
-                case EVT_bk2bl:
-		    // Don't use "black line to blue line" event.
-  		    /*
-                    state = ST_stopping_R;
-                    observer->notifyOfDistance(FINAL_APPROACH_LEN);
-                    lineTracer->haveControl();
-		    */
-                    break;
-                default:
-                    break;
-            }
-            break;
-        case ST_crimbing:
-            switch (event) {
-                case EVT_backButton_On:
-                    state = ST_ending;
-                    wakeupMain();
-                    break;
-                case EVT_bk2bl:
-                    state = ST_stopping_L;
-                    observer->notifyOfDistance(FINAL_APPROACH_LEN);
-                    lineTracer->haveControl();
-                    break;
-                default:
-                    break;
-            }
-            break;
-        case ST_stopping_R:
-        case ST_stopping_L:
-            switch (event) {
-                case EVT_backButton_On:
-                    state = ST_ending;
-                    wakeupMain();
-                    break;
                 case EVT_dist_reached:
-                    state = ST_ending;
+                    state = ST_end;
                     wakeupMain();
                     break;
                 default:
                     break;
             }
             break;
-        case ST_ending:
+        case ST_end:
             break;
         default:
             break;

@@ -7,6 +7,7 @@
 
 #include "app.h"
 #include "LineTracer.hpp"
+#include "Observer.hpp"
 
 LineTracer::LineTracer(Motor* lm, Motor* rm, Motor* tm) {
     _debug(syslog(LOG_NOTICE, "%08u, LineTracer constructor", clock->now()));
@@ -23,8 +24,6 @@ void LineTracer::haveControl() {
 }
 
 void LineTracer::operate() {
-    //controlTail(TAIL_ANGLE_DRIVE,10); /* バランス走行用角度に制御 */
-    
     if (frozen) {
         forward = turn = 0; /* 障害物を検知したら停止 */
     } else {
@@ -46,12 +45,8 @@ void LineTracer::operate() {
         int16_t sensor = g_grayScaleBlueless;
         int16_t target = GS_TARGET;
 
-        if (state == ST_tracing_L || state == ST_stopping_L || state == ST_crimbing) {
-            turn = ltPid->compute(sensor, target);
-        } else {
-            // state == ST_tracing_R || state == ST_stopping_R || state == ST_dancing
-            turn = (-1) * ltPid->compute(sensor, target);
-        }
+        turn = _EDGE * ltPid->compute(sensor, target);
+        //turn = ltPid->compute(sensor, target);
     }
 
     /* 左右モータでロボットのステアリング操作を行う */
