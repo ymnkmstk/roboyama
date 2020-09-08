@@ -80,13 +80,15 @@ using namespace ev3api;
 // machine state
 #define ST_start        0
 #define ST_tracing      1
-#define ST_stopping     2
-#define ST_end          3
+#define ST_blind        2
+#define ST_stopping     3
+#define ST_end          4
 
 #define ST_NAME_LEN     20  // maximum number of characters for a machine state name
 const char stateName[][ST_NAME_LEN] = {
     "ST_start",
     "ST_tracing",
+    "ST_blind",
     "ST_stopping",
     "ST_end"
 };

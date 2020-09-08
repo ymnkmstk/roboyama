@@ -70,6 +70,7 @@ void StateMachine::sendTrigger(uint8_t event) {
                     lineTracer->unfreeze();
                     observer->unfreeze();
                     syslog(LOG_NOTICE, "%08u, Departed", clock->now());
+                    observer->notifyOfDistance(700); // switch to ST_Blind after 700
                    break;
                 default:
                     break;
@@ -82,14 +83,13 @@ void StateMachine::sendTrigger(uint8_t event) {
                     wakeupMain();
                     break;
                 case EVT_sonar_On:
-                    break;
                 case EVT_sonar_Off:
-                    //lineTracer->unfreeze();
+                    break;
+                case EVT_dist_reached:
+                    state = ST_blind;
+                    blindRunner->haveControl();
                     break;
                 case EVT_bl2bk:
-                    //state = ST_dancing;
-                    //limboDancer->haveControl();
-                    break;
                 case EVT_bk2bl:
                     /*
                     // stop at the start of blue line
