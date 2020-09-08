@@ -36,6 +36,8 @@ void BlindRunner::haveControl() {
 }
 
 void BlindRunner::operate() {
+	LineTracer::operate();
+	/*
 	// 開始ログ出力
 	if (++s_trace_counter * PERIOD_NAV_TSK >= PERIOD_TRACE_MSG ) {
 		s_trace_counter = 0;
@@ -47,6 +49,7 @@ void BlindRunner::operate() {
 		s_trace_counter = 0;
 		_debug(syslog(LOG_NOTICE, "%08u, ■■■BlindRunner::operate():終了", clock->now()));
 	}
+	*/
 }
 
 int BlindRunner::readLine( FILE* file, char* dst, size_t len ){
