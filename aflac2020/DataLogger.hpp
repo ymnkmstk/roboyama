@@ -17,6 +17,7 @@ private:
 public:
     DataLogger( int32_t offs );
     void logging( int32_t value );
+    int getCount();
     int32_t lastValue();
     char* getHistByString();
 };

@@ -27,8 +27,12 @@ while ( <ifd> ) {
     findCalc("angL","angLhist",10,\@angLval);
     findCalc("angR","angRhist",10,\@angRval);
     if ( /hsv =/ ) {
-	if ( $#distval != $#locXval || $#locXval != $#locYval || $#locYval != $#angLval || $#angLval != $#angRval ) {
-	    die "unmatch numbers $#distval, $#locXval, $#locYval, $#angLval, $#angRval";
+	my @vals = ($#distval,$#locXval,$#locYval,$#angLval,$#angRval); # $#colRval, $#colGval, $#colBval,
+	my $i;
+	for ( $i = 1; $i <= $#vals; ++$i ) {
+	    if ( $vals[$i-1] != $vals[$i] ) {
+		die "unmatch numbers $#distval,$#locXval,$#locYval,$#angLval,$#angRval";
+	    }
 	}
 	my $i;
 	for ( $i = 0; $i <= $#distval; ++$i ) {
