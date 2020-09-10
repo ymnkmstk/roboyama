@@ -79,11 +79,9 @@ void StateMachine::sendTrigger(uint8_t event) {
         case ST_tracing:
             switch (event) {
                 case EVT_backButton_On:
+                case EVT_tilt:
                     state = ST_end;
                     wakeupMain();
-                    break;
-                case EVT_sonar_On:
-                case EVT_sonar_Off:
                     break;
                 case EVT_dist_reached:
                     state = ST_blind;
@@ -101,10 +99,23 @@ void StateMachine::sendTrigger(uint8_t event) {
                     observer->unfreeze();
                     */
                     break;
+                case EVT_sonar_On:
+                case EVT_sonar_Off:
+                    break;
                 case EVT_cmdStop:
                     state = ST_stopping;
                     observer->notifyOfDistance(FINAL_APPROACH_LEN);
                     lineTracer->haveControl();
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case ST_blind:
+            switch (event) {
+                case EVT_tilt:
+                    state = ST_end;
+                    wakeupMain();
                     break;
                 default:
                     break;
@@ -120,8 +131,6 @@ void StateMachine::sendTrigger(uint8_t event) {
                 default:
                     break;
             }
-            break;
-        case ST_end:
             break;
         default:
             break;

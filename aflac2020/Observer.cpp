@@ -24,12 +24,11 @@ Observer::Observer(Motor* lm, Motor* rm, TouchSensor* ts, SonarSensor* ss, GyroS
     sonarSensor = ss;
     gyroSensor  = gs;
     colorSensor = cs;
-    distance = 0.0;
-    azimuth = 0.0;
-    locX = 0.0;
-    locY = 0.0;
-    prevAngL = 0;
-    prevAngR = 0;
+
+    distance = azimuth = locX = locY = 0.0;
+    prevAngL = prevAngR = 0;
+    integD = integDL = integDR = 0.0; // temp
+
     notifyDistance = 0;
     traceCnt = 0;
     prevGS = INT16_MAX;
@@ -38,9 +37,6 @@ Observer::Observer(Motor* lm, Motor* rm, TouchSensor* ts, SonarSensor* ss, GyroS
     backButton_flag = false;
     lost_flag = false;
     blue_flag = false;
-    //ot_r = new OutlierTester(OLT_SKIP_PERIOD/PERIOD_OBS_TSK, OLT_INIT_PERIOD/PERIOD_OBS_TSK);
-    //ot_g = new OutlierTester(OLT_SKIP_PERIOD/PERIOD_OBS_TSK, OLT_INIT_PERIOD/PERIOD_OBS_TSK);
-    //ot_b = new OutlierTester(OLT_SKIP_PERIOD/PERIOD_OBS_TSK, OLT_INIT_PERIOD/PERIOD_OBS_TSK);
 
     fir_r = new FIR_Transposed<FIR_ORDER>(hn);
     fir_g = new FIR_Transposed<FIR_ORDER>(hn);
@@ -57,12 +53,10 @@ void Observer::activate() {
 }
 
 void Observer::reset() {
-    distance = 0.0;
-    azimuth = 0.0;
-    locX = 0.0;
-    locY = 0.0;
+    distance = azimuth = locX = locY = 0.0;
     prevAngL = leftMotor->getCount();
     prevAngR = rightMotor->getCount();
+    integD = integDL = integDR = 0.0; // temp
 }
 
 void Observer::notifyOfDistance(int32_t delta) {
@@ -211,29 +205,33 @@ void Observer::operate() {
 
         // determine if tilt
         if ( check_tilt() ) {
-            //stateMachine->sendTrigger(EVT_cmdStop);
+            stateMachine->sendTrigger(EVT_tilt);
         }
     }
     
-    /*
-    int32_t iDeltaD  = (int32_t)(1000.0 * deltaDist );
-    int32_t iDeltaDL = (int32_t)(1000.0 * deltaDistL);
-    int32_t iDeltaDR = (int32_t)(1000.0 * deltaDistR);
-    if (iDeltaDL != 0 && iDeltaDR != 0) {
-        _debug(syslog(LOG_NOTICE, "%08u, %06d, %06d, %06d, %06d", clock->now(), getDistance(), iDeltaD, iDeltaDL, iDeltaDR));
-    }
-    */
-
-    /*
+    integD  += deltaDist;  // temp
+    integDL += deltaDistL; // temp
+    integDR += deltaDistR; // temp
     // display trace message in every PERIOD_TRACE_MSG ms
     if (++traceCnt * PERIOD_OBS_TSK >= PERIOD_TRACE_MSG) {
         traceCnt = 0;
+        /*
+        // temp from here
+        int32_t iD  = (int32_t)integD;
+        int32_t iDL = (int32_t)integDL;
+        int32_t iDR = (int32_t)integDR;
+        _debug(syslog(LOG_NOTICE, "%08u, %06d, %06d, %06d, %06d", clock->now(), getDistance(), iD, iDL, iDR));
+        integD = integDL = integDR = 0.0;
+        // temp to here
+        */
+        /*
         _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): distance = %d, azimuth = %d, x = %d, y = %d", clock->now(), getDistance(), getAzimuth(), getLocX(), getLocY()));
         _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): hsv = (%03u, %03u, %03u)", clock->now(), g_hsv.h, g_hsv.s, g_hsv.v));
         _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): rgb = (%03u, %03u, %03u)", clock->now(), g_rgb.r, g_rgb.g, g_rgb.b));
         _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): angle = %d, anglerVelocity = %d", clock->now(), g_angle, g_anglerVelocity));
+        */
+        _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): sensor = %d, target = %d", clock->now(), g_grayScale, GS_TARGET));
     }
-    */
 }
 
 void Observer::deactivate() {

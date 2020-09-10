@@ -7,49 +7,61 @@
 
 #include "app.h"
 #include "BlindRunner.hpp"
+#include "Observer.hpp"
 #include <string.h>
 #include <stdlib.h>
 
 BlindRunner::BlindRunner(Motor* lm, Motor* rm, Motor* tm) : LineTracer(lm, rm, tm) {
 #if defined(MAKE_SIM)
     _debug(syslog(LOG_NOTICE, "%08lu, BlindRunner attempts to read profile in simulator environment", clock->now()));
-	readPropFile("/usr/local/etc/wgetrc");
+	readPropFile("BlindRunner_prop.txt");
 #else
 	readPropFile("/ev3rt/res/BlindRunner_prop.txt");
 #endif
-	leftMotor = lm;
+	leftMotor  = lm;
 	rightMotor = rm;
-	tailMotor = tm;
-	
+	tailMotor  = tm;
 	s_trace_counter = 0;
-
     _debug(syslog(LOG_NOTICE, "%08lu, BlindRunner constructor", clock->now()));
 }
 
 void BlindRunner::haveControl() {
     activeNavigator = this;
-
     // private変数の初期化
-
+	courseMapSize = sizeof(courseMap) / sizeof(*courseMap);
+	currentSection = 0;
+	forward = speed;
+	turn = 0;
     // ログ出力
     syslog(LOG_NOTICE, "%08lu, BlindRunner has control", clock->now());
+	syslog(LOG_NOTICE, "%08lu, section %s entered", clock->now(), courseMap[currentSection].id);
+	ev3_led_set_color(LED_GREEN);
 }
 
 void BlindRunner::operate() {
-	LineTracer::operate();
-	/*
-	// 開始ログ出力
-	if (++s_trace_counter * PERIOD_NAV_TSK >= PERIOD_TRACE_MSG ) {
-		s_trace_counter = 0;
-		_debug(syslog(LOG_NOTICE, "%08u, ■■■BlindRunner::operate():開始", clock->now()));
+	int32_t d = observer->getDistance();
+	if (currentSection < courseMapSize && d >= courseMap[currentSection].sectionEnd) {
+		currentSection++;
+		syslog(LOG_NOTICE, "%08lu, section %s entered", clock->now(), courseMap[currentSection].id);
+	} else if (currentSection == courseMapSize && d >= courseMap[currentSection].sectionEnd) {
+		if (++s_trace_counter * PERIOD_NAV_TSK >= PERIOD_TRACE_MSG ) {
+			s_trace_counter = 0;
+			_debug(syslog(LOG_NOTICE, "%08u, BlindRunner course map exhausted", clock->now()));
+		}
 	}
+	if (courseMap[currentSection].id[0] == 's') {
+		forward = speed;
+		LineTracer::operate();
+	} else {
+		forward = SPEED_BLIND;
+		turn = _EDGE * forward * courseMap[currentSection].curvature / 2;
+		/* 左右モータでロボットのステアリング操作を行う */
+    	pwm_L = forward - turn;
+    	pwm_R = forward + turn;
 
-	// 終了ログ出力
-	if (++s_trace_counter * PERIOD_NAV_TSK >= PERIOD_TRACE_MSG ) {
-		s_trace_counter = 0;
-		_debug(syslog(LOG_NOTICE, "%08u, ■■■BlindRunner::operate():終了", clock->now()));
+    	leftMotor->setPWM(pwm_L);
+    	rightMotor->setPWM(pwm_R);
 	}
-	*/
 }
 
 int BlindRunner::readLine( FILE* file, char* dst, size_t len ){

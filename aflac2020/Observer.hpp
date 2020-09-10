@@ -9,6 +9,7 @@
 #define Observer_hpp
 
 #include "aflac_common.hpp"
+#include "utility.hpp"
 
 #define OLT_SKIP_PERIOD    1000 * 1000 // period to skip outlier test in miliseconds
 #define OLT_INIT_PERIOD    3000 * 1000 // period before starting outlier test in miliseconds
@@ -30,6 +31,7 @@ private:
     GyroSensor*     gyroSensor;
     ColorSensor*    colorSensor;
     double distance, azimuth, locX, locY;
+    double integD, integDL, integDR; // temp
     int16_t traceCnt, prevGS;
     int32_t prevAngL, prevAngR, notifyDistance, gsDiff, timeDiff;
     uint64_t curTime, prevTime;
