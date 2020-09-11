@@ -54,12 +54,12 @@ using namespace ev3api;
 
 #define TIRE_DIAMETER    100.0F  // diameter of tire in milimater
 #define WHEEL_TREAD      150.0F  // distance between the right and left wheels
-//#define P_CONST            0.4D  // PID constants determined by Ultimate Gain method
-//#define I_CONST            0.0D
-//#define D_CONST            0.0D
-#define P_CONST           0.46D  // PID constants determined by Ultimate Gain method
-#define I_CONST     0.00000013D
-#define D_CONST          0.075D
+#define P_CONST            0.4D  // PID constants determined by Ultimate Gain method
+#define I_CONST            0.0D
+#define D_CONST            0.0D
+//#define P_CONST           0.46D  // PID constants determined by Ultimate Gain method
+//#define I_CONST     0.00000013D
+//#define D_CONST          0.075D
 #define SPEED_NORM           50
 #define SPEED_BLIND          75
 #define TURN_MIN            -16  // minimum value PID calculator returns
