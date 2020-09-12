@@ -70,7 +70,7 @@ void StateMachine::sendTrigger(uint8_t event) {
                     lineTracer->unfreeze();
                     observer->unfreeze();
                     syslog(LOG_NOTICE, "%08u, Departed", clock->now());
-                    observer->notifyOfDistance(700); // switch to ST_Blind after 700
+                    observer->notifyOfDistance(600); // switch to ST_Blind after 600
                     break;
                 default:
                     break;
@@ -109,6 +109,7 @@ void StateMachine::sendTrigger(uint8_t event) {
                     lineTracer->haveControl();
                     break;
                 case EVT_tilt:
+                case EVT_cmdStop:
                     state = ST_end;
                     wakeupMain();
                     break;

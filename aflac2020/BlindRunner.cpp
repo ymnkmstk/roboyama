@@ -8,6 +8,7 @@
 #include "app.h"
 #include "BlindRunner.hpp"
 #include "Observer.hpp"
+#include "StateMachine.hpp"
 #include <string.h>
 #include <stdlib.h>
 
@@ -32,6 +33,7 @@ void BlindRunner::haveControl() {
 	currentSection = 0;
 	forward = speed;
 	turn = 0;
+	stopping = false;
     // ログ出力
     syslog(LOG_NOTICE, "%08lu, BlindRunner has control", clock->now());
 	syslog(LOG_NOTICE, "%08lu, section %s entered", clock->now(), courseMap[currentSection].id);
@@ -40,21 +42,32 @@ void BlindRunner::haveControl() {
 
 void BlindRunner::operate() {
 	int32_t d = observer->getDistance();
-	if (currentSection < courseMapSize && d >= courseMap[currentSection].sectionEnd) {
+	if (currentSection < courseMapSize - 1 && d >= courseMap[currentSection].sectionEnd) {
 		currentSection++;
 		syslog(LOG_NOTICE, "%08lu, section %s entered", clock->now(), courseMap[currentSection].id);
-	} else if (currentSection == courseMapSize && d >= courseMap[currentSection].sectionEnd) {
-		if (++s_trace_counter * PERIOD_NAV_TSK >= PERIOD_TRACE_MSG ) {
-			s_trace_counter = 0;
+	} else if (currentSection == courseMapSize  - 1 && d >= courseMap[currentSection].sectionEnd) {
+		if (!stopping) {
+			stopping = true;
 			_debug(syslog(LOG_NOTICE, "%08lu, BlindRunner course map exhausted", clock->now()));
-			observer->notifyOfDistance(FINAL_APPROACH_LEN);
+			stateMachine->sendTrigger(EVT_cmdStop);
 		}
 	}
+
 	if (courseMap[currentSection].id[0] == 'L') {
 		forward = speed;
 		LineTracer::operate();
 	} else {
-		forward = SPEED_BLIND;
+		if (courseMap[currentSection].id[0] == 'B') {
+			forward = SPEED_BLIND;
+		} else if (courseMap[currentSection].id[0] == 'N') {
+			forward = SPEED_NORM - 10;
+			if (g_grayScale <= GS_LOST) { // line found
+				observer->notifyOfDistance(0);  // give control back to LineTracer
+			}
+		} else {
+			_debug(syslog(LOG_NOTICE, "%08lu, illegal course map id", clock->now()));
+			stateMachine->sendTrigger(EVT_cmdStop);				
+		}
 		turn = _EDGE * forward * courseMap[currentSection].curvature / 2;
 		/* 左右モータでロボットのステアリング操作を行う */
     	pwm_L = forward - turn;

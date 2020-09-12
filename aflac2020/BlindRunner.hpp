@@ -20,27 +20,31 @@ struct courseSection {
 	double  curvature;
 };
 
-// section id starts with L uses LineTracer
-// while   id starts with B uses BlindRunner logic
+// section id starts with L for LineTracer deligaton
+//                   with B for SPEED_BLIND
+//                   with N for SPEED_NORM 
 // Note:
-//  curve +625, 0.45 makes right angle 
+//  curve +625, 0.45 makes right angle
+//        +650, 0.40
+//        +795, 0.30
 const struct courseSection courseMap[] = {
-	{"Lst00",  755, 0.0},
-	{"Bcv01", 1270, 0.533},
-	{"Bcv01", 1825, 0.5335},
-	{"Lst02", 2175, 0.0},
-	{"Bcv03", 3360,-0.4795},
-	{"Lst04", 3903, 0.0},
- 	{"Bcv05", 4528,-0.45},
-	{"Lst06", 5050, 0.0},
-	{"Bcv07", 5675, 0.45},
-	{"Bst08", 5960, 0.0},
-	{"Bcv09", 6575, 0.45},
-	{"Lst10", 7082, 0.0},
-	{"Bcv11", 7707, 0.45},
-	{"Lst12",10160, 0.0},
-	{"Lcv13",10590,-0.70},
-	{"Lst14",11660, 0.0}
+	{"Bst00",  755, 0.0},
+	{"Bcv01", 1270, 0.5334},
+	{"Bcv01", 1821, 0.5333},
+	{"Bst02", 2175, 0.0},
+	{"Bcv03", 3361,-0.4793},
+	{"Bst04", 3902, 0.0},
+  	{"Bcv05", 4527,-0.45},
+	{"Bst06", 5050, 0.0},
+	{"Bcv07", 5676, 0.45},
+	{"Bst08", 5951, 0.0},
+	{"Bcv09", 6567, 0.45},
+	{"Bst10", 6905, 0.0},
+	{"Bcv11", 7700, 0.3},
+	{"Bst12", 9105, 0.0},
+	{"Bcv13", 9898,-0.3},
+	{"Bst14",10780, 0.0},
+	{"Ncv15",11600,-0.24}
 }; // Note: size of this array is given by sizeof(courseMap)/sizeof(*courseMap)
 
 class BlindRunner : public LineTracer {
@@ -50,6 +54,7 @@ private:
     Motor*  rightMotor;
     Motor*	tailMotor;
 	int		courseMapSize, currentSection;
+	bool	stopping;
 
 	struct property{
 		char name[PROP_NAME_LEN];

@@ -230,7 +230,7 @@ void Observer::operate() {
         _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): rgb = (%03u, %03u, %03u)", clock->now(), g_rgb.r, g_rgb.g, g_rgb.b));
         _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): angle = %d, anglerVelocity = %d", clock->now(), g_angle, g_anglerVelocity));
         */
-        _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): sensor = %d, target = %d", clock->now(), g_grayScale, GS_TARGET));
+        _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): sensor = %d, target = %d, distance = %d", clock->now(), g_grayScale, GS_TARGET, getDistance()));
     }
 }
 
