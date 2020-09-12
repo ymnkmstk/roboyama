@@ -15,27 +15,33 @@
 #define NUM_PROPS	13	// プロパティーの個数
 
 struct courseSection {
-	char	id[5];
+	char	id[6];
 	int32_t sectionEnd;
 	double  curvature;
 };
 
+// section id starts with L uses LineTracer
+// while   id starts with B uses BlindRunner logic
+// Note:
+//  curve +625, 0.45 makes right angle 
 const struct courseSection courseMap[] = {
-	{"st00",  855, 0.0},
-	{"cv01", 1910, 0.5333},
-	{"st02", 2428, 0.0},
-	{"cv03", 3570,-0.4795},
-	{"st04", 4355, 0.0},
-	{"cv05", 4780,-0.75},
-	{"st06", 5535, 0.0},
-	{"cv07", 6190, 0.488}, //
-	{"st08", 6420, 0.0},
-	{"cv09", 7120, 0.46},
-	{"st10", 7760, 0.0},
-	{"cv11", 8360, 0.48},
-	{"st12",10160, 0.0},
-	{"cv13",10590,-0.70},
-	{"st14",11660, 0.0}
+	{"Lst00",  855, 0.0},
+	{"Bcv01", 1370, 0.533},
+	{"Bcv01", 1925, 0.5335},
+	{"Lst02", 2425, 0.0},
+	{"Bcv03", 3610,-0.4795},
+	{"Lst04", 4213, 0.0},    
+ 	{"Bcv05", 4838,-0.45},
+	{"Lst06", 5400, 0.0},
+	{"Bcv07", 6025, 0.45},
+	{"Bst08", 6310, 0.0},
+	{"Bcv09", 6925, 0.45},
+	{"Lst10", 7455, 0.0},
+	{"Bcv11", 8080, 0.45},
+	{"Bst12", 9000, 0.0},
+	{"Bst12",10160, 0.0},
+	{"Lcv13",10590,-0.70},
+	{"Lst14",11660, 0.0}
 }; // Note: size of this array is given by sizeof(courseMap)/sizeof(*courseMap)
 
 class BlindRunner : public LineTracer {

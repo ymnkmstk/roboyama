@@ -46,10 +46,11 @@ void BlindRunner::operate() {
 	} else if (currentSection == courseMapSize && d >= courseMap[currentSection].sectionEnd) {
 		if (++s_trace_counter * PERIOD_NAV_TSK >= PERIOD_TRACE_MSG ) {
 			s_trace_counter = 0;
-			_debug(syslog(LOG_NOTICE, "%08u, BlindRunner course map exhausted", clock->now()));
+			_debug(syslog(LOG_NOTICE, "%08lu, BlindRunner course map exhausted", clock->now()));
+			observer->notifyOfDistance(FINAL_APPROACH_LEN);
 		}
 	}
-	if (courseMap[currentSection].id[0] == 's') {
+	if (courseMap[currentSection].id[0] == 'L') {
 		forward = speed;
 		LineTracer::operate();
 	} else {
