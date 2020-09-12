@@ -1,49 +1,30 @@
 #include "app.h"
+#include "aflac_common.hpp"
 #include "DataLogger.hpp"
 
-DataLogger::DataLogger( int32_t offs )
+DataLogger::DataLogger( const char *varnm, int32_t offs )
 {
+    varname = varnm;
     offset = offs;
     latest = 0;
+    index = 0;
     count = 0;
-    prevptr = NULL;
 }
 
 //const char *BASE64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 void DataLogger::logging( int32_t value )
 {
-    if ( prevptr == NULL ) {
-	latest = value;
-	prevptr = hist_str;
-    }
     int32_t diff = value - latest;
     diff += (0x22 + offset);
-    hist_str[count] = ( diff < 0x21 ) ? 0x21 : ( diff > 0x7e ) ? 0x7e : diff;
+    hist_str[index][count] = ( diff < 0x21 ) ? 0x21 : ( diff > 0x7e ) ? 0x7e : diff;
     latest = value;
     ++count;
-    if ( count >= HISTARRAYSIZE*2 ) count = 0;
-}
-
-int DataLogger::getCount()
-{
-    return (prevptr+count) - hist_str;
-}
-
-char* DataLogger::getHistByString()
-{
-    hist_str[count] = 0;
-    if ( count > HISTARRAYSIZE ) {
+    if ( count >= LOGGING_PERIOD ) {
+	char *ptr = hist_str[index];
 	count = 0;
-	return prevptr;
-    } else {
-	++count;
-	prevptr = hist_str + count;
-	return hist_str;
+	index = 1-index;
+	_debug(syslog(LOG_NOTICE, "%08u, DataLogger:%s = %d %s",
+		      clock->now(), varname, value, ptr));
     }
-}
-
-int32_t DataLogger::lastValue()
-{
-    return latest;
 }

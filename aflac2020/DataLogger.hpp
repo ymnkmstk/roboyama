@@ -5,19 +5,17 @@
 // Copyright © 2020 Ahiruchan Koubou. All rights reserved.
 //
 
-#define HISTARRAYSIZE (((PERIOD_TRACE_MSG)/(PERIOD_OBS_TSK))+50)
+#define LOGGING_PERIOD ((PERIOD_TRACE_MSG)/(PERIOD_OBS_TSK))
 
 class DataLogger {
 private:
+    const char *varname;
     int32_t offset;
     int32_t latest;
-    char hist_str[HISTARRAYSIZE*2];
+    char hist_str[2][LOGGING_PERIOD+1];
+    int index;
     int count;
-    char* prevptr;
 public:
-    DataLogger( int32_t offs );
+    DataLogger( const char *varnm, int32_t offs );
     void logging( int32_t value );
-    int getCount();
-    int32_t lastValue();
-    char* getHistByString();
 };

@@ -14,29 +14,23 @@ open(ifd,$logfile) || die "cannot open '$logfile'";
 #     print "$i = ".$BASE64[$i]."\n";
 # }
 
-print "distance,azimuth,locX,locY,angL,angR\n";
-my @distval = (0);
-my @locXval = (0);
-my @locYval = (0);
+print "angL,angR\n";
 my @angLval = (0);
 my @angRval = (0);
 while ( <ifd> ) {
-    findCalc("distance","disthist",46,\@distval);
-    findCalc("x","locXhist",46,\@locXval);
-    findCalc("y","locYhist",46,\@locYval);
-    findCalc("angL","angLhist",10,\@angLval);
-    findCalc("angR","angRhist",10,\@angRval);
-    if ( /hsv =/ ) {
-	my @vals = ($#distval,$#locXval,$#locYval,$#angLval,$#angRval); # $#colRval, $#colGval, $#colBval,
+    findCalc("angL",10,\@angLval);
+    findCalc("angR",10,\@angRval);
+    if ( /DataLogger:angR =/ ) {
+	my @vals = ($#angLval,$#angRval); # $#distval,$#locXval,$#locYval,$#colRval, $#colGval, $#colBval,
 	my $i;
 	for ( $i = 1; $i <= $#vals; ++$i ) {
 	    if ( $vals[$i-1] != $vals[$i] ) {
-		die "unmatch numbers $#distval,$#locXval,$#locYval,$#angLval,$#angRval";
+		die "unmatch numbers ".pack("i");
 	    }
 	}
 	my $i;
-	for ( $i = 0; $i <= $#distval; ++$i ) {
-	    print "$distval[$i], $locXval[$i], $locYval[$i], $angLval[$i], $angRval[$i]\n"
+	for ( $i = 0; $i <= $vals[0]; ++$i ) {
+	    print "$angLval[$i],$angRval[$i]\n"
 	}
     }
 }
@@ -44,24 +38,24 @@ close(ifd);
 
 sub findCalc
 {
-    my $pat1  = shift;
-    my $pat2  = shift;
+    my $pat   = shift;
     my $offs  = shift;
     my $ref   = shift;
-    if ( /$pat1 = (-?[0-9]+)/ ) {
-	my $val = $1;
-	$ref->[0] = pop(@$ref);
-	$ref->[1] = $val;
-    }
-    if ( /$pat2 = ([^\r\n]+)/ ) {
-	my @hist = unpack("C*",$1);
+    my @arr   = @$ref;
+    if ( /DataLogger:$pat = (-?[0-9]+) ([^\r\n]+)[\r\n]*$/ ) {
+	my $res = $1;
+	my @hist = unpack("C*",$2);
+	my $val;
+	if ( $#arr == -1 ) {
+	    $val = 0;
+	} else {
+	    $val = pop(@arr);
+	}
 	my $i;
-	my $val = $ref->[0];
-	my $res = $ref->[1];
 	for ( $i = 0; $i <= $#hist; ++$i ) {
 	    $val += $hist[$i] - 0x22 - $offs;
 	    $ref->[$i] = $val;
 	}
-	die "differnet $pat1/$pat2 $val != $res" if ( $val != $res );
+	die "differnet $pat $val != $res" if ( $val != $res );
     }
 }
