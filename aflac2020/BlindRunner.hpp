@@ -44,7 +44,7 @@ const struct courseSection courseMap[] = {
 	{"Bst12", 9105, 0.0},
 	{"Bcv13", 9898,-0.3},
 	{"Bst14",10780, 0.0},
-	{"Ncv15",11600,-0.24}
+	{"Ncv15",11600,-0.245}
 }; // Note: size of this array is given by sizeof(courseMap)/sizeof(*courseMap)
 
 class BlindRunner : public LineTracer {

@@ -32,7 +32,7 @@ extern "C" {
  */
 #define PERIOD_OBS_TSK  ( 4 * 1000)
 #define PERIOD_NAV_TSK  ( 4 * 1000)
-#define PERIOD_TRACE_MSG   400 * 1000 // Trace message in every 400 ms
+#define PERIOD_TRACE_MSG   1000 * 1000 // Trace message in every 1000 ms
 
 /**
  * Default task stack size in bytes

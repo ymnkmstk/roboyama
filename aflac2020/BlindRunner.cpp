@@ -60,7 +60,7 @@ void BlindRunner::operate() {
 		if (courseMap[currentSection].id[0] == 'B') {
 			forward = SPEED_BLIND;
 		} else if (courseMap[currentSection].id[0] == 'N') {
-			forward = SPEED_NORM - 10;
+			forward = SPEED_SLOW;
 			if (g_grayScale <= GS_LOST) { // line found
 				observer->notifyOfDistance(0);  // give control back to LineTracer
 			}

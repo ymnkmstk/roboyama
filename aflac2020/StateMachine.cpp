@@ -108,7 +108,7 @@ void StateMachine::sendTrigger(uint8_t event) {
                     state = ST_tracing;
                     lineTracer->haveControl();
                     break;
-                case EVT_tilt:
+                // case EVT_tilt: // Ignore EVT_TILT as SPEED_BLIND -> SPEED_SLOW may generate EVT_TILT
                 case EVT_cmdStop:
                     state = ST_end;
                     wakeupMain();
