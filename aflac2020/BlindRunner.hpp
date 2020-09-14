@@ -11,6 +11,7 @@
 #include "aflac_common.hpp"
 #include "LineTracer.hpp"
 
+#define PERIOD_SPEED_CHG 200 * 1000 // Trace message in every 200 ms
 #define PROP_NAME_LEN	48	// プロパティー名の最大長
 #define NUM_PROPS	13	// プロパティーの個数
 
@@ -22,7 +23,7 @@ struct courseSection {
 
 // section id starts with L for LineTracer deligaton
 //                   with B for SPEED_BLIND
-//                   with N for SPEED_NORM 
+//                   with R to return to LineTracer 
 // Note:
 //  curve +625, 0.45 makes right angle
 //        +650, 0.40
@@ -44,7 +45,8 @@ const struct courseSection courseMap[] = {
 	{"Bst12", 9105, 0.0},
 	{"Bcv13", 9898,-0.3},
 	{"Bst14",10780, 0.0},
-	{"Ncv15",11600,-0.245}
+	{"Rcv15",11600,-0.247},
+	{"Lcv15",11600,-0.247}
 }; // Note: size of this array is given by sizeof(courseMap)/sizeof(*courseMap)
 
 class BlindRunner : public LineTracer {
@@ -53,7 +55,7 @@ private:
     Motor*	leftMotor;
     Motor*  rightMotor;
     Motor*	tailMotor;
-	int		courseMapSize, currentSection;
+	int		courseMapSize, currentSection, speedChgCnt;
 	bool	stopping;
 
 	struct property{

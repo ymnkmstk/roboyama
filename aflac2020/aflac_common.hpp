@@ -62,6 +62,7 @@ using namespace ev3api;
 #define D_CONST          0.075D
 #define SPEED_NORM           50
 #define SPEED_SLOW           30
+#define SPEED_RECOVER        10
 #define SPEED_BLIND          75
 #define TURN_MIN            -16  // minimum value PID calculator returns
 #define TURN_MAX             16  // maximum value PID calculator returns

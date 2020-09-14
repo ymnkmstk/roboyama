@@ -66,6 +66,10 @@ void LineTracer::operate() {
     }
 }
 
+int8_t LineTracer::getSpeed() {
+    return speed;
+}
+
 void LineTracer::setSpeed(int8_t s) {
     speed = s;
 }

@@ -31,6 +31,7 @@ void BlindRunner::haveControl() {
     // private変数の初期化
 	courseMapSize = sizeof(courseMap) / sizeof(*courseMap);
 	currentSection = 0;
+	speedChgCnt = 0;
 	forward = speed;
 	turn = 0;
 	stopping = false;
@@ -49,20 +50,31 @@ void BlindRunner::operate() {
 		if (!stopping) {
 			stopping = true;
 			_debug(syslog(LOG_NOTICE, "%08lu, BlindRunner course map exhausted", clock->now()));
-			stateMachine->sendTrigger(EVT_cmdStop);
+			observer->notifyOfDistance(0); // give control back to LineTracer
 		}
 	}
 
 	if (courseMap[currentSection].id[0] == 'L') {
-		forward = speed;
+		if (++speedChgCnt * PERIOD_NAV_TSK >= PERIOD_SPEED_CHG) {
+			speedChgCnt = 0;
+			int s = LineTracer::getSpeed();
+			if (s < SPEED_NORM) {
+				LineTracer::setSpeed(++s);
+			} else if (s > SPEED_NORM) {
+				LineTracer::setSpeed(--s);
+			}
+		}
 		LineTracer::operate();
 	} else {
 		if (courseMap[currentSection].id[0] == 'B') {
 			forward = SPEED_BLIND;
-		} else if (courseMap[currentSection].id[0] == 'N') {
+		} else if (courseMap[currentSection].id[0] == 'R') {
+			LineTracer::setSpeed(SPEED_SLOW);
 			forward = SPEED_SLOW;
 			if (g_grayScale <= GS_LOST) { // line found
-				observer->notifyOfDistance(0);  // give control back to LineTracer
+				LineTracer::setSpeed(SPEED_RECOVER);
+				currentSection++;  // switch to LineTracer entry
+				syslog(LOG_NOTICE, "%08lu, section %s entered", clock->now(), courseMap[currentSection].id);
 			}
 		} else {
 			_debug(syslog(LOG_NOTICE, "%08lu, illegal course map id", clock->now()));
