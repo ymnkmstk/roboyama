@@ -57,8 +57,7 @@ void BlindRunner::operate() {
 
     if (d_cv01_line_lost == 0 && g_grayScale > GS_LOST && strcmp(sBcv01, courseMap[currentSection].id) == 0) {
 		d_cv01_line_lost = d;
-	}
-	if (d_cv01_line_lost != 0 && d_cv01_line_found == 0 && g_grayScale <= GS_LOST && strcmp(sBcv01, courseMap[currentSection].id) == 0) {
+	} else if (d_cv01_line_lost != 0 && d_cv01_line_found == 0 && g_grayScale <= GS_LOST && strcmp(sBcv01, courseMap[currentSection].id) == 0) {
 		d_cv01_line_found = d;
 	}
 	if (d_offset == 0 && d_cv01_line_lost != 0 && d_cv01_line_found != 0) {
