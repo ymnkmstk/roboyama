@@ -34,6 +34,7 @@ void BlindRunner::haveControl() {
 	speedChgCnt = 0;
 	forward = speed;
 	turn = 0;
+	d_offset = d_cv01_line_lost = d_cv01_line_found = 0;
 	stopping = false;
     // ログ出力
     syslog(LOG_NOTICE, "%08lu, BlindRunner has control", clock->now());
@@ -43,15 +44,27 @@ void BlindRunner::haveControl() {
 
 void BlindRunner::operate() {
 	int32_t d = observer->getDistance();
-	if (currentSection < courseMapSize - 1 && d >= courseMap[currentSection].sectionEnd) {
+	if (currentSection < courseMapSize - 1 && d >= (courseMap[currentSection].sectionEnd - d_offset)) {
 		currentSection++;
-		syslog(LOG_NOTICE, "%08lu, section %s entered", clock->now(), courseMap[currentSection].id);
-	} else if (currentSection == courseMapSize  - 1 && d >= courseMap[currentSection].sectionEnd) {
+		syslog(LOG_NOTICE, "%08lu, section %s entered at %d", clock->now(), courseMap[currentSection].id, d);
+	} else if (currentSection == courseMapSize  - 1 && d >= (courseMap[currentSection].sectionEnd - d_offset)) {
 		if (!stopping) {
 			stopping = true;
 			_debug(syslog(LOG_NOTICE, "%08lu, BlindRunner course map exhausted", clock->now()));
 			observer->notifyOfDistance(0); // give control back to LineTracer
 		}
+	}
+
+    if (d_cv01_line_lost == 0 && g_grayScale > GS_LOST && strcmp(sBcv01, courseMap[currentSection].id) == 0) {
+		d_cv01_line_lost = d;
+	}
+	if (d_cv01_line_lost != 0 && d_cv01_line_found == 0 && g_grayScale <= GS_LOST && strcmp(sBcv01, courseMap[currentSection].id) == 0) {
+		d_cv01_line_found = d;
+	}
+	if (d_offset == 0 && d_cv01_line_lost != 0 && d_cv01_line_found != 0) {
+		int32_t d_actual_midpoint = (d_cv01_line_lost + d_cv01_line_found) / 2;
+		d_offset = d_cv01_midpoint - d_actual_midpoint;
+		syslog(LOG_NOTICE, "%08lu, cv01 midpoint plan %d vs actual %d: distance to be offset by %d", clock->now(), d_cv01_midpoint, d_actual_midpoint, d_offset);
 	}
 
 	if (courseMap[currentSection].id[0] == 'L') {
@@ -74,7 +87,7 @@ void BlindRunner::operate() {
 			if (g_grayScale <= GS_LOST) { // line found
 				LineTracer::setSpeed(SPEED_RECOVER);
 				currentSection++;  // switch to LineTracer entry
-				syslog(LOG_NOTICE, "%08lu, section %s entered", clock->now(), courseMap[currentSection].id);
+				syslog(LOG_NOTICE, "%08lu, section %s entered at %d", clock->now(), courseMap[currentSection].id, d);
 			}
 		} else {
 			_debug(syslog(LOG_NOTICE, "%08lu, illegal course map id", clock->now()));

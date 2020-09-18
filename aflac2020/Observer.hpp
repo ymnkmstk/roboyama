@@ -31,7 +31,6 @@ private:
     GyroSensor*     gyroSensor;
     ColorSensor*    colorSensor;
     double distance, azimuth, locX, locY;
-    double integD, integDL, integDR; // temp
     int16_t traceCnt, prevGS;
     int32_t prevAngL, prevAngR, notifyDistance, gsDiff, timeDiff;
     uint64_t curTime, prevTime;

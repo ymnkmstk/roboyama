@@ -27,7 +27,6 @@ Observer::Observer(Motor* lm, Motor* rm, TouchSensor* ts, SonarSensor* ss, GyroS
 
     distance = azimuth = locX = locY = 0.0;
     prevAngL = prevAngR = 0;
-    integD = integDL = integDR = 0.0; // temp
 
     notifyDistance = 0;
     traceCnt = 0;
@@ -56,7 +55,6 @@ void Observer::reset() {
     distance = azimuth = locX = locY = 0.0;
     prevAngL = leftMotor->getCount();
     prevAngR = rightMotor->getCount();
-    integD = integDL = integDR = 0.0; // temp
 }
 
 void Observer::notifyOfDistance(int32_t delta) {
@@ -209,21 +207,9 @@ void Observer::operate() {
         }
     }
     
-    integD  += deltaDist;  // temp
-    integDL += deltaDistL; // temp
-    integDR += deltaDistR; // temp
     // display trace message in every PERIOD_TRACE_MSG ms
     if (++traceCnt * PERIOD_OBS_TSK >= PERIOD_TRACE_MSG) {
         traceCnt = 0;
-        /*
-        // temp from here
-        int32_t iD  = (int32_t)integD;
-        int32_t iDL = (int32_t)integDL;
-        int32_t iDR = (int32_t)integDR;
-        _debug(syslog(LOG_NOTICE, "%08u, %06d, %06d, %06d, %06d", clock->now(), getDistance(), iD, iDL, iDR));
-        integD = integDL = integDR = 0.0;
-        // temp to here
-        */
         /*
         _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): distance = %d, azimuth = %d, x = %d, y = %d", clock->now(), getDistance(), getAzimuth(), getLocX(), getLocY()));
         _debug(syslog(LOG_NOTICE, "%08u, Observer::operate(): hsv = (%03u, %03u, %03u)", clock->now(), g_hsv.h, g_hsv.s, g_hsv.v));
