@@ -17,7 +17,8 @@ extern "C" {
  * Common header files
  */
 #include "ev3api.h"
-#include "target_test.h"
+//#include "target_test.h"
+#include "etroboc_ext.h"
 
 /**
  * Task priorities (smaller number has higher priority)
@@ -30,10 +31,9 @@ extern "C" {
  * Task periods in micro seconds
  * Note: It used to be in ms with HRP2 kernel)
  */
-//#define PERIOD_OBS_TSK  (40 * 1000)
 #define PERIOD_OBS_TSK  ( 4 * 1000)
 #define PERIOD_NAV_TSK  ( 4 * 1000)
-#define PERIOD_TRACE_MSG    1000 * 1000   /* Trace message in every 1000 ms */
+#define PERIOD_TRACE_MSG   1000 * 1000 // Trace message in every 1000 ms
 
 /**
  * Default task stack size in bytes

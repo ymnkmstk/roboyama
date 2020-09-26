@@ -9,6 +9,7 @@
 #define Observer_hpp
 
 #include "aflac_common.hpp"
+#include "utility.hpp"
 
 #define OLT_SKIP_PERIOD    1000 * 1000 // period to skip outlier test in miliseconds
 #define OLT_INIT_PERIOD    3000 * 1000 // period before starting outlier test in miliseconds
