@@ -32,10 +32,16 @@ Observer::Observer(Motor* lm, Motor* rm, TouchSensor* ts, SonarSensor* ss, GyroS
     azimuth = 0.0;
     locX = 0.0;
     locY = 0.0;
+    aveDiffAng = 0.0;
+    deltaDiff = 0.0;
+    prevDeltaDiff = 0.0;
     prevAngL = 0;
     prevAngR = 0;
     notifyDistance = 0;
     traceCnt = 0;
+    diffAng = 0;
+    sumDiffAng = 0;
+    countAng = 0;
     prevGS = INT16_MAX;
     touch_flag = false;
     sonar_flag = false;
@@ -131,12 +137,45 @@ void Observer::operate() {
     locX += (deltaDist * sin(azimuth));
     locY += (deltaDist * cos(azimuth));
 
-    // monitor distance
-    if ((notifyDistance != 0.0) && (distance > notifyDistance)) {
-        syslog(LOG_NOTICE, "%08u, distance reached", clock->now());
-        notifyDistance = 0.0; // event to be sent only once
-        stateMachine->sendTrigger(EVT_dist_reached);
+
+    // modify start by Furuta 2020.09.23
+    // monitor good timing to swith to BlindRunner
+    if((countAng != -1) && (notifyDistance != 0.0))  {
+        if ((curAngL + curAngR) < AVERAGE_START) {
+            // cutoff initial noize
+            // syslog(LOG_NOTICE, "%08u, initial cutting off", clock->now());         
+        } else if (((curAngL + curAngR) >= AVERAGE_START) && ((curAngL + curAngR) < AVERAGE_END)) {
+            // calculate average of delta of angL and andR
+            diffAng = curAngL - curAngR;
+            sumDiffAng += diffAng;
+            countAng ++;
+            // syslog(LOG_NOTICE, "%08u, diffAng = %d, sum = %d, cnt = %d", clock->now(), diffAng, sumDiffAng, countAng);
+        } else if (((curAngL + curAngR) >= AVERAGE_END)) {
+            // judge whether should switch to BlindRunner
+            aveDiffAng = (double)sumDiffAng / countAng;
+            diffAng = curAngL - curAngR;
+            prevDeltaDiff = deltaDiff;
+            deltaDiff = diffAng - aveDiffAng;
+            // syslog(LOG_NOTICE, "%08u, diffAng = %d, sum = %d, cnt = %d, ave = %f", clock->now(), diffAng, sumDiffAng, countAng, aveDiffAng);
+           if (((deltaDiff < 0.0) && (prevDeltaDiff > 0.0)) ||
+               ((deltaDiff > 0.0) && (prevDeltaDiff < 0.0))) {
+                // Delta has been across Average
+                syslog(LOG_NOTICE, "%08u, diffAng = %d, sum = %d, cnt = %d", clock->now(), diffAng, sumDiffAng, countAng);
+                syslog(LOG_NOTICE, "%08u, Pass control to BlindRunner", clock->now()); 
+                countAng = -1;
+                notifyDistance = 0.0;
+                stateMachine->sendTrigger(EVT_dist_reached);
+            }
+        }
     }
+
+    // // monitor distance
+    // if ((notifyDistance != 0.0) && (distance > notifyDistance)) {
+    //     syslog(LOG_NOTICE, "%08u, distance reached", clock->now());
+    //     notifyDistance = 0.0; // event to be sent only once
+    //     stateMachine->sendTrigger(EVT_dist_reached);
+    // }
+    // modify end by Furuta 2020.09.23
     
     // monitor touch sensor
     bool result = check_touch();
