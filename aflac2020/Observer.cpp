@@ -8,10 +8,9 @@
 #include "app.h"
 #include "Observer.hpp"
 #include "StateMachine.hpp"
-#include "DataLogger.hpp"
 
-DataLogger angLLogger("angL",10);
-DataLogger angRLogger("angR",10);
+//DataLogger angLLogger("angL",10);
+//DataLogger angRLogger("angR",10);
 
 // global variables to pass FIR-filtered color from Observer to Navigator and its sub-classes
 rgb_raw_t g_rgb;
@@ -116,9 +115,9 @@ void Observer::operate() {
 
     // accumulate distance
     int32_t curAngL = leftMotor->getCount();
-    angLLogger.logging(curAngL);
+    // angLLogger.logging(curAngL);
     int32_t curAngR = rightMotor->getCount();
-    angRLogger.logging(curAngR);
+    // angRLogger.logging(curAngR);
     double deltaDistL = M_PI * TIRE_DIAMETER * (curAngL - prevAngL) / 360.0;
     double deltaDistR = M_PI * TIRE_DIAMETER * (curAngR - prevAngR) / 360.0;
     double deltaDist = (deltaDistL + deltaDistR) / 2.0;
