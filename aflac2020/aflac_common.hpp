@@ -38,7 +38,6 @@
 #include "Steering.h"
 #include "Clock.h"
 using namespace ev3api;
-#include "utility.hpp"
 
 /* 下記のマクロは個体/環境に合わせて変更する必要があります */
 #define GYRO_OFFSET           0  /* ジャイロセンサオフセット値(角速度0[deg/sec]時) */
@@ -55,13 +54,16 @@ using namespace ev3api;
 
 #define TIRE_DIAMETER    100.0F  // diameter of tire in milimater
 #define WHEEL_TREAD      150.0F  // distance between the right and left wheels
-//#define P_CONST           0.38D  // PID constants determined by Ultimate Gain method
-//#define I_CONST           0.06D
-//#define D_CONST          0.027D
+//#define P_CONST            0.4D  // PID constants determined by Ultimate Gain method
+//#define I_CONST            0.0D
+//#define D_CONST            0.0D
 #define P_CONST           0.46D  // PID constants determined by Ultimate Gain method
 #define I_CONST     0.00000013D
 #define D_CONST          0.075D
-#define SPEED_NORM           45
+#define SPEED_NORM           50
+#define SPEED_SLOW           30
+#define SPEED_RECOVER        10
+#define SPEED_BLIND          75
 #define TURN_MIN            -16  // minimum value PID calculator returns
 #define TURN_MAX             16  // maximum value PID calculator returns
 #define GS_TARGET            45
@@ -128,6 +130,12 @@ const char eventName[][EVT_NAME_LEN] = {
     "EVT_dist_reached",
     "EVT_tilt"
 };
+
+typedef struct {
+    uint16_t h; // Hue
+    uint16_t s; // Saturation
+    uint16_t v; // Value of brightness  
+} hsv_raw_t;
 
 // global variables
 extern rgb_raw_t g_rgb;

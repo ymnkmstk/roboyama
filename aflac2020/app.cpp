@@ -53,5 +53,10 @@ void main_task(intptr_t unused) {
 
     delete stateMachine;
     delete clock;
+
+#if defined(MAKE_SIM)
+    ETRoboc_notifyCompletedToSimulator();
+#endif
+
     ext_tsk();
 }

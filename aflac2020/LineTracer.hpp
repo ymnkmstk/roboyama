@@ -21,6 +21,7 @@ public:
     LineTracer(Motor* lm, Motor* rm, Motor* tm);
     void haveControl();
     void operate(); // method to invoke from the cyclic handler
+    int8_t getSpeed();
     void setSpeed(int8_t s);
     void freeze();
     void unfreeze();
