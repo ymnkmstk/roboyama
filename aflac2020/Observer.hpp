@@ -30,15 +30,20 @@ class Observer {
 private:
     Motor*          leftMotor;
     Motor*          rightMotor;
+    Motor*          armMotor;
+    Motor*          tailMotor;
     TouchSensor*    touchSensor;
     SonarSensor*    sonarSensor;
     GyroSensor*     gyroSensor;
     ColorSensor*    colorSensor;
-    double distance, azimuth, locX, locY, aveDiffAng, deltaDiff, prevDeltaDiff;
-    int16_t traceCnt, prevGS;
-    int32_t prevAngL, prevAngR, notifyDistance, gsDiff, timeDiff, diffAng, sumDiffAng, countAng;
+    double distance, azimuth, locX, locY, aveDiffAng, deltaDiff, prevDeltaDiff, prevDis, prevDisX, prevDisY;
+    int16_t traceCnt, prevGS, curRgbSum, prevRgbSum, curAngle, prevAngle, curDegree180, prevDegree180,curDegree360, prevDegree360,accumuDegree,turnDegree;
+    int32_t prevAngL, prevAngR, notifyDistance, gsDiff, timeDiff, sonarDistance, diffAng, sumDiffAng, countAng;
+    double integD, integDL, integDR;
+    int8_t process_count,root_no;
     uint64_t curTime, prevTime;
-    bool touch_flag, sonar_flag, backButton_flag, lost_flag, frozen, blue_flag;
+    bool touch_flag, sonar_flag, backButton_flag, lost_flag, frozen, blue_flag, blue2_flg, slalom_flg, line_over_flg, move_back_flg,garage_flg;
+
     rgb_raw_t cur_rgb;
     hsv_raw_t cur_hsv;
     FIR_Transposed<FIR_ORDER> *fir_r, *fir_g, *fir_b;
@@ -49,18 +54,23 @@ private:
 
     bool check_touch(void);
     bool check_sonar(void);
+    bool check_sonar(int16_t sonar_alert_dist_from, int16_t sonar_alert_dist_to);
     bool check_backButton(void);
     bool check_lost(void);
     bool check_tilt(void);
+    int16_t getTurnDgree(int16_t prev_x,int16_t x);
+    
 protected:
 public:
     Observer();
-    Observer(Motor* lm, Motor* rm, TouchSensor* ts, SonarSensor* ss, GyroSensor* gs, ColorSensor* cs);
+    Observer(Motor* lm, Motor* rm, Motor* am, Motor* tm, TouchSensor* ts, SonarSensor* ss, GyroSensor* gs, ColorSensor* cs);
     void activate();
     void reset();
     void notifyOfDistance(int32_t delta);
     int32_t getDistance();
+    int32_t getSonarDistance();
     int16_t getAzimuth();
+    int16_t getDegree();
     int32_t getLocX();
     int32_t getLocY();
     void operate(); // method to invoke from the cyclic handler

@@ -8,6 +8,7 @@ Observer.o \
 Navigator.o \
 LineTracer.o \
 BlindRunner.o \
+ChallengeRunner.o \
 utility.o
 
 SRCLANG := c++
@@ -24,7 +25,6 @@ APPL_DIRS += $(mkfile_path)app $(mkfile_path)unit
 
 INCLUDES += \
 	-I$(mkfile_path)app \
-	-I$(mkfile_path)unit \
-	-I$(ETROBO_HRP3_WORKSPACE)/etroboc_common
+	-I$(mkfile_path)unit
 
 #COPTS += -fno-use-cxa-atexit

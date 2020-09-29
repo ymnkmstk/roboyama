@@ -139,6 +139,8 @@ public:
     ~OutlierTester();
 };
 
+int own_abs(int num);
+
 #define LOGGING_PERIOD ((PERIOD_TRACE_MSG)/(PERIOD_OBS_TSK))
 
 class DataLogger {

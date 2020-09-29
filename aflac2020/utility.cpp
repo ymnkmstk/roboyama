@@ -86,8 +86,7 @@ int16_t PIDcalculator::compute(int16_t sensor, int16_t target) {
         char buf[128];
         snprintf(buf, sizeof(buf), "p = %lf, i = %lf, d = %lf", p, i, d);
         _debug(syslog(LOG_NOTICE, "%08u, PIDcalculator::compute(): sensor = %d, target = %d, d0 = %d, d1 = %d +", clock->now(), sensor, target, diff[0], diff[1]));
-        _debug(syslog(LOG_NOTICE, "%08u, PIDcalculator::compute(): sensor = %d, target = %d, %s", clock->now(), sensor, target, buf));
-    }
+        _debug(syslog(LOG_NOTICE, "%08u, PIDcalculator::compute(): sensor = %d, target = %d, %s", clock->now(), sensor, target, buf));    }
     */
     return math_limit(p + i + d, minimum, maximum);
 }
@@ -129,6 +128,10 @@ int8_t OutlierTester::test(double sample) { // sample is an outlier when true is
         sum   += sample;
         return NOT_OUTLIER; // sample is NOT an outlier
     }
+}
+
+int own_abs(int num){
+    return (num > 0) ? num : -num;
 }
 
 DataLogger::DataLogger( const char *varnm, int32_t offs )
