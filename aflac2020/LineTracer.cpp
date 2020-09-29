@@ -16,6 +16,7 @@ LineTracer::LineTracer(Motor* lm, Motor* rm, Motor* tm) {
     trace_pwmLR = 0;
     speed       = SPEED_NORM;
     frozen      = false;
+    cntl_p_flg  = false;
 }
 
 void LineTracer::haveControl() {
