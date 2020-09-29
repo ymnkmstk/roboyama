@@ -17,8 +17,7 @@ extern "C" {
  * Common header files
  */
 #include "ev3api.h"
-//#include "target_test.h"
-#include "etroboc_ext.h"
+#include "target_test.h"
 
 /**
  * Task priorities (smaller number has higher priority)

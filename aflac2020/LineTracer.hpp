@@ -14,8 +14,9 @@
 class LineTracer : public Navigator {
 private:
     int32_t motor_ang_l, motor_ang_r;
-    bool    frozen;
 protected:
+    bool    frozen;
+    bool    cntl_p_flg;
 public:
     LineTracer();
     LineTracer(Motor* lm, Motor* rm, Motor* tm);
@@ -25,6 +26,8 @@ public:
     void setSpeed(int8_t s);
     void freeze();
     void unfreeze();
+    float calcPropP();
+    void setCntlP(bool p);
     ~LineTracer();
 };
 

@@ -10,6 +10,7 @@
 #include "Observer.hpp"
 #include "LineTracer.hpp"
 
+
 StateMachine::StateMachine() {
     _debug(syslog(LOG_NOTICE, "%08u, StateMachine default constructor", clock->now()));
 }
@@ -22,19 +23,21 @@ void StateMachine::initialize() {
     gyroSensor  = new GyroSensor(PORT_4);
     leftMotor   = new Motor(PORT_C);
     rightMotor  = new Motor(PORT_B);
-    tailMotor   = new Motor(PORT_A);
+    tailMotor   = new Motor(PORT_D);
+    armMotor   = new Motor(PORT_A);
     steering    = new Steering(*leftMotor, *rightMotor);
     
     /* LCD画面表示 */
     ev3_lcd_fill_rect(0, 0, EV3_LCD_WIDTH, EV3_LCD_HEIGHT, EV3_LCD_WHITE);
     ev3_lcd_draw_string("EV3way-ET aflac2020", 0, CALIB_FONT_HEIGHT*1);
     
-    observer = new Observer(leftMotor, rightMotor, touchSensor, sonarSensor, gyroSensor, colorSensor);
-    observer->freeze(); // Do NOT attempt to collect sensor data until unfreeze() is invoked
+    observer = new Observer(leftMotor, rightMotor, armMotor, tailMotor, touchSensor, sonarSensor, gyroSensor, colorSensor);    observer->freeze(); // Do NOT attempt to collect sensor data until unfreeze() is invoked
     observer->activate();
     blindRunner = new BlindRunner(leftMotor, rightMotor, tailMotor);
     lineTracer = new LineTracer(leftMotor, rightMotor, tailMotor);
     lineTracer->activate();
+    challengeRunner = new ChallengeRunner(leftMotor, rightMotor, tailMotor,armMotor);
+    challengeRunner->activate();
     
     ev3_led_set_color(LED_ORANGE); /* 初期化完了通知 */
 
@@ -79,7 +82,6 @@ void StateMachine::sendTrigger(uint8_t event) {
         case ST_tracing:
             switch (event) {
                 case EVT_backButton_On:
-                case EVT_tilt:
                     state = ST_end;
                     wakeupMain();
                     break;
@@ -91,6 +93,7 @@ void StateMachine::sendTrigger(uint8_t event) {
                 case EVT_bk2bl:
                     break;
                 case EVT_sonar_On:
+                    break;
                 case EVT_sonar_Off:
                     break;
                 case EVT_cmdStop:
@@ -128,6 +131,41 @@ void StateMachine::sendTrigger(uint8_t event) {
                     break;
             }
             break;
+        case ST_slalom:
+            switch (event) {
+                case EVT_slalom_reached:
+                    challengeRunner->runChallenge();
+                    break;
+                case EVT_slalom_challenge:
+                    challengeRunner->runChallenge();
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case ST_block:
+            switch (event) {
+                case EVT_block_challenge:
+                    challengeRunner->runChallenge();
+                    break;
+                case EVT_line_on_p_cntl:
+                    lineTracer->haveControl();
+                    lineTracer->setSpeed(30);
+                    lineTracer->setCntlP(true);
+                    break;
+                case EVT_line_on_pid_cntl:
+                    lineTracer->haveControl();
+                    lineTracer->setSpeed(30);
+                    lineTracer->setCntlP(false);
+                    break;
+                case EVT_block_area_in:
+                    challengeRunner->haveControl();
+                    challengeRunner->runChallenge();
+                    break;
+                default:
+                    break;
+            }
+            break;
         default:
             break;
     }
@@ -148,10 +186,12 @@ void StateMachine::exit() {
     
     delete lineTracer;
     delete blindRunner;
+    delete challengeRunner;
     observer->deactivate();
     delete observer;
     
     delete tailMotor;
+    delete armMotor;
     delete rightMotor;
     delete leftMotor;
     delete gyroSensor;
