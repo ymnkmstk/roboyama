@@ -7,6 +7,7 @@
 //
 
 #include "app.h"
+#include "aflac_common.hpp"
 #include "utility.hpp"
 
 void rgb_to_hsv(rgb_raw_t rgb, hsv_raw_t& hsv) {
@@ -131,4 +132,29 @@ int8_t OutlierTester::test(double sample) { // sample is an outlier when true is
 
 int own_abs(int num){
     return (num > 0) ? num : -num;
+}
+
+DataLogger::DataLogger( const char *varnm, int32_t offs )
+{
+    varname = varnm;
+    offset = offs;
+    latest = 0;
+    index = 0;
+    count = 0;
+}
+
+void DataLogger::logging( int32_t value )
+{
+    int32_t diff = value - latest;
+    diff += (0x22 + offset);
+    hist_str[index][count] = ( diff < 0x21 ) ? 0x21 : ( diff > 0x7e ) ? 0x7e : diff;
+    latest = value;
+    ++count;
+    if ( count >= LOGGING_PERIOD ) {
+	char *ptr = hist_str[index];
+	count = 0;
+	index = 1-index;
+	_debug(syslog(LOG_NOTICE, "%08u, DataLogger:%s = %d %s",
+		      clock->now(), varname, value, ptr));
+    }
 }

@@ -9,6 +9,9 @@
 #include "Observer.hpp"
 #include "StateMachine.hpp"
 
+//DataLogger angLLogger("angL",10);
+//DataLogger angRLogger("angR",10);
+
 // global variables to pass FIR-filtered color from Observer to Navigator and its sub-classes
 rgb_raw_t g_rgb;
 hsv_raw_t g_hsv;
@@ -146,7 +149,9 @@ void Observer::operate() {
 
     // accumulate distance
     int32_t curAngL = leftMotor->getCount();
+    // angLLogger.logging(curAngL);
     int32_t curAngR = rightMotor->getCount();
+    // angRLogger.logging(curAngR);
     double deltaDistL = M_PI * TIRE_DIAMETER * (curAngL - prevAngL) / 360.0;
     double deltaDistR = M_PI * TIRE_DIAMETER * (curAngR - prevAngR) / 360.0;
     double deltaDist = (deltaDistL + deltaDistR) / 2.0;
@@ -184,11 +189,11 @@ void Observer::operate() {
             prevDeltaDiff = deltaDiff;
             deltaDiff = diffAng - aveDiffAng;
             // syslog(LOG_NOTICE, "%08u, diffAng = %d, sum = %d, cnt = %d, ave = %f", clock->now(), diffAng, sumDiffAng, countAng, aveDiffAng);
-           if (((deltaDiff < 0.0) && (prevDeltaDiff > 0.0)) ||
-               ((deltaDiff > 0.0) && (prevDeltaDiff < 0.0))) {
+	    if (((deltaDiff < 0.0) && (prevDeltaDiff > 0.0)) ||
+		((deltaDiff > 0.0) && (prevDeltaDiff < 0.0))) {
                 // Delta has been across Average
                 syslog(LOG_NOTICE, "%08u, diffAng = %d, sum = %d, cnt = %d", clock->now(), diffAng, sumDiffAng, countAng);
-                syslog(LOG_NOTICE, "%08u, Pass control to BlindRunner", clock->now()); 
+                syslog(LOG_NOTICE, "%08u, Pass control to BlindRunner, prev = %d, delta = %d", clock->now(), (int)(prevDeltaDiff*1000), (int)(deltaDiff*1000)); 
                 countAng = -1;
                 notifyDistance = 0.0;
                 stateMachine->sendTrigger(EVT_dist_reached);
