@@ -314,7 +314,7 @@ void Observer::operate() {
          }
      }else if(g_challenge_stepNo == 902){
         //黒または青をとらえたら
-        printf("g_challenge_stepNo = 903 r=%d,g=%d,b=%d,state=%d\n",cur_rgb.r,cur_rgb.g, cur_rgb.b,state);
+        //printf("g_challenge_stepNo = 903 r=%d,g=%d,b=%d,state=%d\n",cur_rgb.r,cur_rgb.g, cur_rgb.b,state);
 
         if((cur_rgb.g + cur_rgb.b <= 100 && cur_rgb.r <=50 && cur_rgb.g <=40 && cur_rgb.b <=60) || cur_rgb.b - cur_rgb.r >= 60 ){
             printf("黒来ました prevDis=%lf distance=%lf sa=%lf\n",prevDis,distance,distance-prevDis);
