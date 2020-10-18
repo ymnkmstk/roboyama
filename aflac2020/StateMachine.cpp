@@ -37,7 +37,7 @@ void StateMachine::initialize() {
     lineTracer = new LineTracer(leftMotor, rightMotor, tailMotor);
     lineTracer->activate();
     challengeRunner = new ChallengeRunner(leftMotor, rightMotor, tailMotor,armMotor);
-    challengeRunner->activate();
+    //challengeRunner->activate();  // cause of defect - removed on Oct.17
     
     ev3_led_set_color(LED_ORANGE); /* 初期化完了通知 */
 
@@ -86,6 +86,7 @@ void StateMachine::sendTrigger(uint8_t event) {
                     wakeupMain();
                     break;
                 case EVT_dist_reached:
+                case EVT_robot_aligned:
                     state = ST_blind;
                     blindRunner->haveControl();
                     break;
@@ -93,9 +94,20 @@ void StateMachine::sendTrigger(uint8_t event) {
                 case EVT_bk2bl:
                     break;
                 case EVT_sonar_On:
+                    if (observer->getDistance() >= DIST_end_blind) {
+                        state = ST_slalom;
+                        challengeRunner->haveControl();
+                    }
                     break;
                 case EVT_sonar_Off:
                     break;
+                case EVT_black_found:
+                    printf("EVT_black_found");
+                    lineTracer->setSpeed(10);
+                    break;
+                case EVT_distance_over:
+                    lineTracer->setSpeed(30);
+                    break;    
                 case EVT_cmdStop:
                     state = ST_stopping;
                     observer->notifyOfDistance(FINAL_APPROACH_LEN);
@@ -108,8 +120,21 @@ void StateMachine::sendTrigger(uint8_t event) {
         case ST_blind:
             switch (event) {
                 case EVT_dist_reached:
-                    state = ST_tracing;
-                    lineTracer->haveControl();
+                    if (observer->getDistance() >= DIST_end_blind) {
+                        state = ST_tracing;
+                        //lineTracer->setSpeed(SPEED_SLOW);
+                        lineTracer->setSpeed(40);
+                        lineTracer->haveControl();
+                    }
+                    break;
+                case EVT_sonar_On: // just in case transition to st_tracing failed
+                    if (observer->getDistance() >= DIST_end_blind) {
+                        state = ST_slalom;
+                        challengeRunner->haveControl();
+                    }
+                    break;
+                case EVT_robot_aligned:
+                    syslog(LOG_NOTICE, "%08u, StateMachine::sendTrigger(): EVT_robot_aligned too late and ignored", clock->now());
                     break;
                 // case EVT_tilt: // Ignore EVT_TILT as SPEED_BLIND -> SPEED_SLOW may generate EVT_TILT
                 case EVT_cmdStop:
@@ -150,7 +175,7 @@ void StateMachine::sendTrigger(uint8_t event) {
                     break;
                 case EVT_line_on_p_cntl:
                     lineTracer->haveControl();
-                    lineTracer->setSpeed(30);
+                    lineTracer->setSpeed(25);
                     lineTracer->setCntlP(true);
                     break;
                 case EVT_line_on_pid_cntl:
