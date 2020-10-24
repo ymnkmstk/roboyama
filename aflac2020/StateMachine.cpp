@@ -73,7 +73,7 @@ void StateMachine::sendTrigger(uint8_t event) {
                     lineTracer->unfreeze();
                     observer->unfreeze();
                     syslog(LOG_NOTICE, "%08u, Departed", clock->now());
-                    observer->notifyOfDistance(600); // switch to ST_Blind after 600
+                    observer->notifyOfDistance(DIST_force_blind); // switch to ST_Blind forcefully after DIST_force_blind reached
                     break;
                 default:
                     break;
@@ -102,7 +102,6 @@ void StateMachine::sendTrigger(uint8_t event) {
                 case EVT_sonar_Off:
                     break;
                 case EVT_black_found:
-                    printf("EVT_black_found");
                     lineTracer->setSpeed(10);
                     break;
                 case EVT_distance_over:
@@ -122,8 +121,7 @@ void StateMachine::sendTrigger(uint8_t event) {
                 case EVT_dist_reached:
                     if (observer->getDistance() >= DIST_end_blind) {
                         state = ST_tracing;
-                        //lineTracer->setSpeed(SPEED_SLOW);
-                        lineTracer->setSpeed(40);
+                        lineTracer->setSpeed(SPEED_SLOW);
                         lineTracer->haveControl();
                     }
                     break;
