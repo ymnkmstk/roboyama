@@ -28,18 +28,18 @@ void StateMachine::initialize() {
     steering    = new Steering(*leftMotor, *rightMotor);
     
     /* LCD画面表示 */
-    ev3_lcd_fill_rect(0, 0, EV3_LCD_WIDTH, EV3_LCD_HEIGHT, EV3_LCD_WHITE);
-    ev3_lcd_draw_string("EV3way-ET aflac2020", 0, CALIB_FONT_HEIGHT*1);
+    //ev3_lcd_fill_rect(0, 0, EV3_LCD_WIDTH, EV3_LCD_HEIGHT, EV3_LCD_WHITE);
+    //ev3_lcd_draw_string("EV3way-ET aflac2020", 0, CALIB_FONT_HEIGHT*1);
     
     observer = new Observer(leftMotor, rightMotor, armMotor, tailMotor, touchSensor, sonarSensor, gyroSensor, colorSensor);    observer->freeze(); // Do NOT attempt to collect sensor data until unfreeze() is invoked
     observer->activate();
     blindRunner = new BlindRunner(leftMotor, rightMotor, tailMotor);
     lineTracer = new LineTracer(leftMotor, rightMotor, tailMotor);
-    lineTracer->activate();
+    //lineTracer->activate();
     challengeRunner = new ChallengeRunner(leftMotor, rightMotor, tailMotor,armMotor);
     //challengeRunner->activate();  // cause of defect - removed on Oct.17
     
-    ev3_led_set_color(LED_ORANGE); /* 初期化完了通知 */
+    //ev3_led_set_color(LED_ORANGE); /* 初期化完了通知 */
 
     state = ST_start;
 }
@@ -63,7 +63,8 @@ void StateMachine::sendTrigger(uint8_t event) {
                     
                     /* ジャイロセンサーリセット */
                     gyroSensor->reset();
-                    ev3_led_set_color(LED_GREEN); /* スタート通知 */
+                    //ev3_led_set_color(LED_GREEN); /* スタート通知 */
+                    lineTracer->activate();
                     
                     observer->freeze();
                     lineTracer->freeze();
@@ -160,6 +161,15 @@ void StateMachine::sendTrigger(uint8_t event) {
                     challengeRunner->runChallenge();
                     break;
                 case EVT_slalom_challenge:
+                    challengeRunner->runChallenge();
+                    break;
+                case EVT_line_on_pid_cntl: //hinutest
+                    lineTracer->haveControl();
+                    lineTracer->setSpeed(50);
+                    lineTracer->setCntlP(false);
+                    break;
+                case EVT_block_area_in: //hinutest
+                    challengeRunner->haveControl();
                     challengeRunner->runChallenge();
                     break;
                 default:
