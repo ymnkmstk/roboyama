@@ -782,14 +782,14 @@ void Observer::operate() {
                 printf("黒or青を経由、左寄りに落ちました\n");
                 prevDis=distance;
 
-                //ぎりぎり追加コード sano_t
-                if(distance-prevDis > 15 ){
-                    g_challenge_stepNo = 152;
-                    stateMachine->sendTrigger(EVT_block_challenge);
-                    clock->sleep(600);
-                    g_challenge_stepNo = 171;
-                    stateMachine->sendTrigger(EVT_block_challenge);
-                }
+                // //ぎりぎり追加コード sano_t
+                // if(distance-prevDis > 15 ){
+                //     g_challenge_stepNo = 152;
+                //     stateMachine->sendTrigger(EVT_block_challenge);
+                //     clock->sleep(600);
+                //     g_challenge_stepNo = 171;
+                //     stateMachine->sendTrigger(EVT_block_challenge);
+                // }
 
                 //ガレージ外ならさらに曲がる
                 if(root_no==1){
@@ -1469,14 +1469,14 @@ void Observer::operate() {
             }else if(g_challenge_stepNo == 171 && (curRgbSum<=100 || cur_rgb.b - cur_rgb.r >=60)){
                 printf("黒or青を経由、左寄りに落ちました distance-prevDis=%lf\n",own_abs(distance-prevDis));
 
-                //ぎりぎり追加コード sano_t
-                if(distance-prevDis > 15 ){
-                    g_challenge_stepNo = 152;
-                    stateMachine->sendTrigger(EVT_block_challenge);
-                    clock->sleep(600);
-                    g_challenge_stepNo = 171;
-                    stateMachine->sendTrigger(EVT_block_challenge);
-                }
+                // //ぎりぎり追加コード sano_t
+                // if(distance-prevDis > 15 ){
+                //     g_challenge_stepNo = 152;
+                //     stateMachine->sendTrigger(EVT_block_challenge);
+                //     clock->sleep(600);
+                //     g_challenge_stepNo = 171;
+                //     stateMachine->sendTrigger(EVT_block_challenge);
+                // }
 
                 prevDis=distance;
                 //ガレージ外ならさらに曲がる
