@@ -158,7 +158,7 @@ void ChallengeRunner::runChallenge() {
             if (_LEFT == 1){
                 setPwmLR(20,20,Mode_speed_constant,1); //hinu
             }else{
-                setPwmLR(30,32,Mode_speed_constant,1);
+                setPwmLR(20,22,Mode_speed_constant,1);
             }
             break;
         case 24:
@@ -166,7 +166,7 @@ void ChallengeRunner::runChallenge() {
             if (_LEFT == 1){
                 setPwmLR(10,-10,Mode_speed_constant,1);
             }else{
-                setPwmLR(-10,13,Mode_speed_constant,1);
+                setPwmLR(-9,13,Mode_speed_constant,1);
             }
             break;
         case 30:
@@ -198,7 +198,7 @@ void ChallengeRunner::runChallenge() {
             if (_LEFT == 1){
                 setPwmLR(15,-13,Mode_speed_constant,1);
             }else{
-                setPwmLR(-10,13,Mode_speed_constant,1);
+                setPwmLR(-12,16,Mode_speed_constant,1);
             }
             break;
         case 50:
@@ -206,7 +206,7 @@ void ChallengeRunner::runChallenge() {
             if (_LEFT == 1){
                 setPwmLR(20,25,Mode_speed_increaseR,75);
             }else{
-                setPwmLR(25,21,Mode_speed_increaseL,150); // changed
+                setPwmLR(25,22,Mode_speed_increaseL,160); // changed
             }
             break;
         case 60:
@@ -271,7 +271,7 @@ void ChallengeRunner::runChallenge() {
             if (_LEFT == 1){
                 setPwmLR(18,18,Mode_speed_decreaseL,180);
             }else{
-                setPwmLR(18,25,Mode_speed_decreaseR,250);
+                setPwmLR(18,21,Mode_speed_decreaseR,250);
             }
             break;
         case 101:
@@ -280,9 +280,7 @@ void ChallengeRunner::runChallenge() {
                 setPwmLR(20,-20,Mode_speed_constant,1);
             }else{
                 rest(200);
-                setPwmLR(-8,9,Mode_speed_constant,1);
-                clock->sleep(400);
-                setPwmLR(18,25,Mode_speed_decreaseR,250);
+                setPwmLR(-20,23,Mode_speed_constant,1);
             }
             break;
         case 102:
@@ -292,10 +290,9 @@ void ChallengeRunner::runChallenge() {
                 clock->sleep(460);
                 setPwmLR(25,18,Mode_speed_decreaseL,200);
             }else{
-                rest(200);
-                setPwmLR(12,-11,Mode_speed_constant,1);
-                clock->sleep(500);
-                setPwmLR(18,25,Mode_speed_decreaseR,250);
+                setPwmLR(8,-8,Mode_speed_constant,1);
+                clock->sleep(460);
+                setPwmLR(18,25,Mode_speed_decreaseL,200);
             }
             break;
         case 112:
@@ -303,7 +300,7 @@ void ChallengeRunner::runChallenge() {
             if (_LEFT == 1){
                 setPwmLR(20,20,Mode_speed_constant,1);
             }else{
-                setPwmLR(-25,-28,Mode_speed_constant,1);
+                setPwmLR(20,22,Mode_speed_constant,1);
             }
             break;
         case 114:
@@ -311,7 +308,7 @@ void ChallengeRunner::runChallenge() {
             if (_LEFT == 1){
                 setPwmLR(13,-8,Mode_speed_constant,1);
             }else{
-                setPwmLR(-7,12,Mode_speed_constant,1);
+                setPwmLR(-8,13,Mode_speed_constant,1);
             }
             break;
         case 120:
@@ -319,9 +316,7 @@ void ChallengeRunner::runChallenge() {
             if (_LEFT == 1){
                 setPwmLR(10,10,Mode_speed_constant,1);
             }else{
-                setPwmLR(15,15,Mode_speed_constant,1);
-                clock->sleep(550);
-                setPwmLR(-11,12,Mode_speed_constant,1);
+                setPwmLR(10,10,Mode_speed_constant,1);
             }
             break;
         case 121:
@@ -345,7 +340,7 @@ void ChallengeRunner::runChallenge() {
             if (_LEFT == 1){
                 setPwmLR(22,22,Mode_speed_constant,1);
             }else{
-                setPwmLR(16,16,Mode_speed_constant,1);
+                setPwmLR(22,24,Mode_speed_constant,1);
             }
             break;
         case 132:
@@ -361,7 +356,19 @@ void ChallengeRunner::runChallenge() {
             if (_LEFT == 1){
                 setPwmLR(9,-9,Mode_speed_constant,1);
             }else{
-                setPwmLR(-15,15,Mode_speed_constant,1);
+                setPwmLR(-9,11,Mode_speed_constant,1);
+            }
+            break;
+        case 135:
+            setPwmLR(0,0,Mode_speed_constant,1);
+            break;
+        case 136:
+            rest(200);
+            if (_LEFT == 1){
+                setPwmLR(9,-9,Mode_speed_constant,1);
+            }else{
+                setPwmLR(-9,11,Mode_speed_constant,1);
+                clock->sleep(400);
             }
             break;
         case 139:
@@ -369,7 +376,7 @@ void ChallengeRunner::runChallenge() {
             if (_LEFT == 1){
                 setPwmLR(10,-10,Mode_speed_constant,1);
             }else{
-                setPwmLR(-9,9,Mode_speed_constant,1);
+                setPwmLR(-10,11,Mode_speed_constant,1);
             }
             break;
         case 141:
@@ -413,13 +420,22 @@ void ChallengeRunner::runChallenge() {
         //     setPwmLR(pwm_L,pwm_R,Mode_speed_constant,1);
         //     break;
         case 170:
-            rest(200);
-            setPwmLR(25,25,Mode_speed_increaseLR,30);
+            //rest(200);
+            setPwmLR(25,25,Mode_speed_increaseLR,25);
             break;
         case 171://hinu
-            rest(200);
+            //rest(200);
             setPwmLR(20,-20,Mode_speed_constant,1);
             clock->sleep(1000);
+            break;
+        case 173:
+            if (_LEFT == 1){
+                setPwmLR(-20,20,Mode_speed_constant,1);
+                clock->sleep(130);
+            }else{
+                setPwmLR(20,-20,Mode_speed_constant,1);
+                clock->sleep(170);
+            }
             break;
         case 180:
             if (_LEFT == 1){
@@ -437,11 +453,11 @@ void ChallengeRunner::runChallenge() {
             }
             break;
         case 193:
-            rest(700);
+            rest(300);
             setPwmLR(30,30,Mode_speed_constant,1);
             break;
         case 200:
-            rest(600);
+            rest(500);
             if (_LEFT == 1){
                 setPwmLR(10,0,Mode_speed_constant,1);
             }else{
@@ -508,7 +524,7 @@ void ChallengeRunner::runChallenge() {
             }
             break;
          case 261:
-            rest(200); // changed
+            rest(1000); // changed
             if (_LEFT == 1){
                 setPwmLR(2,20,Mode_speed_constant,1);
             }else{
@@ -556,16 +572,16 @@ void ChallengeRunner::runChallenge() {
         case 284:
             //rest(200);
             if (_LEFT == 1){
-                setPwmLR(11,-9,Mode_speed_constant,1);
+                setPwmLR(12,-8,Mode_speed_constant,1);
             }else{
-                setPwmLR(-9,11,Mode_speed_constant,1);
+                setPwmLR(-8,12,Mode_speed_constant,1);
             }
             break;
         case 286:
             if (_LEFT == 1){
                 setPwmLR(25,25,Mode_speed_constant,1);
             }else{
-                setPwmLR(25,27,Mode_speed_constant,1);
+                setPwmLR(25,26,Mode_speed_constant,1);
             }
             break;
         case 290:
