@@ -6,29 +6,32 @@
 using namespace std;
 #include "../BrainTree.h"
 
-class SuccessAction : public BrainTree::Node
-{
+class SuccessAction : public BrainTree::Node {
 public:
-    Status update() override
-    {
+    Status update() override {
         cout << "  success action" << endl;
         return Node::Status::Success;
     }
 };
 
-class FailAction : public BrainTree::Node
-{
+class Success2Action : public BrainTree::Node {
 public:
-    Status update() override
-    {
+    Status update() override {
+        cout << "  success2 action" << endl;
+        return Node::Status::Success;
+    }
+};
+
+class FailAction : public BrainTree::Node {
+public:
+    Status update() override {
         cout << "  fail action" << endl;
         return Node::Status::Failure;
     }
 };
 
 #if 0 // not used
-void CreatingBehaviorTreeManually()
-{
+void CreatingBehaviorTreeManually() {
     BrainTree::BehaviorTree tree;
     auto sequence = new BrainTree::Selector();
     auto sayHello = new FailAction();
@@ -40,24 +43,69 @@ void CreatingBehaviorTreeManually()
 }
 #endif
 
-void CreatingBehaviorTreeUsingBuilders()
-{
-    cout << "Sequence: success -> fail, two times" << endl;
+void CreatingBehaviorTreeUsingBuilders() {
+    cout << "Sequence: success -> fail -> success2, three times" << endl;
     auto tree = BrainTree::Builder()
-        .composite<BrainTree::MemSequence>()
+        .composite<BrainTree::Sequence>()
             .leaf<SuccessAction>()
             .leaf<FailAction>()
-        .end()
+            .leaf<Success2Action>()
+       .end()
         .build();
     cout << " first update()" << endl;
     tree->update();
     cout << " second update()" << endl;
     tree->update();
-    //tree->update();
+    cout << " third update()" << endl;
+    tree->update();
+
+    cout << "MemSequence: success -> fail -> success2, three times" << endl;
+    tree = BrainTree::Builder()
+        .composite<BrainTree::MemSequence>()
+            .leaf<SuccessAction>()
+            .leaf<FailAction>()
+            .leaf<Success2Action>()
+    .end()
+        .build();
+    cout << " first update()" << endl;
+    tree->update();
+    cout << " second update()" << endl;
+    tree->update();
+    cout << " third update()" << endl;
+    tree->update();
+
+    cout << "Selector: fail -> success -> success2, three times" << endl;
+    tree = BrainTree::Builder()
+        .composite<BrainTree::Selector>()
+            .leaf<FailAction>()
+            .leaf<SuccessAction>()
+            .leaf<Success2Action>()
+       .end()
+        .build();
+    cout << " first update()" << endl;
+    tree->update();
+    cout << " second update()" << endl;
+    tree->update();
+    cout << " third update()" << endl;
+    tree->update();
+
+    cout << "StatefulSelector: fail -> success -> success2, three times" << endl;
+    tree = BrainTree::Builder()
+        .composite<BrainTree::StatefulSelector>()
+            .leaf<FailAction>()
+            .leaf<SuccessAction>()
+            .leaf<Success2Action>()
+       .end()
+        .build();
+    cout << " first update()" << endl;
+    tree->update();
+    cout << " second update()" << endl;
+    tree->update();
+    cout << " third update()" << endl;
+    tree->update();
 }
 
-int main()
-{
+int main() {
     //CreatingBehaviorTreeManually();
     CreatingBehaviorTreeUsingBuilders();
     return 0;
