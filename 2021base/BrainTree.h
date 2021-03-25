@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <memory>
+//#include <memory>
 #include <vector>
 #include <string>
 #include <unordered_map>
@@ -52,7 +52,7 @@ public:
 
     void reset() { status = Status::Invalid; }
 
-    using Ptr = std::shared_ptr<Node>;
+    //using Ptr = std::shared_ptr<Node>;
 
 protected:
     Status status = Status::Invalid;
@@ -61,15 +61,18 @@ protected:
 class Composite : public Node
 {
 public:
-    Composite() : it(children.begin()) {}
+    //Composite() : it(children.begin()) {}
     virtual ~Composite() {}
     
-    void addChild(Node::Ptr child) { children.push_back(child); }
+    //void addChild(Node::Ptr child) { children.push_back(child); }
+    void addChild(Node* child) { children.push_back(child); it=children.begin(); }
     bool hasChildren() const { return !children.empty(); }
     
 protected:
-    std::vector<Node::Ptr> children;
-    std::vector<Node::Ptr>::iterator it;
+    //std::vector<Node::Ptr> children;
+    std::vector<Node*> children;
+    //std::vector<Node::Ptr>::iterator it;
+    std::vector<Node*>::iterator it;
 };
 
 class Decorator : public Node
@@ -77,11 +80,13 @@ class Decorator : public Node
 public:
     virtual ~Decorator() {}
 
-    void setChild(Node::Ptr node) { child = node; }
+    //void setChild(Node::Ptr node) { child = node; }
+    void setChild(Node* node) { child = node; }
     bool hasChild() const { return child != nullptr; }
     
 protected:
-    Node::Ptr child = nullptr;
+    //Node::Ptr child = nullptr;
+    Node* child = nullptr;
 };
 
 class Blackboard
@@ -137,7 +142,7 @@ public:
     }
     bool hasString(std::string key) const  { return strings.find(key) != strings.end(); }
 
-    using Ptr = std::shared_ptr<Blackboard>;
+    //using Ptr = std::shared_ptr<Blackboard>;
 
 protected:
     std::unordered_map<std::string, bool> bools;
@@ -152,28 +157,36 @@ class Leaf : public Node
 public:
     Leaf() {}
     virtual ~Leaf() {}
-    Leaf(Blackboard::Ptr blackboard) : blackboard(blackboard) {}
+    //Leaf(Blackboard::Ptr blackboard) : blackboard(blackboard) {}
+    Leaf(Blackboard* blackboard) : blackboard(blackboard) {}
     
     virtual Status update() = 0;
 
 protected:
-    Blackboard::Ptr blackboard;
+    //Blackboard::Ptr blackboard;
+    Blackboard* blackboard;
 };
 
 class BehaviorTree : public Node
 {
 public:
-    BehaviorTree() : blackboard(std::make_shared<Blackboard>()) {}
-    BehaviorTree(const Node::Ptr &rootNode) : BehaviorTree() { root = rootNode; }
+    //BehaviorTree() : blackboard(std::make_shared<Blackboard>()) {}
+    BehaviorTree() : blackboard(new Blackboard()) {}
+    //BehaviorTree(const Node::Ptr &rootNode) : BehaviorTree() { root = rootNode; }
+    BehaviorTree(Node* rootNode) : BehaviorTree() { root = rootNode; }
     
     Status update() { return root->tick(); }
     
-    void setRoot(const Node::Ptr &node) { root = node; }
-    Blackboard::Ptr getBlackboard() const { return blackboard; }
+    //void setRoot(const Node::Ptr &node) { root = node; }
+    void setRoot(Node* node) { root = node; }
+    //Blackboard::Ptr getBlackboard() const { return blackboard; }
+    Blackboard* getBlackboard() const { return blackboard; }
     
 private:
-    Node::Ptr root = nullptr;
-    Blackboard::Ptr blackboard = nullptr;
+    //Node::Ptr root = nullptr;
+    Node* root = nullptr;
+    //Blackboard::Ptr blackboard = nullptr;
+    Blackboard* blackboard = nullptr;
 };
 
 template <class Parent>
@@ -188,7 +201,8 @@ public:
     template <class NodeType, typename... Args>
     CompositeBuilder<Parent> leaf(Args... args)
     {
-        auto child = std::make_shared<NodeType>((args)...);
+        //auto child = std::make_shared<NodeType>((args)...);
+        auto child = new NodeType((args)...);
         node->addChild(child);
         return *this;
     }
@@ -196,17 +210,21 @@ public:
     template <class CompositeType, typename... Args>
     CompositeBuilder<CompositeBuilder<Parent>> composite(Args... args)
     {
-        auto child = std::make_shared<CompositeType>((args)...);
+        //auto child = std::make_shared<CompositeType>((args)...);
+        auto child = new CompositeType((args)...);
         node->addChild(child);
-        return CompositeBuilder<CompositeBuilder<Parent>>(this, (CompositeType*)child.get());
+        //return CompositeBuilder<CompositeBuilder<Parent>>(this, (CompositeType*)child.get());
+        return CompositeBuilder<CompositeBuilder<Parent>>(this, (CompositeType*)child);
     }
 
     template <class DecoratorType, typename... Args>
     DecoratorBuilder<CompositeBuilder<Parent>> decorator(Args... args)
     {
-        auto child = std::make_shared<DecoratorType>((args)...);
+        //auto child = std::make_shared<DecoratorType>((args)...);
+        auto child = new DecoratorType((args)...);
         node->addChild(child);
-        return DecoratorBuilder<CompositeBuilder<Parent>>(this, (DecoratorType*)child.get());
+        //return DecoratorBuilder<CompositeBuilder<Parent>>(this, (DecoratorType*)child.get());
+        return DecoratorBuilder<CompositeBuilder<Parent>>(this, (DecoratorType*)child);
     }
 
     Parent& end()
@@ -228,7 +246,8 @@ public:
     template <class NodeType, typename... Args>
     DecoratorBuilder<Parent> leaf(Args... args)
     {
-        auto child = std::make_shared<NodeType>((args)...);
+        //auto child = std::make_shared<NodeType>((args)...);
+        auto child = new NodeType((args)...);
         node->setChild(child);
         return *this;
     }
@@ -236,17 +255,21 @@ public:
     template <class CompositeType, typename... Args>
     CompositeBuilder<DecoratorBuilder<Parent>> composite(Args... args)
     {
-        auto child = std::make_shared<CompositeType>((args)...);
-        node->setChild(child);
-        return CompositeBuilder<DecoratorBuilder<Parent>>(this, (CompositeType*)child.get());
+        //auto child = std::make_shared<CompositeType>((args)...);
+        auto child = new CompositeType((args)...);
+         node->setChild(child);
+        //return CompositeBuilder<DecoratorBuilder<Parent>>(this, (CompositeType*)child.get());
+        return CompositeBuilder<DecoratorBuilder<Parent>>(this, (CompositeType*)child);
     }
 
     template <class DecoratorType, typename... Args>
     DecoratorBuilder<DecoratorBuilder<Parent>> decorator(Args... args)
     {
-        auto child = std::make_shared<DecoratorType>((args)...);
+        //auto child = std::make_shared<DecoratorType>((args)...);
+        auto child = new DecoratorType((args)...);
         node->setChild(child);
-        return DecoratorBuilder<DecoratorBuilder<Parent>>(this, (DecoratorType*)child.get());
+        //return DecoratorBuilder<DecoratorBuilder<Parent>>(this, (DecoratorType*)child.get());
+        return DecoratorBuilder<DecoratorBuilder<Parent>>(this, (DecoratorType*)child);
     }
 
     Parent& end()
@@ -265,34 +288,42 @@ public:
     template <class NodeType, typename... Args>
     Builder leaf(Args... args)
     {
-        root = std::make_shared<NodeType>((args)...);
+        //root = std::make_shared<NodeType>((args)...);
+        root = new NodeType((args)...);
         return *this;
     }
 
     template <class CompositeType, typename... Args>
     CompositeBuilder<Builder> composite(Args... args)
     {
-        root = std::make_shared<CompositeType>((args)...);
-        return CompositeBuilder<Builder>(this, (CompositeType*)root.get());
+        //root = std::make_shared<CompositeType>((args)...);
+        root = new CompositeType((args)...);
+        //return CompositeBuilder<Builder>(this, (CompositeType*)root.get());
+        return CompositeBuilder<Builder>(this, (CompositeType*)root);
     }
 
     template <class DecoratorType, typename... Args>
     DecoratorBuilder<Builder> decorator(Args... args)
     {
-        root = std::make_shared<DecoratorType>((args)...);
-        return DecoratorBuilder<Builder>(this, (DecoratorType*)root.get());
+        //root = std::make_shared<DecoratorType>((args)...);
+        root = new DecoratorType((args)...);
+        //return DecoratorBuilder<Builder>(this, (DecoratorType*)root.get());
+        return DecoratorBuilder<Builder>(this, (DecoratorType*)root);
     }
 
-    Node::Ptr build()
+    //Node::Ptr build()
+    Node* build()
     {
         assert(root != nullptr && "The Behavior Tree is empty!");
-        auto tree = std::make_shared<BehaviorTree>();
+        //auto tree = std::make_shared<BehaviorTree>();
+        auto tree = new BehaviorTree();
         tree->setRoot(root);
         return tree;
     }
 
 private:
-    Node::Ptr root;
+    //Node::Ptr root;
+    Node* root;
 };
 
 // The Selector composite ticks each child node in order.
