@@ -50,7 +50,7 @@ void CreatingBehaviorTreeUsingBuilders() {
             .leaf<SuccessAction>()
             .leaf<FailAction>()
             .leaf<Success2Action>()
-       .end()
+        .end()
         .build();
     cout << " first update()" << endl;
     tree->update();
@@ -65,7 +65,7 @@ void CreatingBehaviorTreeUsingBuilders() {
             .leaf<SuccessAction>()
             .leaf<FailAction>()
             .leaf<Success2Action>()
-    .end()
+        .end()
         .build();
     cout << " first update()" << endl;
     tree->update();
@@ -80,7 +80,7 @@ void CreatingBehaviorTreeUsingBuilders() {
             .leaf<FailAction>()
             .leaf<SuccessAction>()
             .leaf<Success2Action>()
-       .end()
+        .end()
         .build();
     cout << " first update()" << endl;
     tree->update();
@@ -95,7 +95,7 @@ void CreatingBehaviorTreeUsingBuilders() {
             .leaf<FailAction>()
             .leaf<SuccessAction>()
             .leaf<Success2Action>()
-       .end()
+        .end()
         .build();
     cout << " first update()" << endl;
     tree->update();
@@ -103,6 +103,26 @@ void CreatingBehaviorTreeUsingBuilders() {
     tree->update();
     cout << " third update()" << endl;
     tree->update();
+
+    cout << "Sequence: Succeeder w/ fail child" << endl;
+    cout << "-> Inverted Failer w/ success child" << endl;
+    cout << "-> success2" << endl;
+    tree = BrainTree::Builder()
+        .composite<BrainTree::Sequence>()
+            .decorator<BrainTree::Succeeder>()
+                .leaf<FailAction>()
+            .end()
+            .decorator<BrainTree::Inverter>()
+                .decorator<BrainTree::Failer>()
+                    .leaf<SuccessAction>()
+                .end()
+            .end()
+            .leaf<Success2Action>()
+        .end()
+        .build();
+    tree->update();
+
+    delete tree;
 }
 
 int main() {

@@ -180,6 +180,9 @@ void main_task(intptr_t unused) {
     /* deregister cyclic handler from EV3RT */
     stp_cyc(CYC_UPD_TSK);
 
+    /* destroy behavior tree */
+    delete tree;
+
     /* destroy EV3 objects */
     delete armMotor;
     delete tailMotor;
