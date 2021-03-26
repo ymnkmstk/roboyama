@@ -22,6 +22,6 @@ INCLUDES += \
 	-I$(mkfile_path)unit
 
 #COPTS += -fno-use-cxa-atexit
-COPTS += -DNDEBUG -std=c++11
+COPTS += -DNDEBUG -std=gnu++11
 #COPTS += -fno-exceptions -fno-non-call-exceptions -fno-rtti -ffreestanding
 #COPTS += -ffunction-sections -fdata-sections

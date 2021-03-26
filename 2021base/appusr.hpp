@@ -15,6 +15,11 @@
 #include "Clock.h"
 using namespace ev3api;
 
+/* M_PI and M_TWOPI is NOT available even with math header file under -std=c++11
+   because they are not strictly comforming to C++11 standards
+   this program is compiled under -std=gnu++11 option */
+#include <math.h>
+
 #include "BrainTree.h"
 #include "PIDcalculator.hpp"
 
@@ -49,14 +54,17 @@ extern Motor*       rightMotor;
 extern Motor*       tailMotor;
 extern Motor*       armMotor;
 
-#define PERIOD_TRACE_MSG   1000 * 1000 /* Trace message in every 1000 ms */
+#define PERIOD_TRACE_MSG   1000 * 1000 /* Trace message in every 1000 ms    */
 #define P_CONST           0.85D
 #define I_CONST      0.0000001D
 #define D_CONST            0.5D
-#define TURN_MIN            -16  /* minimum value PID calculator returns */
-#define TURN_MAX             16  /* maximum value PID calculator returns */
+#define TURN_MIN            -16  /* minimum value PID calculator returns    */
+#define TURN_MAX             16  /* maximum value PID calculator returns    */
 #define SPEED_NORM           50
 #define GS_TARGET            47
+#define SONAR_ALERT_DISTANCE 10  /* in centimeters                          */
+#define TIRE_DIAMETER    100.0F  /* diameter of tire in milimater           */
+#define WHEEL_TREAD      150.0F  /* distance between right and left wheels  */
 
 /* structures */
 typedef struct {

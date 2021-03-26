@@ -31,6 +31,59 @@ public:
     }
 };
 
+class IsSonarOn : public BrainTree::Node {
+public:
+    Status update() override {
+        int32_t distance = sonarSensor->getDistance();
+        if ((distance <= SONAR_ALERT_DISTANCE) && (distance >= 0)) {
+            syslog(LOG_NOTICE, "%08u, IsSonarOn::update() : SONAR_ALERT_DISTANCE", clock->now());
+            return Node::Status::Success;
+        } else {
+            return Node::Status::Failure;
+        }
+    }
+};
+
+class EstimateLocation : public BrainTree::Node {
+public:
+    Status update() override {
+        /* accumulate distance */
+        int32_t curAngL = leftMotor->getCount();
+        int32_t curAngR = rightMotor->getCount();
+        double deltaDistL = M_PI * TIRE_DIAMETER * (curAngL - prevAngL) / 360.0;
+        double deltaDistR = M_PI * TIRE_DIAMETER * (curAngR - prevAngR) / 360.0;
+        double deltaDist = (deltaDistL + deltaDistR) / 2.0;
+        distance += deltaDist;
+        prevAngL = curAngL;
+        prevAngR = curAngR;
+        /* calculate azimuth */
+        double deltaAzi = atan2((deltaDistL - deltaDistR), WHEEL_TREAD);
+        azimuth += deltaAzi;
+        if (azimuth > M_TWOPI) {
+            azimuth -= M_TWOPI;
+        } else if (azimuth < 0.0) {
+            azimuth += M_TWOPI;
+        }
+        /* estimate location */
+        locX += (deltaDist * sin(azimuth));
+        locY += (deltaDist * cos(azimuth));
+
+        /* display trace message in every PERIOD_TRACE_MSG ms */
+        if (++traceCnt * PERIOD_UPD_TSK >= PERIOD_TRACE_MSG) {
+            traceCnt = 0;
+            _debug(syslog(LOG_NOTICE, "%08u, EstimateLocation::update() : locX = %d, locY = %d, distance = %d",
+                clock->now(), (int)locX, (int)locY, (int)distance));
+        }
+
+        return Node::Status::Success;
+    }
+protected:
+    double distance, azimuth, locX, locY;
+    int32_t prevAngL, prevAngR;
+private:
+    int traceCnt = 0;
+};
+
 class WakeUpMain : public BrainTree::Node {
 public:
     Status update() override {
@@ -63,15 +116,15 @@ public:
         /* B - G cuts off blue */
         grayScaleBlueless = (cur_rgb.r * 77 + cur_rgb.g * 150 + (cur_rgb.b - cur_rgb.g) * 29) / 256;
 
-        background = colorSensor->getAmbient();
+        //background = colorSensor->getAmbient();
 
         /* compute necessary amount of steering by PID control */
-        turn = _EDGE * ltPid->compute(grayScaleBlueless - background, GS_TARGET);
+        turn = _EDGE * ltPid->compute(grayScaleBlueless, GS_TARGET);
         forward = SPEED_NORM;
 
         /* steer EV3 by setting different speed to the motors */
-        pwm_L = forward + turn;
-        pwm_R = forward - turn;
+        pwm_L = forward - turn;
+        pwm_R = forward + turn;
         leftMotor->setPWM(pwm_L);
         rightMotor->setPWM(pwm_R);
 
@@ -84,7 +137,7 @@ public:
                 clock->now(), pwm_L, pwm_R));
         }
 
-        return Node::Status::Running;
+        return Node::Status::Success;
     }
 protected:
     PIDcalculator*  ltPid;
@@ -165,7 +218,15 @@ void main_task(intptr_t unused) {
     tree = (BrainTree::BehaviorTree*) BrainTree::Builder()
         .composite<BrainTree::MemSequence>()
             .leaf<IsTouchOn>()
-            .leaf<TraceLine>()
+            .decorator<BrainTree::UntilFailure>()
+                .composite<BrainTree::Sequence>()
+                    .leaf<EstimateLocation>()
+                    .decorator<BrainTree::Inverter>()
+                        .leaf<IsSonarOn>()
+                    .end()
+                    .leaf<TraceLine>()
+                .end()
+            .end()
             .leaf<WakeUpMain>()
         .end()
         .build();
