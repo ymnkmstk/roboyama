@@ -23,7 +23,35 @@ class IsTouchOn : public BrainTree::Node {
 public:
     Status update() override {
         if (touchSensor->isPressed()) {
-            syslog(LOG_NOTICE, "%08u, IsTouchOn::update() : TouchSensor pressed", clock->now());
+            _log("TouchSensor pressed");
+            /* indicate departure by LED color */
+            ev3_led_set_color(LED_GREEN);
+            return Node::Status::Success;
+        } else {
+            return Node::Status::Failure;
+        }
+    }
+};
+
+class IsBackOn : public BrainTree::Node {
+public:
+    Status update() override {
+        if (ev3_button_is_pressed(BACK_BUTTON)) {
+            _log("Back button pressed");
+            return Node::Status::Success;
+        } else {
+            return Node::Status::Failure;
+        }
+    }
+};
+
+class IsBlueDetected : public BrainTree::Node {
+public:
+    Status update() override {
+        rgb_raw_t cur_rgb;
+        colorSensor->getRawColor(cur_rgb);
+        if (cur_rgb.b - cur_rgb.r > 60 && cur_rgb.b <= 255 && cur_rgb.r <= 255) {
+            _log("line color changed black to blue");
             return Node::Status::Success;
         } else {
             return Node::Status::Failure;
@@ -36,7 +64,7 @@ public:
     Status update() override {
         int32_t distance = sonarSensor->getDistance();
         if ((distance <= SONAR_ALERT_DISTANCE) && (distance >= 0)) {
-            syslog(LOG_NOTICE, "%08u, IsSonarOn::update() : SONAR_ALERT_DISTANCE", clock->now());
+            _log("SONAR_ALERT_DISTANCE");
             return Node::Status::Success;
         } else {
             return Node::Status::Failure;
@@ -46,6 +74,10 @@ public:
 
 class EstimateLocation : public BrainTree::Node {
 public:
+    EstimateLocation() : distance(0.0),azimuth(0.0),locX(0.0),locY(0.0),traceCnt(0) {
+        prevAngL = leftMotor->getCount();
+        prevAngR = rightMotor->getCount();
+    }
     Status update() override {
         /* accumulate distance */
         int32_t curAngL = leftMotor->getCount();
@@ -67,27 +99,25 @@ public:
         /* estimate location */
         locX += (deltaDist * sin(azimuth));
         locY += (deltaDist * cos(azimuth));
-
         /* display trace message in every PERIOD_TRACE_MSG ms */
         if (++traceCnt * PERIOD_UPD_TSK >= PERIOD_TRACE_MSG) {
             traceCnt = 0;
-            _debug(syslog(LOG_NOTICE, "%08u, EstimateLocation::update() : locX = %d, locY = %d, distance = %d",
-                clock->now(), (int)locX, (int)locY, (int)distance));
+            _debug(_log("locX = %d, locY = %d, distance = %d",
+                (int)locX, (int)locY, (int)distance));
         }
-
-        return Node::Status::Success;
+        return Node::Status::Running;
     }
 protected:
     double distance, azimuth, locX, locY;
     int32_t prevAngL, prevAngR;
 private:
-    int traceCnt = 0;
+    int traceCnt;
 };
 
 class WakeUpMain : public BrainTree::Node {
 public:
     Status update() override {
-        syslog(LOG_NOTICE, "%08u, WakeUpMain::update() : Ending...", clock->now());
+        _log("Ending...");
         /* wake up the main task */
         ER ercd = wup_tsk(MAIN_TASK);
         assert(ercd == E_OK);
@@ -98,14 +128,18 @@ public:
 class TraceLine : public BrainTree::Node
 {
 public:
-    void initialize() {
+    TraceLine() : fillFIR(FIR_ORDER+1),traceCnt(0) {
         ltPid = new PIDcalculator(P_CONST, I_CONST, D_CONST, PERIOD_UPD_TSK, TURN_MIN, TURN_MAX);
         fir_r = new FIR_Transposed<FIR_ORDER>(hn);
         fir_g = new FIR_Transposed<FIR_ORDER>(hn);
         fir_b = new FIR_Transposed<FIR_ORDER>(hn);
-        fillFIR = FIR_ORDER + 1;
+        /* reset motor encoders */
+        leftMotor->reset();
+        rightMotor->reset();
+        /* reset gyro sensor */
+        gyroSensor->reset();
     }
-    void terminate(Status s) {
+    ~TraceLine() {
         delete fir_b;
         delete fir_g;
         delete fir_r;
@@ -117,10 +151,12 @@ public:
         rgb_raw_t cur_rgb;
 
         colorSensor->getRawColor(cur_rgb);
+        #if 0
         /* process RGB by the Low Pass Filter */
         cur_rgb.r = fir_r->Execute(cur_rgb.r);
         cur_rgb.g = fir_g->Execute(cur_rgb.g);
         cur_rgb.b = fir_b->Execute(cur_rgb.b);
+        #endif
 
         /* wait until FIR array is filled */
         if (fillFIR > 0) {
@@ -145,10 +181,8 @@ public:
             /* display trace message in every PERIOD_TRACE_MSG ms */
             if (++traceCnt * PERIOD_UPD_TSK >= PERIOD_TRACE_MSG) {
                 traceCnt = 0;
-                _debug(syslog(LOG_NOTICE, "%08u, TraceLine::update() : sensor = %d, background = %d",
-                    clock->now(), grayScaleBlueless, background));
-                _debug(syslog(LOG_NOTICE, "%08u, TraceLine::update() : pwm_L = %d, pwm_R = %d",
-                    clock->now(), pwm_L, pwm_R));
+                _debug(_log("sensor = %d, background = %d", grayScaleBlueless, background));
+                _debug(_log("pwm_L = %d, pwm_R = %d", pwm_L, pwm_R));
             }
         }
         return Node::Status::Running;
@@ -157,7 +191,7 @@ protected:
     PIDcalculator*  ltPid;
     FIR_Transposed<FIR_ORDER> *fir_r, *fir_g, *fir_b;
 private:
-    int traceCnt = 0, fillFIR;
+    int traceCnt, fillFIR;
 };
 
 /* a cyclic handler to activate a task */
@@ -189,23 +223,19 @@ void main_task(intptr_t unused) {
     */
 
     /* indicate initialization completion by LED color */
-    _debug(syslog(LOG_NOTICE, "%08u, Initialization completed.", clock->now()));
-    /*
+    _debug(_log("Initialization completed."));
     ev3_led_set_color(LED_ORANGE);
-    */
 
     /* BEHAVIOR TREE DEFINITION */
     tree = (BrainTree::BehaviorTree*) BrainTree::Builder()
         .composite<BrainTree::MemSequence>()
             .leaf<IsTouchOn>()
-            .decorator<BrainTree::UntilFailure>()
-                .composite<BrainTree::Sequence>()
-                    .leaf<EstimateLocation>()
-                    .decorator<BrainTree::Inverter>()
-                        .leaf<IsSonarOn>()
-                    .end()
-                    .leaf<TraceLine>()
-                .end()
+            .composite<BrainTree::ParallelSequence>(1,1)
+                .leaf<EstimateLocation>()
+                .leaf<IsSonarOn>()
+                .leaf<IsBackOn>()
+                .leaf<IsBlueDetected>()
+                .leaf<TraceLine>()
             .end()
             .leaf<WakeUpMain>()
         .end()
@@ -239,5 +269,5 @@ void main_task(intptr_t unused) {
 
 /* periodic task to update the behavior tree */
 void update_task(intptr_t unused) {
-    if (tree != NULL) tree->update();
+    if (tree != nullptr) tree->update();
 }
