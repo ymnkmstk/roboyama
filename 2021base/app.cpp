@@ -100,8 +100,15 @@ class TraceLine : public BrainTree::Node
 public:
     void initialize() {
         ltPid = new PIDcalculator(P_CONST, I_CONST, D_CONST, PERIOD_UPD_TSK, TURN_MIN, TURN_MAX);
+        fir_r = new FIR_Transposed<FIR_ORDER>(hn);
+        fir_g = new FIR_Transposed<FIR_ORDER>(hn);
+        fir_b = new FIR_Transposed<FIR_ORDER>(hn);
+        fillFIR = FIR_ORDER + 1;
     }
     void terminate(Status s) {
+        delete fir_b;
+        delete fir_g;
+        delete fir_r;
         delete ltPid;
     }
     Status update() override {
@@ -111,36 +118,47 @@ public:
         hsv_raw_t cur_hsv;
 
         colorSensor->getRawColor(cur_rgb);
-        rgb_to_hsv(cur_rgb, cur_hsv);
-        grayScale = (cur_rgb.r * 77 + cur_rgb.g * 150 + cur_rgb.b * 29) / 256;
-        /* B - G cuts off blue */
-        grayScaleBlueless = (cur_rgb.r * 77 + cur_rgb.g * 150 + (cur_rgb.b - cur_rgb.g) * 29) / 256;
+        /* process RGB by the Low Pass Filter */
+        cur_rgb.r = fir_r->Execute(cur_rgb.r);
+        cur_rgb.g = fir_g->Execute(cur_rgb.g);
+        cur_rgb.b = fir_b->Execute(cur_rgb.b);
 
-        //background = colorSensor->getAmbient();
+        /* wait until FIR array is filled */
+        if (fillFIR > 0) {
+            fillFIR--;
+        } else {
+            rgb_to_hsv(cur_rgb, cur_hsv);
+            grayScale = (cur_rgb.r * 77 + cur_rgb.g * 150 + cur_rgb.b * 29) / 256;
+            /* B - G cuts off blue */
+            grayScaleBlueless = (cur_rgb.r * 77 + cur_rgb.g * 150 + (cur_rgb.b - cur_rgb.g) * 29) / 256;
 
-        /* compute necessary amount of steering by PID control */
-        turn = _EDGE * ltPid->compute(grayScaleBlueless, GS_TARGET);
-        forward = SPEED_NORM;
+            background = colorSensor->getAmbient();
 
-        /* steer EV3 by setting different speed to the motors */
-        pwm_L = forward - turn;
-        pwm_R = forward + turn;
-        leftMotor->setPWM(pwm_L);
-        rightMotor->setPWM(pwm_R);
+            /* compute necessary amount of steering by PID control */
+            turn = _EDGE * ltPid->compute(grayScaleBlueless, (int16_t)GS_TARGET);
+            forward = SPEED_NORM;
 
-        /* display trace message in every PERIOD_TRACE_MSG ms */
-        if (++traceCnt * PERIOD_UPD_TSK >= PERIOD_TRACE_MSG) {
-            traceCnt = 0;
-            _debug(syslog(LOG_NOTICE, "%08u, TraceLine::update() : sensor = %d, background = %d",
-                clock->now(), grayScaleBlueless, background));
-            _debug(syslog(LOG_NOTICE, "%08u, TraceLine::update() : pwm_L = %d, pwm_R = %d",
-                clock->now(), pwm_L, pwm_R));
+            /* steer EV3 by setting different speed to the motors */
+            pwm_L = forward - turn;
+            pwm_R = forward + turn;
+            leftMotor->setPWM(pwm_L);
+            rightMotor->setPWM(pwm_R);
+
+            /* display trace message in every PERIOD_TRACE_MSG ms */
+            if (++traceCnt * PERIOD_UPD_TSK >= PERIOD_TRACE_MSG) {
+                traceCnt = 0;
+                _debug(syslog(LOG_NOTICE, "%08u, TraceLine::update() : sensor = %d, background = %d",
+                    clock->now(), grayScaleBlueless, background));
+                _debug(syslog(LOG_NOTICE, "%08u, TraceLine::update() : pwm_L = %d, pwm_R = %d",
+                    clock->now(), pwm_L, pwm_R));
+            }
         }
-
-        return Node::Status::Success;
+        return Node::Status::Running;
     }
 protected:
     PIDcalculator*  ltPid;
+    FIR_Transposed<FIR_ORDER> *fir_r, *fir_g, *fir_b;
+
     void rgb_to_hsv(rgb_raw_t rgb, hsv_raw_t& hsv) {
         uint16_t max, min;
         double cr, cg, cb, h;  /* must be double */
@@ -177,7 +195,7 @@ protected:
         }
     }
 private:
-    int traceCnt = 0;
+    int traceCnt = 0, fillFIR;
 };
 
 /* a cyclic handler to activate a task */

@@ -23,6 +23,11 @@ using namespace ev3api;
 #include "BrainTree.h"
 #include "PIDcalculator.hpp"
 
+#include "FIR.hpp"
+/* FIR filter parameter */
+static const int FIR_ORDER = 10; 
+static const double hn[FIR_ORDER+1] = { -1.247414986406201e-18, -1.270350182429102e-02, -2.481243022283666e-02, 6.381419731491805e-02, 2.761351394755998e-01, 4.000000000000000e-01, 2.761351394755998e-01, 6.381419731491805e-02, -2.481243022283666e-02, -1.270350182429102e-02, -1.247414986406201e-18 };
+
 #define DEBUG
 
 #ifdef DEBUG
