@@ -60,23 +60,16 @@ extern Motor*       tailMotor;
 extern Motor*       armMotor;
 
 #define PERIOD_TRACE_MSG   1000 * 1000 /* Trace message in every 1000 ms    */
-#define P_CONST           0.85D
-#define I_CONST      0.0000001D
-#define D_CONST            0.5D
+#define P_CONST            0.3D
+#define I_CONST     0.00000013D
+#define D_CONST          0.075D
 #define TURN_MIN            -16  /* minimum value PID calculator returns    */
 #define TURN_MAX             16  /* maximum value PID calculator returns    */
 #define SPEED_NORM           50
-#define GS_TARGET            47
+#define GS_TARGET            30  /* was 47 for 2020 program                 */
 #define SONAR_ALERT_DISTANCE 10  /* in centimeters                          */
 #define TIRE_DIAMETER    100.0F  /* diameter of tire in milimater           */
 #define WHEEL_TREAD      150.0F  /* distance between right and left wheels  */
-
-/* structures */
-typedef struct {
-    uint16_t h; /* Hue                 */
-    uint16_t s; /* Saturation          */
-    uint16_t v; /* Value of brightness */  
-} hsv_raw_t;
 
 #if 0
 /* 下記のマクロは個体/環境に合わせて変更する必要があります */
