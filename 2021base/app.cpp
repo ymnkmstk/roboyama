@@ -6,6 +6,9 @@
 #include "app.h"
 #include "appusr.hpp"
 
+/* this is to avoid linker error, undefined reference to `__sync_synchronize' */
+extern "C" void __sync_synchronize() {}
+
 /* global variables */
 FILE*           bt;
 Clock*          clock;
@@ -87,13 +90,17 @@ public:
     }
 };
 
-class EstimateLocation : public BrainTree::Node {
+class EstimateLocation : public BrainTree::Leaf {
 public:
     EstimateLocation() : distance(0.0),azimuth(0.0),locX(0.0),locY(0.0),traceCnt(0) {
         prevAngL = leftMotor->getCount();
         prevAngR = rightMotor->getCount();
     }
     Status update() override {
+        /* when a behavior tree is built by builder, the blackboard pointer seems to be manually populated... */
+        if (blackboard == nullptr) {
+            blackboard = tree->getBlackboard();
+        }
         /* accumulate distance */
         int32_t curAngL = leftMotor->getCount();
         int32_t curAngR = rightMotor->getCount();
@@ -114,6 +121,10 @@ public:
         /* estimate location */
         locX += (deltaDist * sin(azimuth));
         locY += (deltaDist * cos(azimuth));
+        /* write variables to Blackboard for the use by other actions */
+        //blackboard->setDouble(STR(BoardItem::LOCX), locX);
+        //blackboard->setDouble(STR(BoardItem::LOCY), locY);
+        //blackboard->setDouble(STR(BoardItem::DIST), distance);
         /* display trace message in every PERIOD_TRACE_MSG ms */
         if (++traceCnt * PERIOD_UPD_TSK >= PERIOD_TRACE_MSG) {
             traceCnt = 0;

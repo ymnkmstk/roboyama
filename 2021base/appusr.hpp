@@ -64,6 +64,9 @@ extern Motor*       armMotor;
     clock->now(), __PRETTY_FUNCTION__, ##__VA_ARGS__)
 #endif
 
+/* macro to covert an enumeration constant to a string */
+#define STR(var) #var
+
 /* macro for making program compatible for both left and right courses.
    the default is left course, tracing right edge of line. */ 
 #if defined(MAKE_RIGHT)
@@ -85,5 +88,11 @@ extern Motor*       armMotor;
 #define SONAR_ALERT_DISTANCE 10  /* in centimeters                          */
 #define TIRE_DIAMETER    100.0F  /* diameter of tire in milimater           */
 #define WHEEL_TREAD      150.0F  /* distance between right and left wheels  */
+
+enum class BoardItem {
+    LOCX, /* horizontal location    */
+    LOCY, /* virtical   location    */
+    DIST, /* accumulated distance   */
+};
 
 #endif /* appusr_hpp */
