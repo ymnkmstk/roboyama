@@ -15,6 +15,8 @@
 #include "Clock.h"
 using namespace ev3api;
 
+#include "etroboc_ext.h"
+
 /* M_PI and M_TWOPI is NOT available even with math header file under -std=c++11
    because they are not strictly comforming to C++11 standards
    this program is compiled under -std=gnu++11 option */
@@ -28,6 +30,18 @@ using namespace ev3api;
 static const int FIR_ORDER = 10; 
 static const double hn[FIR_ORDER+1] = { -1.247414986406201e-18, -1.270350182429102e-02, -2.481243022283666e-02, 6.381419731491805e-02, 2.761351394755998e-01, 4.000000000000000e-01, 2.761351394755998e-01, 6.381419731491805e-02, -2.481243022283666e-02, -1.270350182429102e-02, -1.247414986406201e-18 };
 
+/* global variables */
+extern FILE*        bt;
+extern Clock*       clock;
+extern TouchSensor* touchSensor;
+extern SonarSensor* sonarSensor;
+extern ColorSensor* colorSensor;
+extern GyroSensor*  gyroSensor;
+extern Motor*       leftMotor;
+extern Motor*       rightMotor;
+extern Motor*       tailMotor;
+extern Motor*       armMotor;
+
 #define DEBUG
 
 #ifdef DEBUG
@@ -36,11 +50,19 @@ static const double hn[FIR_ORDER+1] = { -1.247414986406201e-18, -1.2703501824291
 #define _debug(x)
 #endif
 
+//#define LOG_ON_CONSOL
+
 /* ##__VA_ARGS__ is gcc proprietary extention.
    this is also where -std=gnu++11 option is necessary */
+#ifdef LOG_ON_CONSOL
 #define _log(fmt, ...) \
     syslog(LOG_NOTICE, "%08u, %s: " fmt, \
     clock->now(), __PRETTY_FUNCTION__, ##__VA_ARGS__)
+#else
+#define _log(fmt, ...) \
+    fprintf(bt, "%08u, %s: " fmt "\n", \
+    clock->now(), __PRETTY_FUNCTION__, ##__VA_ARGS__)
+#endif
 
 /* macro for making program compatible for both left and right courses.
    the default is left course, tracing right edge of line. */ 
@@ -52,20 +74,9 @@ static const double hn[FIR_ORDER+1] = { -1.247414986406201e-18, -1.2703501824291
     static const int _EDGE = 1;
 #endif
 
-/* global variables */
-extern Clock*       clock;
-extern TouchSensor* touchSensor;
-extern SonarSensor* sonarSensor;
-extern ColorSensor* colorSensor;
-extern GyroSensor*  gyroSensor;
-extern Motor*       leftMotor;
-extern Motor*       rightMotor;
-extern Motor*       tailMotor;
-extern Motor*       armMotor;
-
 #define PERIOD_TRACE_MSG   1000 * 1000 /* Trace message in every 1000 ms    */
 #define P_CONST           0.85D
-#define I_CONST      0.0000001D
+#define I_CONST     0.00000001D
 #define D_CONST            0.5D
 #define TURN_MIN            -16  /* minimum value PID calculator returns    */
 #define TURN_MAX             16  /* maximum value PID calculator returns    */
@@ -74,161 +85,5 @@ extern Motor*       armMotor;
 #define SONAR_ALERT_DISTANCE 10  /* in centimeters                          */
 #define TIRE_DIAMETER    100.0F  /* diameter of tire in milimater           */
 #define WHEEL_TREAD      150.0F  /* distance between right and left wheels  */
-
-#if 0
-/* 下記のマクロは個体/環境に合わせて変更する必要があります */
-#define GYRO_OFFSET           0  /* ジャイロセンサオフセット値(角速度0[deg/sec]時) */
-#define LIGHT_WHITE          60  /* 白色の光センサ値 */
-#define LIGHT_BLACK           3  /* 黒色の光センサ値 */
-#define GS_LOST              90  // threshold to determine "line lost"
-#define FINAL_APPROACH_LEN  100  // final approch length in milimater
-#define ANG_V_TILT           50  // threshold to determine "tilt"
-#define SONAR_ALERT_DISTANCE 10  /* 超音波センサによる障害物検知距離[cm] */
-#define TAIL_ANGLE_STAND_UP  85  /* 完全停止時の角度[度] */
-#define TAIL_ANGLE_DRIVE      3  /* バランス走行時の角度[度] */
-#define P_GAIN             2.5F  /* 完全停止用モータ制御比例係数 */
-#define PWM_ABS_MAX          60  /* 完全停止用モータ制御PWM絶対最大値 */
-
-#define TIRE_DIAMETER    100.0F  // diameter of tire in milimater
-#define WHEEL_TREAD      150.0F  // distance between the right and left wheels
-//#define P_CONST            0.4D  // PID constants determined by Ultimate Gain method
-//#define I_CONST            0.0D
-//#define D_CONST            0.0D
-
-
-// #define P_CONST           0.46D  // PID constants determined by Ultimate Gain method
-// #define I_CONST     0.00000013D sano_t
-// #define D_CONST          0.075D //sano_t
-#define P_CONST           0.85D
-#define I_CONST            0.0000001D
-#define D_CONST            0.5D
-#define GS_TARGET            47
-
-#define SPEED_NORM           50
-#define SPEED_SLOW           40
-#define SPEED_RECOVER        10
-#define SPEED_BLIND          75
-#define TURN_MIN            -16  // minimum value PID calculator returns
-#define TURN_MAX             16  // maximum value PID calculator returns
-
-
-//#define GS_TARGET            45 //sano_t
-
-#define M_2PI    (2.0 * M_PI)
-
-//#define DEVICE_NAME     "ET0"  /* Bluetooth名 hrp2/target/ev3.h BLUETOOTH_LOCAL_NAMEで設定 */
-//#define PASS_KEY        "1234" /* パスキー    hrp2/target/ev3.h BLUETOOTH_PIN_CODEで設定 */
-#define CMD_START_R     'R' // R-mode start command
-#define CMD_START_r     'r' // R-mode start command
-#define CMD_START_L     'L' // L-mode start command
-#define CMD_START_l     'l' // L-mode start command
-#define CMD_STOP_S      'S'
-#define CMD_STOP_s      's'
-
-// key distance
-#define DIST_force_blind    745
-#define DIST_end_blind      11600
-
-// machine state
-#define ST_start        0
-#define ST_tracing      1
-#define ST_blind        2
-#define ST_stopping     3
-#define ST_end          4
-#define ST_slalom 5
-#define ST_block  6
-
-#define ST_NAME_LEN     20  // maximum number of characters for a machine state name
-const char stateName[][ST_NAME_LEN] = {
-    "ST_start",
-    "ST_tracing",
-    "ST_blind",
-    "ST_stopping",
-    "ST_end",
-    "ST_slalom",
-    "ST_block"
-};
-
-// event
-#define EVT_cmdStart_L      0
-#define EVT_cmdStart_R      1
-#define EVT_touch_On        2
-#define EVT_touch_Off       3
-#define EVT_sonar_On        4
-#define EVT_sonar_Off       5
-#define EVT_backButton_On   6
-#define EVT_backButton_Off  7
-#define EVT_bk2bl           8
-#define EVT_bl2bk           9
-#define EVT_cmdStop         10
-#define EVT_line_lost       11
-#define EVT_line_found      12
-#define EVT_dist_reached    13
-#define EVT_tilt            14
-#define EVT_slalom_reached  15
-#define EVT_slalom_challenge    16
-#define EVT_block_challenge 17
-#define EVT_block_area_in   18
-#define EVT_line_on_pid_cntl    19
-#define EVT_line_on_p_cntl  20
-#define EVT_robot_aligned  21
-#define EVT_black_found        22
-#define EVT_distance_over   23
-#define EVT_NAME_LEN        24  // maximum number of characters for an event name
-
-const char eventName[][EVT_NAME_LEN] = {
-    "EVT_cmdStart_L",
-    "EVT_cmdStart_R",
-    "EVT_touch_On",
-    "EVT_touch_Off",
-    "EVT_sonar_On",
-    "EVT_sonar_Off",
-    "EVT_backButton_On",
-    "EVT_backButton_Off",
-    "EVT_bk2bl",
-    "EVT_bl2bk",
-    "EVT_cmdStop",
-    "EVT_line_lost",
-    "EVT_line_found",
-    "EVT_dist_reached",
-    "EVT_tilt",
-    "EVT_slalom_reached",
-    "EVT_slalom_challenge",
-    "EVT_block_challenge",
-    "EVT_block_area_in",
-    "EVT_line_on_pid_cntl",
-    "EVT_line_on_p_cntl",
-    "EVT_robot_aligned",
-    "EVT_black_found",
-    "EVT_distance_over"
-};
-
-typedef struct {
-    uint16_t h; // Hue
-    uint16_t s; // Saturation
-    uint16_t v; // Value of brightness  
-} hsv_raw_t;
-
-// pwmSetMode
-#define Mode_speed_constant     1
-#define Mode_speed_increaseL    2
-#define Mode_speed_decreaseL    3
-#define Mode_speed_increaseR    4
-#define Mode_speed_decreaseR    5
-#define Mode_speed_increaseLR   6
-#define Mode_speed_decreaseLR   7
-#define Mode_speed_incrsLdcrsR  8
-#define Mode_speed_incrsRdcrsL  9
-
-// global variables
-extern rgb_raw_t g_rgb;
-extern hsv_raw_t g_hsv;
-extern int16_t g_grayScale, g_grayScaleBlueless;
-extern int16_t g_angle, g_anglerVelocity;
-extern int16_t g_challenge_stepNo,g_color_brightness; //sano
-
-extern Clock*       clock;
-extern uint8_t      state;
-#endif /* 0 */
 
 #endif /* appusr_hpp */

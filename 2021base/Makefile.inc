@@ -19,9 +19,9 @@ APPL_DIRS += $(mkfile_path)app $(mkfile_path)unit
 
 INCLUDES += \
 	-I$(mkfile_path)app \
-	-I$(mkfile_path)unit
+	-I$(mkfile_path)unit \
+	-I$(ETROBO_HRP3_WORKSPACE)/etroboc_common
 
 #COPTS += -fno-use-cxa-atexit
-COPTS += -DNDEBUG -std=gnu++11
-#COPTS += -fno-exceptions -fno-non-call-exceptions -fno-rtti -ffreestanding
-#COPTS += -ffunction-sections -fdata-sections
+#COPTS += -DNDEBUG -std=gnu++11
+COPTS += -std=gnu++11

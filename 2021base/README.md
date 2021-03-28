@@ -9,3 +9,17 @@ You may retrieve the original verion of the library from Arvidsson's GitHub repo
   https://github.com/arvidsson/BrainTree
 
 Enjoy your modelling and programming in ET Robocon 2021 competition and good luck!
+
+
+Usage:
+
+1. Place 2021base directory in your ETrobo workspace.
+2. Start ETrobo environment.
+3. In terminal, execute "make [right] app=2021base sim up" command.
+4. When LOG_ON_CONSOL directive is defined, various application messages are written to consol;
+  otherwise, they are written to the pseudo Bluetooth device.
+  They can be observed by another terminal by "btcat [right] app=2021base" command.
+  Look at _log() macro in "appusr.hpp" to see how it works.
+
+Further information on ETrobo environment:
+  https://github.com/ETrobocon/etrobo
