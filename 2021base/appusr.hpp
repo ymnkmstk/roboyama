@@ -88,8 +88,9 @@ extern Motor*       armMotor;
 #define SONAR_ALERT_DISTANCE 10  /* in centimeters                          */
 #define TIRE_DIAMETER    100.0F  /* diameter of tire in milimater           */
 #define WHEEL_TREAD      150.0F  /* distance between right and left wheels  */
+#define BLUE_DISTANCE     12000  /* 2nd blue part should be further than this   */ 
 
-enum class BoardItem {
+enum BoardItem {
     LOCX, /* horizontal location    */
     LOCY, /* virtical   location    */
     DIST, /* accumulated distance   */

@@ -6,23 +6,20 @@
 using namespace std;
 #include "../BrainTree.h"
 
-class SuccessAction : public BrainTree::Node {
+class SuccessAction : public BrainTree::Leaf {
 public:
+    SuccessAction(int i) {
+         id = i;
+    }
     Status update() override {
-        cout << "  success action" << endl;
+        cout << "  success" << id << " action" << endl;
         return Node::Status::Success;
     }
+private:
+    int id;
 };
 
-class Success2Action : public BrainTree::Node {
-public:
-    Status update() override {
-        cout << "  success2 action" << endl;
-        return Node::Status::Success;
-    }
-};
-
-class FailAction : public BrainTree::Node {
+class FailAction : public BrainTree::Leaf {
 public:
     Status update() override {
         cout << "  fail action" << endl;
@@ -44,12 +41,12 @@ void CreatingBehaviorTreeManually() {
 #endif
 
 void CreatingBehaviorTreeUsingBuilders() {
-    cout << "Sequence: success -> fail -> success2, three times" << endl;
+    cout << "Sequence: success1 -> fail -> success2, three times" << endl;
     auto tree = BrainTree::Builder()
         .composite<BrainTree::Sequence>()
-            .leaf<SuccessAction>()
+            .leaf<SuccessAction>(1)
             .leaf<FailAction>()
-            .leaf<Success2Action>()
+            .leaf<SuccessAction>(2)
         .end()
         .build();
     cout << " first update()" << endl;
@@ -59,12 +56,12 @@ void CreatingBehaviorTreeUsingBuilders() {
     cout << " third update()" << endl;
     tree->update();
 
-    cout << "MemSequence: success -> fail -> success2, three times" << endl;
+    cout << "MemSequence: success1 -> fail -> success2, three times" << endl;
     tree = BrainTree::Builder()
         .composite<BrainTree::MemSequence>()
-            .leaf<SuccessAction>()
+            .leaf<SuccessAction>(1)
             .leaf<FailAction>()
-            .leaf<Success2Action>()
+            .leaf<SuccessAction>(2)
         .end()
         .build();
     cout << " first update()" << endl;
@@ -74,12 +71,12 @@ void CreatingBehaviorTreeUsingBuilders() {
     cout << " third update()" << endl;
     tree->update();
 
-    cout << "Selector: fail -> success -> success2, three times" << endl;
+    cout << "Selector: fail -> success1 -> success2, three times" << endl;
     tree = BrainTree::Builder()
         .composite<BrainTree::Selector>()
             .leaf<FailAction>()
-            .leaf<SuccessAction>()
-            .leaf<Success2Action>()
+            .leaf<SuccessAction>(1)
+            .leaf<SuccessAction>(2)
         .end()
         .build();
     cout << " first update()" << endl;
@@ -89,12 +86,12 @@ void CreatingBehaviorTreeUsingBuilders() {
     cout << " third update()" << endl;
     tree->update();
 
-    cout << "StatefulSelector: fail -> success -> success2, three times" << endl;
+    cout << "StatefulSelector: fail -> success1 -> success2, three times" << endl;
     tree = BrainTree::Builder()
         .composite<BrainTree::StatefulSelector>()
             .leaf<FailAction>()
-            .leaf<SuccessAction>()
-            .leaf<Success2Action>()
+            .leaf<SuccessAction>(1)
+            .leaf<SuccessAction>(2)
         .end()
         .build();
     cout << " first update()" << endl;
@@ -105,7 +102,7 @@ void CreatingBehaviorTreeUsingBuilders() {
     tree->update();
 
     cout << "Sequence: Succeeder w/ fail child" << endl;
-    cout << "-> Inverted Failer w/ success child" << endl;
+    cout << "-> Inverted Failer w/ success1 child" << endl;
     cout << "-> success2" << endl;
     tree = BrainTree::Builder()
         .composite<BrainTree::Sequence>()
@@ -114,10 +111,10 @@ void CreatingBehaviorTreeUsingBuilders() {
             .end()
             .decorator<BrainTree::Inverter>()
                 .decorator<BrainTree::Failer>()
-                    .leaf<SuccessAction>()
+                    .leaf<SuccessAction>(1)
                 .end()
             .end()
-            .leaf<Success2Action>()
+            .leaf<SuccessAction>(2)
         .end()
         .build();
     tree->update();

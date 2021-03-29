@@ -23,3 +23,11 @@ Usage:
 
 Further information on ETrobo environment:
   https://github.com/ETrobocon/etrobo
+
+
+ToDo:
+
+1. update_task() is currently executed in every 4ms, set by PERIOD_UPD_TSK in app.h file.
+  This seems too often for the simulation environment.  The guideline from the ET Robocon secretariat is to set it to 10ms at least; otherwise, various side effects might be observed during simulated running such as instable data feed from sensor devices.
+2. When PERIOD_UPD_TSK is changed, PID values, i.e., P_CONST, I_CONST, and D_CONST in appusr.h,
+  also have to be fine-tuned to make the robot properly trace the line.

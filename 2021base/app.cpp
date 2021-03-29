@@ -23,7 +23,7 @@ Motor*          armMotor;
 
 BrainTree::BehaviorTree* tree = nullptr;
 
-class IsTouchOn : public BrainTree::Node {
+class IsTouchOn : public BrainTree::Leaf {
 public:
     Status update() override {
         if (touchSensor->isPressed()) {
@@ -37,7 +37,7 @@ public:
     }
 };
 
-class IsBackOn : public BrainTree::Node {
+class IsBackOn : public BrainTree::Leaf {
 public:
     Status update() override {
         if (ev3_button_is_pressed(BACK_BUTTON)) {
@@ -49,7 +49,7 @@ public:
     }
 };
 
-class IsBlueDetected : public BrainTree::Node {
+class IsBlueDetected : public BrainTree::Leaf {
 public:
     Status update() override {
         rgb_raw_t cur_rgb;
@@ -63,7 +63,7 @@ public:
     }
 };
 
-class IsBlackDetected : public BrainTree::Node {
+class IsBlackDetected : public BrainTree::Leaf {
 public:
     Status update() override {
         rgb_raw_t cur_rgb;
@@ -77,7 +77,7 @@ public:
     }
 };
 
-class IsSonarOn : public BrainTree::Node {
+class IsSonarOn : public BrainTree::Leaf {
 public:
     Status update() override {
         int32_t distance = sonarSensor->getDistance();
@@ -88,6 +88,30 @@ public:
             return Node::Status::Failure;
         }
     }
+};
+
+class IsDistanceReached : public BrainTree::Leaf {
+public:
+    IsDistanceReached() : flag(false) {}
+    Status update() override {
+        /* when a behavior tree is built by builder, the blackboard pointer seems to be manually populated... */
+        if (blackboard == nullptr) {
+            blackboard = tree->getBlackboard();
+        }
+        /* read variables from Blackboard */
+        double distance = blackboard->getDouble(STR(BoardItem.DIST));
+        if (distance >= BLUE_DISTANCE) {
+            if (!flag) {
+                _log("BLUE_DISTANCE is reached.");
+                flag = true;
+            }
+            return Node::Status::Success;
+        } else {
+            return Node::Status::Failure;
+        }
+    }
+private:
+    bool flag;
 };
 
 class EstimateLocation : public BrainTree::Leaf {
@@ -122,9 +146,9 @@ public:
         locX += (deltaDist * sin(azimuth));
         locY += (deltaDist * cos(azimuth));
         /* write variables to Blackboard for the use by other actions */
-        //blackboard->setDouble(STR(BoardItem::LOCX), locX);
-        //blackboard->setDouble(STR(BoardItem::LOCY), locY);
-        //blackboard->setDouble(STR(BoardItem::DIST), distance);
+        blackboard->setDouble(STR(BoardItem.LOCX), locX);
+        blackboard->setDouble(STR(BoardItem.LOCY), locY);
+        blackboard->setDouble(STR(BoardItem.DIST), distance);
         /* display trace message in every PERIOD_TRACE_MSG ms */
         if (++traceCnt * PERIOD_UPD_TSK >= PERIOD_TRACE_MSG) {
             traceCnt = 0;
@@ -140,21 +164,7 @@ private:
     int traceCnt;
 };
 
-class WakeUpMain : public BrainTree::Node {
-public:
-    Status update() override {
-        _log("waking up main...");
-        /* wake up the main task */
-        ER ercd = wup_tsk(MAIN_TASK);
-        assert(ercd == E_OK);
-        if (ercd != E_OK) {
-            syslog(LOG_NOTICE, "wup_tsk() returned %d", ercd);
-        }
-       return Node::Status::Success;
-    }
-};
-
-class TraceLine : public BrainTree::Node
+class TraceLine : public BrainTree::Leaf
 {
 public:
     TraceLine() {
@@ -218,6 +228,21 @@ private:
     int traceCnt, fillFIR;
 };
 
+/* method to wake up the main task for termination */
+class WakeUpMain : public BrainTree::Leaf {
+public:
+    Status update() override {
+        _log("waking up main...");
+        /* wake up the main task */
+        ER ercd = wup_tsk(MAIN_TASK);
+        assert(ercd == E_OK);
+        if (ercd != E_OK) {
+            syslog(LOG_NOTICE, "wup_tsk() returned %d", ercd);
+        }
+       return Node::Status::Success;
+    }
+};
+
 /* a cyclic handler to activate a task */
 void task_activator(intptr_t tskid) {
     ER ercd = act_tsk(tskid);
@@ -245,12 +270,14 @@ void main_task(intptr_t unused) {
     ev3_led_set_color(LED_ORANGE);
 
     /* BEHAVIOR TREE DEFINITION */
+
     /* robot starts line tracing
        when touch sensor is turned on.
        it continues running unless:
          ultrasonic sonar detects an obstacle or
          back button is pressed or
-         the second blue part of line is reached,
+         the second blue part of line is reached at
+         further than BLUE_DISTANCE,
        while its location keeps being tracked. */
     tree = (BrainTree::BehaviorTree*) BrainTree::Builder()
         .composite<BrainTree::MemSequence>()
@@ -259,10 +286,13 @@ void main_task(intptr_t unused) {
                 .leaf<EstimateLocation>()
                 .leaf<IsSonarOn>()
                 .leaf<IsBackOn>()
-                .composite<BrainTree::MemSequence>()
-                    .leaf<IsBlueDetected>()
-                    .leaf<IsBlackDetected>()
-                    .leaf<IsBlueDetected>()
+                .composite<BrainTree::ParallelSequence>(2,2)
+                    .leaf<IsDistanceReached>()
+                    .composite<BrainTree::MemSequence>()
+                        .leaf<IsBlueDetected>()
+                        .leaf<IsBlackDetected>()
+                        .leaf<IsBlueDetected>()
+                    .end()
                 .end()
                 .leaf<TraceLine>()
             .end()
