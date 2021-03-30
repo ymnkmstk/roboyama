@@ -23,7 +23,7 @@ Motor*          armMotor;
 
 BrainTree::BehaviorTree* tree = nullptr;
 
-class IsTouchOn : public BrainTree::Leaf {
+class IsTouchOn : public BrainTree::Node {
 public:
     Status update() override {
         if (touchSensor->isPressed()) {
@@ -37,7 +37,7 @@ public:
     }
 };
 
-class IsBackOn : public BrainTree::Leaf {
+class IsBackOn : public BrainTree::Node {
 public:
     Status update() override {
         if (ev3_button_is_pressed(BACK_BUTTON)) {
@@ -49,7 +49,7 @@ public:
     }
 };
 
-class IsBlueDetected : public BrainTree::Leaf {
+class IsBlueDetected : public BrainTree::Node {
 public:
     Status update() override {
         rgb_raw_t cur_rgb;
@@ -63,7 +63,7 @@ public:
     }
 };
 
-class IsBlackDetected : public BrainTree::Leaf {
+class IsBlackDetected : public BrainTree::Node {
 public:
     Status update() override {
         rgb_raw_t cur_rgb;
@@ -77,7 +77,7 @@ public:
     }
 };
 
-class IsSonarOn : public BrainTree::Leaf {
+class IsSonarOn : public BrainTree::Node {
 public:
     Status update() override {
         int32_t distance = sonarSensor->getDistance();
@@ -90,14 +90,10 @@ public:
     }
 };
 
-class IsDistanceReached : public BrainTree::Leaf {
+class IsDistanceReached : public BrainTree::Node {
 public:
     IsDistanceReached() : flag(false) {}
     Status update() override {
-        /* when a behavior tree is built by builder, the blackboard pointer seems to be manually populated... */
-        if (blackboard == nullptr) {
-            blackboard = tree->getBlackboard();
-        }
         /* read variables from Blackboard */
         double distance = blackboard->getDouble(STR(BoardItem.DIST));
         if (distance >= BLUE_DISTANCE) {
@@ -114,17 +110,13 @@ private:
     bool flag;
 };
 
-class EstimateLocation : public BrainTree::Leaf {
+class EstimateLocation : public BrainTree::Node {
 public:
     EstimateLocation() : distance(0.0),azimuth(0.0),locX(0.0),locY(0.0),traceCnt(0) {
         prevAngL = leftMotor->getCount();
         prevAngR = rightMotor->getCount();
     }
     Status update() override {
-        /* when a behavior tree is built by builder, the blackboard pointer seems to be manually populated... */
-        if (blackboard == nullptr) {
-            blackboard = tree->getBlackboard();
-        }
         /* accumulate distance */
         int32_t curAngL = leftMotor->getCount();
         int32_t curAngR = rightMotor->getCount();
@@ -164,8 +156,7 @@ private:
     int traceCnt;
 };
 
-class TraceLine : public BrainTree::Leaf
-{
+class TraceLine : public BrainTree::Node {
 public:
     TraceLine() {
         fillFIR = FIR_ORDER + 1;
@@ -229,7 +220,7 @@ private:
 };
 
 /* method to wake up the main task for termination */
-class WakeUpMain : public BrainTree::Leaf {
+class WakeUpMain : public BrainTree::Node {
 public:
     Status update() override {
         _log("waking up main...");
