@@ -2,6 +2,7 @@
 // Copyright 2015-2018 Par Arvidsson. All rights reserved.
 // Licensed under the MIT license (https://github.com/arvidsson/BrainTree/blob/master/LICENSE).
 //
+// 3/25/2021 Modified by Wataru Taniguchi to correct the bahavior of stateful composites
 // 3/26/2021 Modified by Wataru Taniguchi to avoid the use of shared_ptr,
 //           being executable on TOPPERS/EV3RT (HRP3) with Athrill
 // 3/30/2021 Modified by Wataru Taniguchi to make use of Blackboard
