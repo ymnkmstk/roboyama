@@ -6,41 +6,64 @@
 using namespace std;
 #include "../BrainTree.h"
 
-class SuccessAction : public BrainTree::Leaf {
+#define STR(var) #var
+
+enum BoardItem {
+    MSG,
+};
+
+class SuccessAction : public BrainTree::Node {
 public:
     SuccessAction(int i) {
          id = i;
     }
     Status update() override {
         cout << "  success" << id << " action" << endl;
+        sprintf(buffer, "    message from success");
+        assert(blackboard != nullptr && "The Blackboard is empty!");
+        blackboard->setString(STR(MSG), buffer);
         return Node::Status::Success;
     }
 private:
+    char buffer[128]; 
     int id;
 };
 
-class FailAction : public BrainTree::Leaf {
+class FailAction : public BrainTree::Node {
 public:
     Status update() override {
         cout << "  fail action" << endl;
+        assert(blackboard != nullptr && "The Blackboard is empty!");
+        cout << blackboard->getString(STR(MSG)) << endl;
         return Node::Status::Failure;
     }
 };
 
-#if 0 // not used
 void CreatingBehaviorTreeManually() {
+    cout << "*** Creating BehaviorTree Manually" << endl;
+    cout << "Sequence: success1 -> fail -> success2, three times" << endl;
     BrainTree::BehaviorTree tree;
-    auto sequence = new BrainTree::Selector();
-    auto sayHello = new FailAction();
-    auto sayHelloAgain = new SuccessAction();
-    sequence->addChild(sayHello);
-    sequence->addChild(sayHelloAgain);
+    auto sequence = new BrainTree::Sequence();
+    auto success1 = new SuccessAction(1);
+    auto fail = new FailAction();
+    auto success2 = new SuccessAction(2);
+    success1->setBlackboard(tree.getBlackboard());
+    fail->setBlackboard(tree.getBlackboard());
+    success2->setBlackboard(tree.getBlackboard());
+    sequence->addChild(success1);
+    sequence->addChild(fail);
+    sequence->addChild(success2);
     tree.setRoot(sequence);
+    cout << " first update()" << endl;
+    tree.update();
+    cout << " second update()" << endl;
+    tree.update();
+    cout << " third update()" << endl;
     tree.update();
 }
-#endif
 
 void CreatingBehaviorTreeUsingBuilders() {
+    cout << "*** Creating BehaviorTree Using Builders" << endl;
     cout << "Sequence: success1 -> fail -> success2, three times" << endl;
     auto tree = BrainTree::Builder()
         .composite<BrainTree::Sequence>()
@@ -123,7 +146,7 @@ void CreatingBehaviorTreeUsingBuilders() {
 }
 
 int main() {
-    //CreatingBehaviorTreeManually();
+    CreatingBehaviorTreeManually();
     CreatingBehaviorTreeUsingBuilders();
     return 0;
 }
