@@ -113,6 +113,12 @@ private:
 class EstimateLocation : public BrainTree::Node {
 public:
     EstimateLocation() : distance(0.0),azimuth(0.0),locX(0.0),locY(0.0),traceCnt(0) {
+        /* reset motor encoders */
+        leftMotor->reset();
+        rightMotor->reset();
+        /* reset gyro sensor */
+        gyroSensor->reset();
+        /* initialize variables */
         prevAngL = leftMotor->getCount();
         prevAngR = rightMotor->getCount();
     }
@@ -158,18 +164,11 @@ private:
 
 class TraceLine : public BrainTree::Node {
 public:
-    TraceLine() {
-        fillFIR = FIR_ORDER + 1;
-        traceCnt = 0;
+    TraceLine() : fillFIR(FIR_ORDER + 1), traceCnt(0) {
         ltPid = new PIDcalculator(P_CONST, I_CONST, D_CONST, PERIOD_UPD_TSK, TURN_MIN, TURN_MAX);
         fir_r = new FIR_Transposed<FIR_ORDER>(hn);
         fir_g = new FIR_Transposed<FIR_ORDER>(hn);
         fir_b = new FIR_Transposed<FIR_ORDER>(hn);
-        /* reset motor encoders */
-        leftMotor->reset();
-        rightMotor->reset();
-        /* reset gyro sensor */
-        gyroSensor->reset();
     }
     ~TraceLine() {
         delete fir_b;
@@ -217,6 +216,68 @@ protected:
     FIR_Transposed<FIR_ORDER> *fir_r, *fir_g, *fir_b;
 private:
     int traceCnt, fillFIR;
+};
+
+class MoveToLine : public BrainTree::Node {
+public:
+    MoveToLine() : fillFIR(FIR_ORDER + 1) {
+        fir_r = new FIR_Transposed<FIR_ORDER>(hn);
+        fir_g = new FIR_Transposed<FIR_ORDER>(hn);
+        fir_b = new FIR_Transposed<FIR_ORDER>(hn);
+    }
+    ~MoveToLine() {
+        delete fir_b;
+        delete fir_g;
+        delete fir_r;
+    }
+    Status update() override {
+        int16_t sensor;
+        rgb_raw_t cur_rgb;
+
+        colorSensor->getRawColor(cur_rgb);
+        /* process RGB by the Low Pass Filter */
+        cur_rgb.r = fir_r->Execute(cur_rgb.r);
+        cur_rgb.g = fir_g->Execute(cur_rgb.g);
+        cur_rgb.b = fir_b->Execute(cur_rgb.b);
+
+        /* wait until FIR array is filled */
+        if (fillFIR > 0) {
+            fillFIR--;
+        } else {
+            /* B - G cuts off blue */
+            sensor = (cur_rgb.r * 77 + cur_rgb.g * 150 + (cur_rgb.b - cur_rgb.g) * 29) / 256;
+
+            if (sensor >= GS_TARGET) {
+                /* move EV3 closer to the line */
+                leftMotor->setPWM(SPEED_SLOW);
+                rightMotor->setPWM(SPEED_SLOW);
+                return Node::Status::Running;
+            } else {
+                return Node::Status::Success;
+            }
+        }
+    }
+protected:
+    FIR_Transposed<FIR_ORDER> *fir_r, *fir_g, *fir_b;
+private:
+    int fillFIR;
+};
+
+class RotateEV3 : public BrainTree::Node {
+public:
+    RotateEV3(int direction, int count) : dir(direction), cnt(count) {}
+    Status update() override {
+        if (--cnt >= 0) {
+            leftMotor->setPWM((-dir) * SPEED_SLOW);
+            rightMotor->setPWM(dir * SPEED_SLOW);
+            return Node::Status::Running;
+        } else {
+            return Node::Status::Success;
+        }
+    }
+private:
+    int8_t dir;
+    int cnt;
 };
 
 /* method to wake up the main task for termination */
@@ -273,6 +334,9 @@ void main_task(intptr_t unused) {
     tree = (BrainTree::BehaviorTree*) BrainTree::Builder()
         .composite<BrainTree::MemSequence>()
             .leaf<IsTouchOn>()
+            .leaf<RotateEV3>(_EDGE, 100) /* TODO magic number */
+            .leaf<MoveToLine>()
+            .leaf<RotateEV3>((-1) * _EDGE, 100) /* TODO magic number */
             .composite<BrainTree::ParallelSequence>(1,1)
                 .leaf<EstimateLocation>()
                 .leaf<IsSonarOn>()
