@@ -68,13 +68,13 @@ extern Motor*       armMotor;
 #define STR(var) #var
 
 /* macro for making program compatible for both left and right courses.
-   the default is left course, tracing right edge of line. */ 
+   the default is left course, tracing left edge of line. */ 
 #if defined(MAKE_RIGHT)
     static const int _LEFT = 0;
-    static const int _EDGE = -1;
+    static const int _EDGE = 1;
 #else
     static const int _LEFT = 1;
-    static const int _EDGE = 1;
+    static const int _EDGE = -1;
 #endif
 
 #define PERIOD_TRACE_MSG   1000 * 1000 /* Trace message in every 1000 ms    */
@@ -83,7 +83,8 @@ extern Motor*       armMotor;
 #define D_CONST            0.5D
 #define TURN_MIN            -16  /* minimum value PID calculator returns    */
 #define TURN_MAX             16  /* maximum value PID calculator returns    */
-#define SPEED_NORM           50
+#define SPEED_SLOW           15
+#define SPEED_NORM           25  /* was 50 for 2020 program                 */
 #define GS_TARGET            47  /* was 47 for 2020 program                 */
 #define SONAR_ALERT_DISTANCE 10  /* in centimeters                          */
 #define TIRE_DIAMETER    100.0F  /* diameter of tire in milimater           */
