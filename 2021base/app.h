@@ -33,6 +33,9 @@ extern void main_task(intptr_t unused);
 extern void update_task(intptr_t unused);
 extern void task_activator(intptr_t tskid);
 
+int32_t runningMode; //sano family add
+
+
 #endif /* TOPPERS_MACRO_ONLY */
 
 #ifdef __cplusplus
