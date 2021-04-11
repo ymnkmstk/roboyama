@@ -22,6 +22,7 @@ Motor*          tailMotor;
 Motor*          armMotor;
 
 BrainTree::BehaviorTree* tree = nullptr;
+BrainTree::BehaviorTree* tree_test = nullptr; //sano family add
 
 class IsTouchOn : public BrainTree::Node {
 public:
@@ -121,6 +122,7 @@ public:
         /* initialize variables */
         prevAngL = leftMotor->getCount();
         prevAngR = rightMotor->getCount();
+        runningMode = 0; //sano family add
     }
     Status update() override {
         /* accumulate distance */
@@ -280,17 +282,40 @@ private:
     int cnt;
 };
 
+//sano family add test
+class SpinEV3 : public BrainTree::Node { 
+public:
+    SpinEV3(int direction, int count) : dir(direction), cnt(count) {}
+    Status update() override {
+        if (--cnt >= 0) {
+            leftMotor->setPWM(10);
+            rightMotor->setPWM(-10);
+            printf("test\n");
+            return Node::Status::Running;
+        } else {
+            return Node::Status::Success;
+        }
+    }
+private:
+    int8_t dir;
+    int cnt;
+};
+
+
 /* method to wake up the main task for termination */
 class WakeUpMain : public BrainTree::Node {
 public:
     Status update() override {
         _log("waking up main...");
         /* wake up the main task */
-        ER ercd = wup_tsk(MAIN_TASK);
-        assert(ercd == E_OK);
-        if (ercd != E_OK) {
-            syslog(LOG_NOTICE, "wup_tsk() returned %d", ercd);
-        }
+        // ER ercd = wup_tsk(MAIN_TASK);
+        // assert(ercd == E_OK);
+        //if (ercd != E_OK) {
+        //    syslog(LOG_NOTICE, "wup_tsk() returned %d", ercd);
+        //}
+        leftMotor->setPWM(0);
+        rightMotor->setPWM(0);
+        runningMode = 1;
        return Node::Status::Success;
     }
 };
@@ -355,6 +380,13 @@ void main_task(intptr_t unused) {
         .end()
         .build();
 
+    //trial - sano family add
+    tree_test = (BrainTree::BehaviorTree*) BrainTree::Builder() 
+        .composite<BrainTree::MemSequence>()
+            .leaf<SpinEV3>(_EDGE, 100) /* TODO magic number */
+        .end()
+        .build();
+
     /* register cyclic handler to EV3RT */
     sta_cyc(CYC_UPD_TSK);
     /* sleep until being waken up */
@@ -386,5 +418,13 @@ void main_task(intptr_t unused) {
 
 /* periodic task to update the behavior tree */
 void update_task(intptr_t unused) {
-    if (tree != nullptr) tree->update();
+
+    //if (tree != nullptr) tree->update();
+
+    //sano family add
+     if(runningMode==0){
+        if (tree != nullptr) tree->update();
+     }else if(runningMode==1){
+        if (tree_test != nullptr) tree_test->update();
+     }
 }
