@@ -65,12 +65,10 @@ using namespace ev3api;
 #define P_CONST           0.85D
 #define I_CONST            0.0000001D
 #define D_CONST            0.5D
-//#define SPEED_NORM           50
 #define GS_TARGET            47
 
-
 #define SPEED_NORM           50
-#define SPEED_SLOW           30
+#define SPEED_SLOW           40
 #define SPEED_RECOVER        10
 #define SPEED_BLIND          75
 #define TURN_MIN            -16  // minimum value PID calculator returns
@@ -89,6 +87,10 @@ using namespace ev3api;
 #define CMD_START_l     'l' // L-mode start command
 #define CMD_STOP_S      'S'
 #define CMD_STOP_s      's'
+
+// key distance
+#define DIST_force_blind    745
+#define DIST_end_blind      11600
 
 // machine state
 #define ST_start        0
@@ -126,14 +128,17 @@ const char stateName[][ST_NAME_LEN] = {
 #define EVT_line_found      12
 #define EVT_dist_reached    13
 #define EVT_tilt            14
-
 #define EVT_slalom_reached  15
 #define EVT_slalom_challenge    16
 #define EVT_block_challenge 17
 #define EVT_block_area_in   18
 #define EVT_line_on_pid_cntl    19
 #define EVT_line_on_p_cntl  20
-#define EVT_NAME_LEN        21  // maximum number of characters for an event name
+#define EVT_robot_aligned  21
+#define EVT_black_found     22
+#define EVT_distance_over   23
+#define EVT_NAME_LEN        24  // maximum number of characters for an event name
+
 const char eventName[][EVT_NAME_LEN] = {
     "EVT_cmdStart_L",
     "EVT_cmdStart_R",
@@ -155,7 +160,10 @@ const char eventName[][EVT_NAME_LEN] = {
     "EVT_block_challenge",
     "EVT_block_area_in",
     "EVT_line_on_pid_cntl",
-    "EVT_line_on_p_cntl"
+    "EVT_line_on_p_cntl",
+    "EVT_robot_aligned",
+    "EVT_black_found",
+    "EVT_distance_over"
 };
 
 typedef struct {

@@ -88,154 +88,361 @@ void ChallengeRunner::runChallenge() {
 
     switch (g_challenge_stepNo) {
         //スラローム専用処理
-        case 0:
+        case 0: // changed
             printf("ぶつかり\n");
-            haveControl();
-            setPwmLR(20,20,Mode_speed_constant,1);
-            clock->sleep(800);
-            setPwmLR(10,10,Mode_speed_constant,1);
+            //haveControl();
+            setPwmLR(25,25,Mode_speed_constant,1);
             clock->sleep(1000);
-            rest(300);
+            setPwmLR(6,6,Mode_speed_constant,1);
+            clock->sleep(1200);
+            rest(200);
             break;
         case 1:
             setPwmLR(-20,-20,Mode_speed_constant,1);
-            clock->sleep(500);
-            rest(300);
+            clock->sleep(550);
+            rest(200);
             if (_LEFT == 1){
-                setPwmLR(43,40,Mode_speed_decreaseLR,25);
+                setPwmLR(42,40,Mode_speed_decreaseLR,30);
             }else{
-                setPwmLR(40,43,Mode_speed_decreaseLR,25);
+                setPwmLR(40,42,Mode_speed_decreaseLR,30);
             }
             break;
         case 10:
             rest(300);
-            setPwmLR(4,15,Mode_speed_constant,1);
+            if (_LEFT == 1){
+                setPwmLR(6,23,Mode_speed_constant,1);
+            }else{
+                setPwmLR(23,6,Mode_speed_constant,1);
+            }
             break;
         case 11:
-            rest(300);
-            setPwmLR(-3,-15,Mode_speed_constant,1);
+            rest(200);
+            if (_LEFT == 1){
+                setPwmLR(-3,-15,Mode_speed_constant,1);
+            }else{
+                setPwmLR(-15,-3,Mode_speed_constant,1);
+            }
             break;            
         case 12:
-            rest(300);
-            setPwmLR(15,3,Mode_speed_constant,1);
+            rest(200);
+            if (_LEFT == 1){
+                setPwmLR(15,3,Mode_speed_constant,1);
+            }else{
+                setPwmLR(3,15,Mode_speed_constant,1);
+            }
+            break;
+        case 13:
+            rest(200);
+            if (_LEFT == 1){
+                setPwmLR(-15,-15,Mode_speed_constant,1);
+                clock->sleep(100);
+            }else{
+                setPwmLR(-15,-15,Mode_speed_constant,1);
+                clock->sleep(100);
+            }
             break;
         case 21:
-            rest(300);
-            setPwmLR(-10,10,Mode_speed_constant,1);
+            rest(200);
+            pwm_L = _EDGE * -10;
+            pwm_R = _EDGE * 10;
+            setPwmLR(pwm_L,pwm_R,Mode_speed_constant,1);
             break;
         case 22:
-            rest(300);
-            setPwmLR(10,-10,Mode_speed_constant,1);
+            rest(200);
+            pwm_L = _EDGE * 10;
+            pwm_R = _EDGE * -10;
+            setPwmLR(pwm_L,pwm_R,Mode_speed_constant,1);
             break;  
         case 23:
-            rest(300);
-            setPwmLR(30,30,Mode_speed_constant,1);
-            break; 
+            rest(200);
+            if (_LEFT == 1){
+                setPwmLR(20,20,Mode_speed_constant,1); //hinu
+            }else{
+                setPwmLR(20,22,Mode_speed_constant,1);
+            }
+            break;
         case 24:
-            rest(300);
-            setPwmLR(10,-10,Mode_speed_constant,1);
+            //rest(200);  
+            if (_LEFT == 1){
+                setPwmLR(10,-10,Mode_speed_constant,1);
+            }else{
+                setPwmLR(-9,13,Mode_speed_constant,1);
+            }
             break;
         case 30:
-            rest(300);
-            setPwmLR(30,30,Mode_speed_constant,1);
+            rest(200);
+            if (_LEFT == 1){
+                setPwmLR(30,30,Mode_speed_decreaseLR,50);
+            }else{
+                setPwmLR(30,32,Mode_speed_decreaseLR,70);
+            }
+            break;
+        case 31:
+            rest(200);
+            if (_LEFT == 1){
+                setPwmLR(-10,10,Mode_speed_constant,1);
+            }else{
+                setPwmLR(9,-9,Mode_speed_constant,1);
+            }
+            break;
+        case 32:
+            rest(200);
+            if (_LEFT == 1){
+                setPwmLR(20,20,Mode_speed_decreaseLR,50);
+            }else{
+                setPwmLR(20,23,Mode_speed_constant, 1);
+            }
             break;
         case 40:
-            setPwmLR(30,40,Mode_speed_constant,1);
-            break;
-        case 41:
-            rest(300);
-            setPwmLR(15,-13,Mode_speed_constant,1);
+            rest(200);
+            if (_LEFT == 1){
+                setPwmLR(15,-13,Mode_speed_constant,1);
+            }else{
+                setPwmLR(-12,16,Mode_speed_constant,1);
+            }
             break;
         case 50:
-            rest(300);            
+            rest(200);            
             if (_LEFT == 1){
-                setPwmLR(20,25,Mode_speed_increaseR,65);
+                setPwmLR(20,25,Mode_speed_increaseR,75);
             }else{
-                setPwmLR(25,20,Mode_speed_increaseL,65);
+                setPwmLR(25,22,Mode_speed_increaseL,160); // changed
             }
             break;
         case 60:
-            rest(300);  
+            rest(200);  
             if (_LEFT == 1){
-                setPwmLR(-2,15,Mode_speed_constant,1);
+                setPwmLR(-3,22,Mode_speed_constant,1);
                 clock->sleep(200);
-                setPwmLR(5,15,Mode_speed_constant,1);
+                setPwmLR(10,27,Mode_speed_constant,1);
             }else{
-                setPwmLR(15,2,Mode_speed_decreaseL,1);
+                setPwmLR(22,-3,Mode_speed_constant,1);
+                clock->sleep(200);
+                setPwmLR(23,10,Mode_speed_constant,1);
             }
             break;
-       case 70:
-            rest(300);
-            setPwmLR(20,20,Mode_speed_constant,1);
+        case 61:
+            rest(200);  
+            if (_LEFT == 1){
+                setPwmLR(30,0,Mode_speed_constant,1);
+                clock->sleep(700);
+                setPwmLR(25,15,Mode_speed_constant,1);
+            }else{
+                setPwmLR(0,30,Mode_speed_constant,1);
+                clock->sleep(700);
+                setPwmLR(15,25,Mode_speed_constant,1);
+            }
+            break;       
+        case 70:
+            rest(200);
+            setPwmLR(25,25,Mode_speed_constant,1);
             break;
         case 71:
-            rest(300);
+            rest(200);
             if (_LEFT == 1){
                 setPwmLR(-12,18,Mode_speed_constant,1);
-                clock->sleep(1000);
             }else{
                 setPwmLR(18,-12,Mode_speed_constant,1);
-                clock->sleep(1000);
             }
             break;
         case 80:
             if (_LEFT == 1){
-                setPwmLR(28,28,Mode_speed_constant,1);
+                setPwmLR(20,20,Mode_speed_constant,1);
             }else{
                 setPwmLR(28,28,Mode_speed_constant,1);
             }
             break;
         case 90:
-            pwm_L = _EDGE * 15;
-            pwm_R = _EDGE * -4;
-            setPwmLR(pwm_L,pwm_R,Mode_speed_constant,1);
+            if (_LEFT == 1){
+                setPwmLR(12,-11,Mode_speed_constant,1);
+            }else{
+                setPwmLR(-14,15,Mode_speed_constant,1);
+            }
+            break;
+        case 99: // changed
+            rest(1000);
+            if (_LEFT == 1){
+                setPwmLR(12,-11,Mode_speed_constant,1);
+            }else{
+                setPwmLR(-8,9,Mode_speed_constant,1);
+            }
             break;
         case 100:
             if (_LEFT == 1){
-                setPwmLR(32,25,Mode_speed_decreaseL,100);
+                setPwmLR(18,18,Mode_speed_decreaseL,180);
             }else{
-                setPwmLR(25,32,Mode_speed_decreaseR,100);
+                setPwmLR(18,21,Mode_speed_decreaseR,250);
             }
             break;
-        case 110:
-            pwm_L = _EDGE * 15;
-            pwm_R = _EDGE * -15;
-            setPwmLR(pwm_L,pwm_R,Mode_speed_constant,1);
+        case 101:
+            if (_LEFT == 1){
+                rest(200);
+                setPwmLR(20,-20,Mode_speed_constant,1);
+            }else{
+                rest(200);
+                setPwmLR(-20,23,Mode_speed_constant,1);
+            }
+            break;
+        case 102:
+            if (_LEFT == 1){
+                rest(200);
+                setPwmLR(-8,8,Mode_speed_constant,1);
+                clock->sleep(460);
+                setPwmLR(25,18,Mode_speed_decreaseL,200);
+            }else{
+                setPwmLR(8,-8,Mode_speed_constant,1);
+                clock->sleep(460);
+                setPwmLR(18,25,Mode_speed_decreaseL,200);
+            }
+            break;
+        case 112:
+            rest(200);
+            if (_LEFT == 1){
+                setPwmLR(20,20,Mode_speed_constant,1);
+            }else{
+                setPwmLR(20,22,Mode_speed_constant,1);
+            }
+            break;
+        case 114:
+            rest(200);
+            if (_LEFT == 1){
+                setPwmLR(13,-8,Mode_speed_constant,1);
+            }else{
+                setPwmLR(-8,13,Mode_speed_constant,1);
+            }
+            break;
+        case 120:
+            rest(200);
+            if (_LEFT == 1){
+                setPwmLR(10,10,Mode_speed_constant,1);
+            }else{
+                setPwmLR(10,10,Mode_speed_constant,1);
+            }
             break;
         case 121:
+            rest(200);
             if (_LEFT == 1){
-                setPwmLR(24,28,Mode_speed_increaseL,80);
+                setPwmLR(26,30,Mode_speed_increaseL,120);
             }else{
-                setPwmLR(28,24,Mode_speed_increaseR,80);
+                setPwmLR(30,26,Mode_speed_increaseR,120);
             }
             break;
         case 130:
-            pwm_L = _EDGE * 15;
-            pwm_R = _EDGE * -15;
-            setPwmLR(pwm_L,pwm_R,Mode_speed_constant,1);
+            rest(200);
+            if (_LEFT == 1){
+                setPwmLR(-14,15,Mode_speed_constant,1);
+            }else{
+                setPwmLR(15,-14,Mode_speed_constant,1);
+            }
+            break;
+        case 131:
+            rest(200);
+            if (_LEFT == 1){
+                setPwmLR(22,22,Mode_speed_constant,1);
+            }else{
+                setPwmLR(22,24,Mode_speed_constant,1);
+            }
+            break;
+        case 132:
+            rest(200);
+            if (_LEFT == 1){
+                setPwmLR(40,10,Mode_speed_increaseR,10);
+            }else{
+                setPwmLR(8,32,Mode_speed_increaseL,25);
+            }
+            break;
+        case 133:
+            rest(200);
+            if (_LEFT == 1){
+                setPwmLR(9,-9,Mode_speed_constant,1);
+            }else{
+                setPwmLR(-9,11,Mode_speed_constant,1);
+            }
+            break;
+        case 135:
+            setPwmLR(0,0,Mode_speed_constant,1);
+            break;
+        case 136:
+            rest(200);
+            if (_LEFT == 1){
+                setPwmLR(9,-9,Mode_speed_constant,1);
+            }else{
+                setPwmLR(-9,11,Mode_speed_constant,1);
+                clock->sleep(400);
+            }
+            break;
+        case 139:
+            rest(200);
+            if (_LEFT == 1){
+                setPwmLR(10,-10,Mode_speed_constant,1);
+            }else{
+                setPwmLR(-10,11,Mode_speed_constant,1);
+            }
             break;
         case 141:
             if (_LEFT == 1){
-                setPwmLR(26,25,Mode_speed_constant,1);
+                setPwmLR(35,33,Mode_speed_constant,1);
             }else{
-                setPwmLR(26,27,Mode_speed_constant,1);
+                setPwmLR(33,35,Mode_speed_constant,1);
             }
             break;
-
+        case 150:
+            setPwmLR(30,30,Mode_speed_constant,1);
+            break;
         //ボーナスブロック専用処理
         case 151:
-            rest(300);
+            rest(500);
+            pwm_L = _EDGE * 10;
+            pwm_R = _EDGE * -10;
+            setPwmLR(pwm_L,pwm_R,Mode_speed_constant,1);
+            break;
+        case 152:
+            rest(200);
+            pwm_L = _EDGE * 12;
+            pwm_R = _EDGE * -12;
+            setPwmLR(pwm_L,pwm_R,Mode_speed_constant,1);
+            break;
+        case 154:
+            //rest(200);
+            pwm_L = _EDGE * 12;
+            pwm_R = _EDGE * -12;
+            setPwmLR(pwm_L,pwm_R,Mode_speed_constant,1);
+            break;
+        case 155:
+            pwm_L = 0;
+            pwm_R = 0;
+            setPwmLR(pwm_L,pwm_R,Mode_speed_constant,1);
+            break;
+        // case 161:
+        //     rest(200);
+        //     pwm_L = _EDGE * -8;
+        //     pwm_R = _EDGE * 8;
+        //     setPwmLR(pwm_L,pwm_R,Mode_speed_constant,1);
+        //     break;
+        case 170:
+            //rest(200);
+            setPwmLR(25,25,Mode_speed_increaseLR,25);
+            break;
+        case 171://hinu
+            //rest(200);
+            setPwmLR(20,-20,Mode_speed_constant,1);
+            clock->sleep(1000);
+            break;
+        case 173:
             if (_LEFT == 1){
-                setPwmLR(8,-8,Mode_speed_constant,1);
+                setPwmLR(-20,20,Mode_speed_constant,1);
+                clock->sleep(130);
             }else{
-                setPwmLR(-8,8,Mode_speed_constant,1);
+                setPwmLR(20,-20,Mode_speed_constant,1);
+                clock->sleep(170);
             }
             break;
-        case 170:
-            setPwmLR(50,50,Mode_speed_constant,1);
-            break;
         case 180:
-            setPwmLR(30,30,Mode_speed_decreaseLR,100);
+            if (_LEFT == 1){
+                setPwmLR(30,30,Mode_speed_decreaseLR,100);
+            }else{
+                setPwmLR(40,40,Mode_speed_decreaseLR,70);
+            }
             break;
         case 190:
             rest(500);
@@ -244,16 +451,13 @@ void ChallengeRunner::runChallenge() {
             }else{
                 setPwmLR(-17,15,Mode_speed_constant,1);
             }
-            //clock->sleep(680);
-            //rest(900);
             break;
         case 193:
-            rest(700);
+            rest(300);
             setPwmLR(30,30,Mode_speed_constant,1);
-            clock->sleep(700);
             break;
         case 200:
-            rest(600);
+            rest(500);
             if (_LEFT == 1){
                 setPwmLR(10,0,Mode_speed_constant,1);
             }else{
@@ -261,7 +465,11 @@ void ChallengeRunner::runChallenge() {
             }
             break;
         case 201:
-            setPwmLR(30,30,Mode_speed_constant,1);
+            if (_LEFT == 1){
+                setPwmLR(35,40,Mode_speed_constant,1);
+            }else{
+                setPwmLR(40,35,Mode_speed_constant,1);
+            }            
             break;
         case 210:
             if (_LEFT == 1){
@@ -274,19 +482,29 @@ void ChallengeRunner::runChallenge() {
             setPwmLR(30,30,Mode_speed_constant,1);
             break;
         case 213:
-            setPwmLR(30,29,Mode_speed_constant,1);
+            if (_LEFT == 1){
+                setPwmLR(30,29,Mode_speed_constant,1);
+            }else{
+                setPwmLR(29,30,Mode_speed_constant,1);
+            }
             break;
         case 230:
-            rest(300);
+            rest(200);
             if (_LEFT == 1){
-                setPwmLR(-9,30,Mode_speed_constant,1);
+                setPwmLR(-9,20,Mode_speed_constant,1);
             }else{
-                setPwmLR(30,-9,Mode_speed_constant,1);
+                setPwmLR(20,-9,Mode_speed_constant,1);
             }
             break;
         case 231:
-            rest(300);
+            rest(200);
             setPwmLR(30,30,Mode_speed_constant,1);
+            break;
+        case 233:
+            rest(200);
+            pwm_L = _EDGE * -20;
+            pwm_R = _EDGE * 20;
+            setPwmLR(pwm_L,pwm_R,Mode_speed_constant,1);
             break;
         case 240:
             setPwmLR(30,30,Mode_speed_constant,1);
@@ -300,12 +518,13 @@ void ChallengeRunner::runChallenge() {
             break;
         case 260:
             if (_LEFT == 1){
-                setPwmLR(4,30,Mode_speed_constant,1);
+                setPwmLR(5,37,Mode_speed_constant,1);
             }else{
-                setPwmLR(30,4,Mode_speed_constant,1);
+                setPwmLR(37,5,Mode_speed_constant,1);
             }
             break;
          case 261:
+            rest(1000); // changed
             if (_LEFT == 1){
                 setPwmLR(2,20,Mode_speed_constant,1);
             }else{
@@ -315,26 +534,55 @@ void ChallengeRunner::runChallenge() {
         case 263:
             setPwmLR(50,50,Mode_speed_decreaseLR,300);
             break;
-        case 281:
+        case 264:
+             if (_LEFT == 1){
+                setPwmLR(3,37,Mode_speed_constant,1);
+            }else{
+                setPwmLR(37,3,Mode_speed_constant,1);
+            }
+            break;
+        case 265:
+            setPwmLR(50,50,Mode_speed_decreaseLR,300);
+            break;
+         case 271:
+            rest(200);
+            if (_LEFT == 1){
+                setPwmLR(10,2,Mode_speed_constant,1);
+            }else{
+                setPwmLR(2,10,Mode_speed_constant,1);
+            }
+            break;
+        case 272:
+            if (_LEFT == 1){
+                setPwmLR(50,50,Mode_speed_decreaseLR,300);
+            }else{
+                setPwmLR(50,51,Mode_speed_decreaseLR,300);
+            }
+            break;
+        case 280:
             setPwmLR(30,30,Mode_speed_decreaseLR,180);
             break;
         case 282:
             if (_LEFT == 1){
-                setPwmLR(25,17,Mode_speed_decreaseLR,150);
+                setPwmLR(22,20,Mode_speed_decreaseLR,80);
             }else{
-                setPwmLR(17,25,Mode_speed_decreaseLR,150);
+                setPwmLR(20,22,Mode_speed_decreaseLR,80);
             }
             break;
         case 284:
-            rest(300);
+            //rest(200);
             if (_LEFT == 1){
-                setPwmLR(10,-10,Mode_speed_constant,1);
+                setPwmLR(12,-8,Mode_speed_constant,1);
             }else{
-                setPwmLR(-10,10,Mode_speed_constant,1);
+                setPwmLR(-8,12,Mode_speed_constant,1);
             }
             break;
         case 286:
-            setPwmLR(25,25,Mode_speed_constant,1);
+            if (_LEFT == 1){
+                setPwmLR(25,25,Mode_speed_constant,1);
+            }else{
+                setPwmLR(25,26,Mode_speed_constant,1);
+            }
             break;
         case 290:
             setPwmLR(0,0,Mode_speed_constant,1);
