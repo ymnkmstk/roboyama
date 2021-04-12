@@ -287,20 +287,88 @@ class SpinEV3 : public BrainTree::Node {
 public:
     SpinEV3(int direction, int count) : dir(direction), cnt(count) {}
     Status update() override {
+        curAngle = gyroSensor->getAngle();
+            if(curAngle < -9){
+                prevAngle = curAngle;
+            }
+            if (prevAngle < -9 && curAngle >= 0){
+                leftMotor->setPWM(10);
+                rightMotor->setPWM(10);
+                armMotor->setPWM(-100);
+                return Node::Status::Success;
+            }
+
         if (--cnt >= 0) {
-            leftMotor->setPWM(10);
-            rightMotor->setPWM(-10);
-            printf("test\n");
+            armMotor->setPWM(30);
+            leftMotor->setPWM(SPEED_NORM);
+            rightMotor->setPWM(SPEED_NORM);
             return Node::Status::Running;
-        } else {
-            return Node::Status::Success;
         }
     }
 private:
     int8_t dir;
     int cnt;
+    int32_t curAngle;
+    int32_t prevAngle;
 };
 
+class TraceLine2 : public BrainTree::Node {
+public:
+    TraceLine2() : fillFIR(FIR_ORDER + 1), traceCnt(0) {
+        ltPid = new PIDcalculator(P_CONST, I_CONST, D_CONST, PERIOD_UPD_TSK, TURN_MIN, TURN_MAX);
+        fir_r = new FIR_Transposed<FIR_ORDER>(hn);
+        fir_g = new FIR_Transposed<FIR_ORDER>(hn);
+        fir_b = new FIR_Transposed<FIR_ORDER>(hn);
+    }
+    ~TraceLine2() {
+        delete fir_b;
+        delete fir_g;
+        delete fir_r;
+        delete ltPid;
+    }
+    Status update() override {
+        int16_t sensor, diff;
+        int8_t forward, turn, pwm_L, pwm_R;
+        rgb_raw_t cur_rgb;
+
+        colorSensor->getRawColor(cur_rgb);
+        /* process RGB by the Low Pass Filter */
+        cur_rgb.r = fir_r->Execute(cur_rgb.r);
+        cur_rgb.g = fir_g->Execute(cur_rgb.g);
+        cur_rgb.b = fir_b->Execute(cur_rgb.b);
+
+        /* wait until FIR array is filled */
+        if (fillFIR > 0) {
+            fillFIR--;
+        } else {
+            /* B - G cuts off blue */
+            //sensor = (cur_rgb.r * 77 + cur_rgb.g * 150 + (cur_rgb.b - cur_rgb.g) * 29) / 256;
+            sensor = cur_rgb.r;
+            //diff = colorSensor->getBrightness() - 20;
+            /* compute necessary amount of steering by PID control */
+            turn = _EDGE * ltPid->compute(sensor, (int16_t)GS_TARGET);
+            //turn = 0.83 * diff + 0;
+            forward = 10;
+            /* steer EV3 by setting different speed to the motors */
+            pwm_L = forward - turn;
+            pwm_R = forward + turn;
+            leftMotor->setPWM(pwm_L);
+            rightMotor->setPWM(pwm_R);
+            /* display trace message in every PERIOD_TRACE_MSG ms */
+            if (++traceCnt * PERIOD_UPD_TSK >= PERIOD_TRACE_MSG) {
+                traceCnt = 0;
+                _log("sensor = %d, pwm_L = %d, pwm_R = %d",
+                    sensor, pwm_L, pwm_R);
+            }
+        }
+        return Node::Status::Running;
+    }
+protected:
+    PIDcalculator* ltPid;
+    FIR_Transposed<FIR_ORDER> *fir_r, *fir_g, *fir_b;
+private:
+    int traceCnt, fillFIR;
+};
 
 /* method to wake up the main task for termination */
 class WakeUpMain : public BrainTree::Node {
@@ -384,6 +452,7 @@ void main_task(intptr_t unused) {
     tree_test = (BrainTree::BehaviorTree*) BrainTree::Builder() 
         .composite<BrainTree::MemSequence>()
             .leaf<SpinEV3>(_EDGE, 100) /* TODO magic number */
+            .leaf<TraceLine2>()
         .end()
         .build();
 
