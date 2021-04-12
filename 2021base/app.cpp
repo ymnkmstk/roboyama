@@ -191,8 +191,7 @@ public:
         if (fillFIR > 0) {
             fillFIR--;
         } else {
-            /* B - G cuts off blue */
-            sensor = (cur_rgb.r * 77 + cur_rgb.g * 150 + (cur_rgb.b - cur_rgb.g) * 29) / 256;
+            sensor = cur_rgb.r;
 
             /* compute necessary amount of steering by PID control */
             turn = _EDGE * ltPid->compute(sensor, (int16_t)GS_TARGET);
@@ -244,8 +243,7 @@ public:
         if (fillFIR > 0) {
             fillFIR--;
         } else {
-            /* B - G cuts off blue */
-            sensor = (cur_rgb.r * 77 + cur_rgb.g * 150 + (cur_rgb.b - cur_rgb.g) * 29) / 256;
+            sensor = cur_rgb.r;
 
             if (sensor >= GS_TARGET) {
                 /* move EV3 closer to the line */
@@ -334,9 +332,9 @@ void main_task(intptr_t unused) {
     tree = (BrainTree::BehaviorTree*) BrainTree::Builder()
         .composite<BrainTree::MemSequence>()
             .leaf<IsTouchOn>()
-            .leaf<RotateEV3>(_EDGE, 100) /* TODO magic number */
+            .leaf<RotateEV3>(_EDGE, 20) /* TODO magic number */
             .leaf<MoveToLine>()
-            .leaf<RotateEV3>((-1) * _EDGE, 100) /* TODO magic number */
+            .leaf<RotateEV3>((-1) * _EDGE, 20) /* TODO magic number */
             .composite<BrainTree::ParallelSequence>(1,1)
                 .leaf<EstimateLocation>()
                 .leaf<IsSonarOn>()
