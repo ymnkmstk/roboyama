@@ -86,10 +86,10 @@ extern Motor*       armMotor;
 #define SPEED_SLOW           15
 #define SPEED_NORM           25  /* was 50 for 2020 program                 */
 #define GS_TARGET            47  /* was 47 for 2020 program                 */
-#define SONAR_ALERT_DISTANCE 10  /* in centimeters                          */
+#define SONAR_ALERT_DISTANCE 5  /* in centimeters                          */
 #define TIRE_DIAMETER    100.0F  /* diameter of tire in milimater           */
 #define WHEEL_TREAD      150.0F  /* distance between right and left wheels  */
-#define BLUE_DISTANCE     12000  /* 2nd blue part should be further than this   */ 
+#define BLUE_DISTANCE     120000  /* 2nd blue part should be further than this   */ 
 
 enum BoardItem {
     LOCX, /* horizontal location    */

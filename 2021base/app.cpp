@@ -83,7 +83,7 @@ public:
     Status update() override {
         int32_t distance = sonarSensor->getDistance();
         if ((distance <= SONAR_ALERT_DISTANCE) && (distance >= 0)) {
-            _log("SONAR_ALERT_DISTANCE");
+            _log("SONAR_ALERT_DISTANCE=%d", distance);
             return Node::Status::Success;
         } else {
             return Node::Status::Failure;
@@ -288,22 +288,27 @@ public:
     SpinEV3(int direction, int count) : dir(direction), cnt(count) {}
     Status update() override {
         curAngle = gyroSensor->getAngle();
-            if(curAngle < -9){
-                prevAngle = curAngle;
-            }
-            if (prevAngle < -9 && curAngle >= 0){
-                leftMotor->setPWM(10);
-                rightMotor->setPWM(10);
-                armMotor->setPWM(-100);
-                return Node::Status::Success;
-            }
+            if(cnt >= 1){
+                leftMotor->setPWM(0);
+                rightMotor->setPWM(0);
+                armMotor->setPWM(-50);
+                cnt++;
+                if(cnt >= 500){
+                    return Node::Status::Success;
+                }
+            }else{
+                armMotor->setPWM(30);
+                leftMotor->setPWM(SPEED_NORM);
+                rightMotor->setPWM(SPEED_NORM);
 
-        if (--cnt >= 0) {
-            armMotor->setPWM(30);
-            leftMotor->setPWM(SPEED_NORM);
-            rightMotor->setPWM(SPEED_NORM);
-            return Node::Status::Running;
-        }
+                if(curAngle < -9){
+                    prevAngle = curAngle;
+                }
+                if (prevAngle < -9 && curAngle >= 0){
+                    ++cnt;
+                }
+                return Node::Status::Running;
+            }
     }
 private:
     int8_t dir;
@@ -337,18 +342,22 @@ public:
         cur_rgb.g = fir_g->Execute(cur_rgb.g);
         cur_rgb.b = fir_b->Execute(cur_rgb.b);
 
+        // _log("cur_rgb.r = %d, cur_rgb.g = %d, cur_rgb.b = %d",
+        //             cur_rgb.r, cur_rgb.g, cur_rgb.b);
+
         /* wait until FIR array is filled */
-        if (fillFIR > 0) {
-            fillFIR--;
+        if (fillFIR < 100) {
+            fillFIR++;
         } else {
             /* B - G cuts off blue */
             //sensor = (cur_rgb.r * 77 + cur_rgb.g * 150 + (cur_rgb.b - cur_rgb.g) * 29) / 256;
+            //sensor = cur_rgb.r;
             sensor = cur_rgb.r;
             //diff = colorSensor->getBrightness() - 20;
             /* compute necessary amount of steering by PID control */
             turn = _EDGE * ltPid->compute(sensor, (int16_t)GS_TARGET);
             //turn = 0.83 * diff + 0;
-            forward = 10;
+            forward = 15;
             /* steer EV3 by setting different speed to the motors */
             pwm_L = forward - turn;
             pwm_R = forward + turn;
@@ -451,7 +460,7 @@ void main_task(intptr_t unused) {
     //trial - sano family add
     tree_test = (BrainTree::BehaviorTree*) BrainTree::Builder() 
         .composite<BrainTree::MemSequence>()
-            .leaf<SpinEV3>(_EDGE, 100) /* TODO magic number */
+            .leaf<SpinEV3>(_EDGE, 0) /* TODO magic number */
             .leaf<TraceLine2>()
         .end()
         .build();
