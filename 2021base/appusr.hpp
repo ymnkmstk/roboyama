@@ -84,8 +84,8 @@ extern Motor*       armMotor;
 #define D_CONST            0.5D
 #define TURN_MIN            -16  /* minimum value PID calculator returns    */
 #define TURN_MAX             16  /* maximum value PID calculator returns    */
-#define SPEED_SLOW           15
-#define SPEED_NORM           25  /* was 50 for 2020 program                 */
+#define SPEED_SLOW           10
+#define SPEED_NORM           10  /* was 50 for 2020 program                 */
 #define GS_TARGET            47  /* was 47 for 2020 program                 */
 #define SONAR_ALERT_DISTANCE 5  /* in centimeters                          */
 #define TIRE_DIAMETER    100.0F  /* diameter of tire in milimater           */

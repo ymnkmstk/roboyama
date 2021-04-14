@@ -357,7 +357,7 @@ public:
             /* compute necessary amount of steering by PID control */
             turn = _EDGE * ltPid->compute(sensor, (int16_t)GS_TARGET);
             //turn = 0.83 * diff + 0;
-            forward = 15;
+            forward = SPEED_SLOW;
             /* steer EV3 by setting different speed to the motors */
             pwm_L = forward - turn;
             pwm_R = forward + turn;
@@ -436,9 +436,9 @@ void main_task(intptr_t unused) {
     tree = (BrainTree::BehaviorTree*) BrainTree::Builder()
         .composite<BrainTree::MemSequence>()
             .leaf<IsTouchOn>()
-            .leaf<RotateEV3>(_EDGE, 100) /* TODO magic number */
-            .leaf<MoveToLine>()
-            .leaf<RotateEV3>((-1) * _EDGE, 100) /* TODO magic number */
+            // .leaf<RotateEV3>(_EDGE, 100) /* TODO magic number */
+            // .leaf<MoveToLine>()
+            // .leaf<RotateEV3>((-1) * _EDGE, 100) /* TODO magic number */
             .composite<BrainTree::ParallelSequence>(1,1)
                 .leaf<EstimateLocation>()
                 .leaf<IsSonarOn>()
