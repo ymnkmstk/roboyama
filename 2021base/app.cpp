@@ -299,7 +299,8 @@ public:
             }else{
                 armMotor->setPWM(30);
                 leftMotor->setPWM(SPEED_NORM);
-                rightMotor->setPWM(SPEED_NORM);
+//                rightMotor->setPWM(SPEED_NORM);
+                rightMotor->setPWM(SPEED_NORM +2);
 
                 if(curAngle < -9){
                     prevAngle = curAngle;
@@ -357,7 +358,7 @@ public:
             /* compute necessary amount of steering by PID control */
             turn = _EDGE * ltPid->compute(sensor, (int16_t)GS_TARGET);
             //turn = 0.83 * diff + 0;
-            forward = 15;
+            forward = 10;
             /* steer EV3 by setting different speed to the motors */
             pwm_L = forward - turn;
             pwm_R = forward + turn;
@@ -366,8 +367,8 @@ public:
             /* display trace message in every PERIOD_TRACE_MSG ms */
             if (++traceCnt * PERIOD_UPD_TSK >= PERIOD_TRACE_MSG) {
                 traceCnt = 0;
-                _log("sensor = %d, pwm_L = %d, pwm_R = %d",
-                    sensor, pwm_L, pwm_R);
+                _log("sensor = %d, pwm_L = %d, pwm_R = %d, r = %d, g = %d, b=%d",
+                    sensor, pwm_L, pwm_R ,cur_rgb.r,cur_rgb.g,cur_rgb.b);
             }
         }
         return Node::Status::Running;
@@ -500,9 +501,18 @@ void update_task(intptr_t unused) {
     //if (tree != nullptr) tree->update();
 
     //sano family add
+    //カンマで飛べるように変更
+    rgb_raw_t cur_rgb2;
+    colorSensor->getRawColor(cur_rgb2);
+    if(cur_rgb2.b>=80 || cur_rgb2.b,sonarSensor->getDistance() < 110){
+        runningMode=1;
+    }
+
      if(runningMode==0){
         if (tree != nullptr) tree->update();
-     }else if(runningMode==1){
+     }else if(runningMode==1 ){
+         //_log("はいったよ");
         if (tree_test != nullptr) tree_test->update();
      }
+
 }
