@@ -298,8 +298,8 @@ public:
                 }
             }else{
                 armMotor->setPWM(30);
-                leftMotor->setPWM(SPEED_NORM);
-                rightMotor->setPWM(SPEED_NORM);
+                leftMotor->setPWM(26);
+                rightMotor->setPWM(25);
 
                 if(curAngle < -9){
                     prevAngle = curAngle;
@@ -320,7 +320,7 @@ private:
 class TraceLine2 : public BrainTree::Node {
 public:
     TraceLine2() : fillFIR(FIR_ORDER + 1), traceCnt(0) {
-        ltPid = new PIDcalculator(P_CONST, I_CONST, D_CONST, PERIOD_UPD_TSK, TURN_MIN, TURN_MAX);
+        ltPid = new PIDcalculator(P_CONST2, I_CONST, D_CONST, PERIOD_UPD_TSK, TURN_MIN, TURN_MAX);
         fir_r = new FIR_Transposed<FIR_ORDER>(hn);
         fir_g = new FIR_Transposed<FIR_ORDER>(hn);
         fir_b = new FIR_Transposed<FIR_ORDER>(hn);
@@ -366,8 +366,8 @@ public:
             /* display trace message in every PERIOD_TRACE_MSG ms */
             if (++traceCnt * PERIOD_UPD_TSK >= PERIOD_TRACE_MSG) {
                 traceCnt = 0;
-                _log("sensor = %d, pwm_L = %d, pwm_R = %d",
-                    sensor, pwm_L, pwm_R);
+                _log("diff=%d, sensor = %d, pwm_L = %d, pwm_R = %d",
+                    diff, sensor, pwm_L, pwm_R);
             }
         }
         return Node::Status::Running;

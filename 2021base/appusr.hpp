@@ -79,6 +79,7 @@ extern Motor*       armMotor;
 
 #define PERIOD_TRACE_MSG   1000 * 1000 /* Trace message in every 1000 ms    */
 #define P_CONST           0.85D
+#define P_CONST2          0.1D
 #define I_CONST     0.00000001D
 #define D_CONST            0.5D
 #define TURN_MIN            -16  /* minimum value PID calculator returns    */
