@@ -319,8 +319,8 @@ private:
 
 class TraceLine2 : public BrainTree::Node {
 public:
-    TraceLine2() : fillFIR(FIR_ORDER + 1), traceCnt(0) {
-        ltPid = new PIDcalculator(P_CONST2, I_CONST, D_CONST, PERIOD_UPD_TSK, TURN_MIN, TURN_MAX);
+    TraceLine2(int sp, double kp) : speedVal(sp), kpVal(kp), fillFIR(FIR_ORDER + 1), traceCnt(0) {
+        ltPid = new PIDcalculator(kpVal, I_CONST, D_CONST, PERIOD_UPD_TSK, TURN_MIN, TURN_MAX);
         fir_r = new FIR_Transposed<FIR_ORDER>(hn);
         fir_g = new FIR_Transposed<FIR_ORDER>(hn);
         fir_b = new FIR_Transposed<FIR_ORDER>(hn);
@@ -332,7 +332,7 @@ public:
         delete ltPid;
     }
     Status update() override {
-        int16_t sensor, diff;
+        int16_t sensor;
         int8_t forward, turn, pwm_L, pwm_R;
         rgb_raw_t cur_rgb;
 
@@ -353,11 +353,9 @@ public:
             //sensor = (cur_rgb.r * 77 + cur_rgb.g * 150 + (cur_rgb.b - cur_rgb.g) * 29) / 256;
             //sensor = cur_rgb.r;
             sensor = cur_rgb.r;
-            //diff = colorSensor->getBrightness() - 20;
             /* compute necessary amount of steering by PID control */
-            turn = _EDGE * ltPid->compute(sensor, (int16_t)GS_TARGET);
-            //turn = 0.83 * diff + 0;
-            forward = SPEED_SLOW;
+            turn = _EDGE * ltPid->compute(sensor, (int16_t)GS_TARGET2);
+            forward = speedVal;
             /* steer EV3 by setting different speed to the motors */
             pwm_L = forward - turn;
             pwm_R = forward + turn;
@@ -366,24 +364,58 @@ public:
             /* display trace message in every PERIOD_TRACE_MSG ms */
             if (++traceCnt * PERIOD_UPD_TSK >= PERIOD_TRACE_MSG) {
                 traceCnt = 0;
-                _log("diff=%d, sensor = %d, pwm_L = %d, pwm_R = %d",
-                    diff, sensor, pwm_L, pwm_R);
+                _log("sensor = %d, rgb = %d, pwm_L = %d, pwm_R = %d",
+                    sensor, cur_rgb.r + cur_rgb.g + cur_rgb.b, pwm_L, pwm_R);
             }
         }
-        return Node::Status::Running;
+
+        if(cur_rgb.r + cur_rgb.g + cur_rgb.b >= 144){
+            return Node::Status::Success;
+        }else{
+            return Node::Status::Running;
+        }
     }
 protected:
     PIDcalculator* ltPid;
     FIR_Transposed<FIR_ORDER> *fir_r, *fir_g, *fir_b;
 private:
-    int traceCnt, fillFIR;
+    int traceCnt, fillFIR, speedVal;
+    double kpVal;
 };
+
+//sano family add test
+class BackRun : public BrainTree::Node { 
+public:
+    BackRun(int direction, int count) : dir(direction), cnt(count) {}
+    Status update() override {
+
+            if(cnt >= 1 && 1000 > cnt){
+                leftMotor->setPWM(-9);
+                rightMotor->setPWM(-9);
+
+            }else if(cnt>=1000 && cnt <3000){
+                leftMotor->setPWM(5);
+                rightMotor->setPWM(-5);
+            }else if(cnt <=3000 &&  cnt <10000){
+                leftMotor->setPWM(10);
+                rightMotor->setPWM(9);
+            }
+            cnt++;
+            return Node::Status::Running;
+    }
+private:
+    int8_t dir;
+    int cnt;
+    int32_t curAngle;
+    int32_t prevAngle;
+};
+
 
 /* method to wake up the main task for termination */
 class WakeUpMain : public BrainTree::Node {
 public:
     Status update() override {
-        _log("waking up main...");
+        //_log("waking up main...");
         /* wake up the main task */
         // ER ercd = wup_tsk(MAIN_TASK);
         // assert(ercd == E_OK);
@@ -461,7 +493,9 @@ void main_task(intptr_t unused) {
     tree_test = (BrainTree::BehaviorTree*) BrainTree::Builder() 
         .composite<BrainTree::MemSequence>()
             .leaf<SpinEV3>(_EDGE, 0) /* TODO magic number */
-            .leaf<TraceLine2>()
+            .leaf<TraceLine2>(SPEED_SLOW, P_CONST2)
+            .leaf<BackRun>(_EDGE, 0) /* TODO magic number */
+            .leaf<WakeUpMain>()
         .end()
         .build();
 
