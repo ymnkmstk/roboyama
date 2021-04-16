@@ -171,7 +171,7 @@ public:
 
 class RotateEV3 : public BrainTree::Node {
 public:
-    RotateEV3(int16_t degree) : deltaDegreeTarget(degree) {
+    RotateEV3(int16_t degree) : deltaDegreeTarget(degree),updated(false) {
         assert(degree >= -180 && degree <= 180);
         if (degree > 0) {
             clockwise = 1;
@@ -180,22 +180,28 @@ public:
         }
     }
     Status update() override {
+        if (!updated) {
+            originalDegree = plotter->getDegree();
+            updated = true;
+        }
         int16_t deltaDegree = plotter->getDegree() - originalDegree;
         if (deltaDegree > 180) {
             deltaDegree -= 360;
+        } else if (deltaDegree < -180) {
+            deltaDegree += 360;
         }
-        if (deltaDegree < deltaDegreeTarget) {
+        if (clockwise * deltaDegree < clockwise * deltaDegreeTarget) {
             leftMotor->setPWM(clockwise * SPEED_SLOW);
             rightMotor->setPWM((-clockwise) * SPEED_SLOW);
             return Node::Status::Running;
         } else {
-            _log("rotation done.");
             return Node::Status::Success;
         }
     }
 private:
     int16_t deltaDegreeTarget, originalDegree;
     int clockwise;
+    bool updated;
 };
 
 /* method to wake up the main task for termination */
@@ -253,9 +259,9 @@ void main_task(intptr_t unused) {
     tree = (BrainTree::BehaviorTree*) BrainTree::Builder()
         .composite<BrainTree::MemSequence>()
             .leaf<IsTouchOn>()
-            .leaf<RotateEV3>(_COURSE * 30)
+            .leaf<RotateEV3>(30 * _COURSE)
             .leaf<MoveToLine>()
-            .leaf<RotateEV3>(_COURSE * -30)
+            .leaf<RotateEV3>(-30 * _COURSE)
             .composite<BrainTree::ParallelSequence>(1,1)
                 .leaf<IsSonarOn>()
                 .leaf<IsBackOn>()
