@@ -346,8 +346,8 @@ public:
         //             cur_rgb.r, cur_rgb.g, cur_rgb.b);
 
         /* wait until FIR array is filled */
-        if (fillFIR < 100) {
-            fillFIR++;
+        if (fillFIR < 25) {
+
         } else {
             /* B - G cuts off blue */
             //sensor = (cur_rgb.r * 77 + cur_rgb.g * 150 + (cur_rgb.b - cur_rgb.g) * 29) / 256;
@@ -368,8 +368,9 @@ public:
                     sensor, cur_rgb.r + cur_rgb.g + cur_rgb.b, pwm_L, pwm_R);
             }
         }
-
-        if(cur_rgb.r + cur_rgb.g + cur_rgb.b >= 144){
+        fillFIR++;
+        _log("fillFIR=%d\n",fillFIR);
+        if(fillFIR > 2600){
             return Node::Status::Success;
         }else{
             return Node::Status::Running;
@@ -389,15 +390,25 @@ public:
     BackRun(int direction, int count) : dir(direction), cnt(count) {}
     Status update() override {
 
-            if(cnt >= 1 && 1000 > cnt){
+//            _log("きたぞ！ %d\n",cnt);
+            if(cnt >= 0 && 400 > cnt){
+                leftMotor->setBrake(true);
+                rightMotor->setBrake(true);
+                leftMotor->setPWM(0);
+                rightMotor->setPWM(0);
+            }
+            if(cnt >= 200 && 600 > cnt){
+//                leftMotor->setBrake(false);
                 leftMotor->setPWM(-9);
                 rightMotor->setPWM(-9);
-
-            }else if(cnt>=1000 && cnt <3000){
-                leftMotor->setPWM(5);
-                rightMotor->setPWM(-5);
-            }else if(cnt <=3000 &&  cnt <10000){
+            }else if(cnt>=600 && cnt <1200){
+                leftMotor->setPWM(9);
+                rightMotor->setPWM(2);
+            }else if(cnt <=1200 &&  cnt <1700){
                 leftMotor->setPWM(10);
+                rightMotor->setPWM(9);
+            }else if(cnt <=1600 &&  cnt <12000){
+                leftMotor->setPWM(12);
                 rightMotor->setPWM(9);
             }
             cnt++;

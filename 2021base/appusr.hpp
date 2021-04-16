@@ -87,7 +87,7 @@ extern Motor*       armMotor;
 #define SPEED_SLOW           9
 #define SPEED_NORM           9  /* was 50 for 2020 program                 */
 #define GS_TARGET            47  /* was 47 for 2020 program                 */
-#define GS_TARGET2            25  /* was 47 for 2020 program                 */
+#define GS_TARGET2            35  /* was 47 for 2020 program                 */
 #define SONAR_ALERT_DISTANCE 5  /* in centimeters                          */
 #define TIRE_DIAMETER    100.0F  /* diameter of tire in milimater           */
 #define WHEEL_TREAD      150.0F  /* distance between right and left wheels  */
