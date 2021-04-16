@@ -3,6 +3,8 @@ mkfile_path := $(dir $(lastword $(MAKEFILE_LIST)))
 APPL_COBJS +=
 
 APPL_CXXOBJS += \
+FilteredColorSensor.o \
+Plotter.o \
 PIDcalculator.o
 
 SRCLANG := c++
