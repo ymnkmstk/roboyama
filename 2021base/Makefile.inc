@@ -26,4 +26,4 @@ INCLUDES += \
 
 #COPTS += -fno-use-cxa-atexit
 #COPTS += -DNDEBUG -std=gnu++11
-COPTS += -std=gnu++11
+COPTS += -std=gnu++11 $(USER_COPTS)

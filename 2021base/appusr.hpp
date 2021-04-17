@@ -72,14 +72,25 @@ extern FilteredColorSensor* filteredColorSensor;
     static const int _COURSE = 1;
 #endif
 
-#define PERIOD_TRACE_MSG   1000 * 1000 /* Trace message in every 1000 ms    */
+/* these parameters are intended to be given as a compiler directive,
+   e.g., -D=SPEED_NORM=50, for fine tuning                                  */
+#ifndef SPEED_NORM
+#define SPEED_NORM           25  /* was 50 for 2020 program                 */
+#endif
+#ifndef P_CONST
 #define P_CONST           0.85D
+#endif
+#ifndef I_CONST
 #define I_CONST     0.00000001D
+#endif
+#ifndef D_CONST
 #define D_CONST            0.5D
+#endif
+
+#define PERIOD_TRACE_MSG   1000 * 1000 /* Trace message in every 1000 ms    */
 #define TURN_MIN            -16  /* minimum value PID calculator returns    */
 #define TURN_MAX             16  /* maximum value PID calculator returns    */
 #define SPEED_SLOW           15
-#define SPEED_NORM           25  /* was 50 for 2020 program                 */
 #define GS_TARGET            47  /* was 47 for 2020 program                 */
 #define SONAR_ALERT_DISTANCE 10  /* in centimeters                          */
 #define BLUE_DISTANCE     10000  /* 2nd blue part should be further than this   */ 
