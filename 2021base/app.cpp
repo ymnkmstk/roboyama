@@ -14,12 +14,13 @@ FILE*           bt;
 Clock*          clock;
 TouchSensor*    touchSensor;
 SonarSensor*    sonarSensor;
-ColorSensor*    colorSensor;
+FilteredColorSensor* filteredColorSensor;
 GyroSensor*     gyroSensor;
 Motor*          leftMotor;
 Motor*          rightMotor;
 Motor*          tailMotor;
 Motor*          armMotor;
+Plotter*        plotter;
 
 BrainTree::BehaviorTree* tree = nullptr;
 BrainTree::BehaviorTree* tree_test = nullptr; //sano family add
@@ -54,7 +55,7 @@ class IsBlueDetected : public BrainTree::Node {
 public:
     Status update() override {
         rgb_raw_t cur_rgb;
-        colorSensor->getRawColor(cur_rgb);
+        filteredColorSensor->getRawColor(cur_rgb);
         if (cur_rgb.b - cur_rgb.r > 60 && cur_rgb.b <= 255 && cur_rgb.r <= 255) {
             _log("line color changed black to blue.");
             return Node::Status::Success;
@@ -68,7 +69,7 @@ class IsBlackDetected : public BrainTree::Node {
 public:
     Status update() override {
         rgb_raw_t cur_rgb;
-        colorSensor->getRawColor(cur_rgb);
+        filteredColorSensor->getRawColor(cur_rgb);
         if (cur_rgb.b - cur_rgb.r < 40) {
             _log("line color changed blue to black.");
             return Node::Status::Success;
@@ -95,9 +96,7 @@ class IsDistanceReached : public BrainTree::Node {
 public:
     IsDistanceReached() : flag(false) {}
     Status update() override {
-        /* read variables from Blackboard */
-        double distance = blackboard->getDouble(STR(BoardItem.DIST));
-        if (distance >= BLUE_DISTANCE) {
+        if (plotter->getDistance() >= BLUE_DISTANCE) {
             if (!flag) {
                 _log("BLUE_DISTANCE is reached.");
                 flag = true;
@@ -111,71 +110,12 @@ private:
     bool flag;
 };
 
-class EstimateLocation : public BrainTree::Node {
-public:
-    EstimateLocation() : distance(0.0),azimuth(0.0),locX(0.0),locY(0.0),traceCnt(0) {
-        /* reset motor encoders */
-        leftMotor->reset();
-        rightMotor->reset();
-        /* reset gyro sensor */
-        gyroSensor->reset();
-        /* initialize variables */
-        prevAngL = leftMotor->getCount();
-        prevAngR = rightMotor->getCount();
-        runningMode = 0; //sano family add
-    }
-    Status update() override {
-        /* accumulate distance */
-        int32_t curAngL = leftMotor->getCount();
-        int32_t curAngR = rightMotor->getCount();
-        double deltaDistL = M_PI * TIRE_DIAMETER * (curAngL - prevAngL) / 360.0;
-        double deltaDistR = M_PI * TIRE_DIAMETER * (curAngR - prevAngR) / 360.0;
-        double deltaDist = (deltaDistL + deltaDistR) / 2.0;
-        distance += deltaDist;
-        prevAngL = curAngL;
-        prevAngR = curAngR;
-        /* calculate azimuth */
-        double deltaAzi = atan2((deltaDistL - deltaDistR), WHEEL_TREAD);
-        azimuth += deltaAzi;
-        if (azimuth > M_TWOPI) {
-            azimuth -= M_TWOPI;
-        } else if (azimuth < 0.0) {
-            azimuth += M_TWOPI;
-        }
-        /* estimate location */
-        locX += (deltaDist * sin(azimuth));
-        locY += (deltaDist * cos(azimuth));
-        /* write variables to Blackboard for the use by other actions */
-        blackboard->setDouble(STR(BoardItem.LOCX), locX);
-        blackboard->setDouble(STR(BoardItem.LOCY), locY);
-        blackboard->setDouble(STR(BoardItem.DIST), distance);
-        /* display trace message in every PERIOD_TRACE_MSG ms */
-        if (++traceCnt * PERIOD_UPD_TSK >= PERIOD_TRACE_MSG) {
-            traceCnt = 0;
-            _log("locX = %d, locY = %d, distance = %d",
-                (int)locX, (int)locY, (int)distance);
-        }
-        return Node::Status::Running;
-    }
-protected:
-    double distance, azimuth, locX, locY;
-    int32_t prevAngL, prevAngR;
-private:
-    int traceCnt;
-};
-
 class TraceLine : public BrainTree::Node {
 public:
-    TraceLine() : fillFIR(FIR_ORDER + 1), traceCnt(0) {
+    TraceLine() : traceCnt(0) {
         ltPid = new PIDcalculator(P_CONST, I_CONST, D_CONST, PERIOD_UPD_TSK, TURN_MIN, TURN_MAX);
-        fir_r = new FIR_Transposed<FIR_ORDER>(hn);
-        fir_g = new FIR_Transposed<FIR_ORDER>(hn);
-        fir_b = new FIR_Transposed<FIR_ORDER>(hn);
     }
     ~TraceLine() {
-        delete fir_b;
-        delete fir_g;
-        delete fir_r;
         delete ltPid;
     }
     Status update() override {
@@ -183,103 +123,86 @@ public:
         int8_t forward, turn, pwm_L, pwm_R;
         rgb_raw_t cur_rgb;
 
-        colorSensor->getRawColor(cur_rgb);
-        /* process RGB by the Low Pass Filter */
-        cur_rgb.r = fir_r->Execute(cur_rgb.r);
-        cur_rgb.g = fir_g->Execute(cur_rgb.g);
-        cur_rgb.b = fir_b->Execute(cur_rgb.b);
-
-        /* wait until FIR array is filled */
-        if (fillFIR > 0) {
-            fillFIR--;
-        } else {
-            /* B - G cuts off blue */
-            //sensor = (cur_rgb.r * 77 + cur_rgb.g * 150 + (cur_rgb.b - cur_rgb.g) * 29) / 256;
-            sensor = cur_rgb.r;
-            /* compute necessary amount of steering by PID control */
-            turn = _EDGE * ltPid->compute(sensor, (int16_t)GS_TARGET);
-            forward = SPEED_NORM;
-            /* steer EV3 by setting different speed to the motors */
-            pwm_L = forward - turn;
-            pwm_R = forward + turn;
-            leftMotor->setPWM(pwm_L);
-            rightMotor->setPWM(pwm_R);
-            /* display trace message in every PERIOD_TRACE_MSG ms */
-            if (++traceCnt * PERIOD_UPD_TSK >= PERIOD_TRACE_MSG) {
-                traceCnt = 0;
-                _log("sensor = %d, pwm_L = %d, pwm_R = %d",
-                    sensor, pwm_L, pwm_R);
-            }
+        filteredColorSensor->getRawColor(cur_rgb);
+        sensor = cur_rgb.r;
+        /* compute necessary amount of steering by PID control */
+        turn = (-1) * _COURSE * ltPid->compute(sensor, (int16_t)GS_TARGET);
+        forward = SPEED_NORM;
+        /* steer EV3 by setting different speed to the motors */
+        pwm_L = forward - turn;
+        pwm_R = forward + turn;
+        leftMotor->setPWM(pwm_L);
+        rightMotor->setPWM(pwm_R);
+        /* display trace message in every PERIOD_TRACE_MSG ms */
+        if (++traceCnt * PERIOD_UPD_TSK >= PERIOD_TRACE_MSG) {
+            traceCnt = 0;
+            _log("sensor = %d, pwm_L = %d, pwm_R = %d",
+                sensor, pwm_L, pwm_R);
+            _log("locX = %d, locY = %d, degree = %d, distance = %d",
+                (int)plotter->getLocX(), (int)plotter->getLocY(),
+                (int)plotter->getDegree(), (int)plotter->getDistance());
         }
         return Node::Status::Running;
     }
 protected:
     PIDcalculator* ltPid;
-    FIR_Transposed<FIR_ORDER> *fir_r, *fir_g, *fir_b;
 private:
-    int traceCnt, fillFIR;
+    int traceCnt;
 };
 
 class MoveToLine : public BrainTree::Node {
 public:
-    MoveToLine() : fillFIR(FIR_ORDER + 1) {
-        fir_r = new FIR_Transposed<FIR_ORDER>(hn);
-        fir_g = new FIR_Transposed<FIR_ORDER>(hn);
-        fir_b = new FIR_Transposed<FIR_ORDER>(hn);
-    }
-    ~MoveToLine() {
-        delete fir_b;
-        delete fir_g;
-        delete fir_r;
-    }
     Status update() override {
         int16_t sensor;
         rgb_raw_t cur_rgb;
 
-        colorSensor->getRawColor(cur_rgb);
-        /* process RGB by the Low Pass Filter */
-        cur_rgb.r = fir_r->Execute(cur_rgb.r);
-        cur_rgb.g = fir_g->Execute(cur_rgb.g);
-        cur_rgb.b = fir_b->Execute(cur_rgb.b);
+        filteredColorSensor->getRawColor(cur_rgb);
+        sensor = cur_rgb.r;
 
-        /* wait until FIR array is filled */
-        if (fillFIR > 0) {
-            fillFIR--;
+        if (sensor >= GS_TARGET) {
+            /* move EV3 closer to the line */
+            leftMotor->setPWM(SPEED_SLOW);
+            rightMotor->setPWM(SPEED_SLOW);
+            return Node::Status::Running;
         } else {
-            /* B - G cuts off blue */
-            sensor = (cur_rgb.r * 77 + cur_rgb.g * 150 + (cur_rgb.b - cur_rgb.g) * 29) / 256;
-
-            if (sensor >= GS_TARGET) {
-                /* move EV3 closer to the line */
-                leftMotor->setPWM(SPEED_SLOW);
-                rightMotor->setPWM(SPEED_SLOW);
-                return Node::Status::Running;
-            } else {
-                return Node::Status::Success;
-            }
+            return Node::Status::Success;
         }
     }
-protected:
-    FIR_Transposed<FIR_ORDER> *fir_r, *fir_g, *fir_b;
-private:
-    int fillFIR;
 };
 
 class RotateEV3 : public BrainTree::Node {
 public:
-    RotateEV3(int direction, int count) : dir(direction), cnt(count) {}
+    RotateEV3(int16_t degree) : deltaDegreeTarget(degree),updated(false) {
+        assert(degree >= -180 && degree <= 180);
+        if (degree > 0) {
+            clockwise = 1;
+        } else {
+            clockwise = -1;
+        }
+    }
     Status update() override {
-        if (--cnt >= 0) {
-            leftMotor->setPWM((-dir) * SPEED_SLOW);
-            rightMotor->setPWM(dir * SPEED_SLOW);
+        if (!updated) {
+            originalDegree = plotter->getDegree();
+            updated = true;
+        }
+        int16_t deltaDegree = plotter->getDegree() - originalDegree;
+        if (deltaDegree > 180) {
+            deltaDegree -= 360;
+        } else if (deltaDegree < -180) {
+            deltaDegree += 360;
+        }
+        if (clockwise * deltaDegree < clockwise * deltaDegreeTarget) {
+            leftMotor->setPWM(clockwise * SPEED_SLOW);
+            rightMotor->setPWM((-clockwise) * SPEED_SLOW);
             return Node::Status::Running;
         } else {
             return Node::Status::Success;
         }
     }
 private:
-    int8_t dir;
-    int cnt;
+    int16_t deltaDegreeTarget, originalDegree;
+    int clockwise;
+    bool updated;
 };
 
 //sano family add test
@@ -298,7 +221,7 @@ public:
                 }
             }else{
                 armMotor->setPWM(30);
-                leftMotor->setPWM(26);
+                leftMotor->setPWM(23);
                 rightMotor->setPWM(25);
 
                 if(curAngle < -9){
@@ -319,16 +242,10 @@ private:
 
 class TraceLine2 : public BrainTree::Node {
 public:
-    TraceLine2(int sp, double kp) : speedVal(sp), kpVal(kp), fillFIR(FIR_ORDER + 1), traceCnt(0) {
+    TraceLine2(int sp, double kp) : speedVal(sp), kpVal(kp), traceCnt(0), cnt(0) {
         ltPid = new PIDcalculator(kpVal, I_CONST, D_CONST, PERIOD_UPD_TSK, TURN_MIN, TURN_MAX);
-        fir_r = new FIR_Transposed<FIR_ORDER>(hn);
-        fir_g = new FIR_Transposed<FIR_ORDER>(hn);
-        fir_b = new FIR_Transposed<FIR_ORDER>(hn);
     }
     ~TraceLine2() {
-        delete fir_b;
-        delete fir_g;
-        delete fir_r;
         delete ltPid;
     }
     Status update() override {
@@ -336,41 +253,27 @@ public:
         int8_t forward, turn, pwm_L, pwm_R;
         rgb_raw_t cur_rgb;
 
-        colorSensor->getRawColor(cur_rgb);
-        /* process RGB by the Low Pass Filter */
-        cur_rgb.r = fir_r->Execute(cur_rgb.r);
-        cur_rgb.g = fir_g->Execute(cur_rgb.g);
-        cur_rgb.b = fir_b->Execute(cur_rgb.b);
-
-        // _log("cur_rgb.r = %d, cur_rgb.g = %d, cur_rgb.b = %d",
-        //             cur_rgb.r, cur_rgb.g, cur_rgb.b);
-
-        /* wait until FIR array is filled */
-        if (fillFIR < 25) {
-
-        } else {
-            /* B - G cuts off blue */
-            //sensor = (cur_rgb.r * 77 + cur_rgb.g * 150 + (cur_rgb.b - cur_rgb.g) * 29) / 256;
-            //sensor = cur_rgb.r;
-            sensor = cur_rgb.r;
-            /* compute necessary amount of steering by PID control */
-            turn = _EDGE * ltPid->compute(sensor, (int16_t)GS_TARGET2);
-            forward = speedVal;
-            /* steer EV3 by setting different speed to the motors */
-            pwm_L = forward - turn;
-            pwm_R = forward + turn;
-            leftMotor->setPWM(pwm_L);
-            rightMotor->setPWM(pwm_R);
-            /* display trace message in every PERIOD_TRACE_MSG ms */
-            if (++traceCnt * PERIOD_UPD_TSK >= PERIOD_TRACE_MSG) {
-                traceCnt = 0;
-                _log("sensor = %d, rgb = %d, pwm_L = %d, pwm_R = %d",
-                    sensor, cur_rgb.r + cur_rgb.g + cur_rgb.b, pwm_L, pwm_R);
-            }
+        filteredColorSensor->getRawColor(cur_rgb);
+        sensor = cur_rgb.r;
+        /* compute necessary amount of steering by PID control */
+        turn = (-1) * _COURSE * ltPid->compute(sensor, (int16_t)GS_TARGET2);
+        forward = speedVal;
+        /* steer EV3 by setting different speed to the motors */
+        pwm_L = forward - turn;
+        pwm_R = forward + turn;
+        leftMotor->setPWM(pwm_L);
+        rightMotor->setPWM(pwm_R);
+        /* display trace message in every PERIOD_TRACE_MSG ms */
+        if (++traceCnt * PERIOD_UPD_TSK >= PERIOD_TRACE_MSG) {
+            traceCnt = 0;
+            _log("sensor = %d, pwm_L = %d, pwm_R = %d",
+                sensor, pwm_L, pwm_R);
+            _log("locX = %d, locY = %d, degree = %d, distance = %d",
+                (int)plotter->getLocX(), (int)plotter->getLocY(),
+                (int)plotter->getDegree(), (int)plotter->getDistance());
         }
-        fillFIR++;
-        _log("fillFIR=%d\n",fillFIR);
-        if(fillFIR > 2600){
+        cnt++;
+        if(cnt > 2470){
             return Node::Status::Success;
         }else{
             return Node::Status::Running;
@@ -378,9 +281,8 @@ public:
     }
 protected:
     PIDcalculator* ltPid;
-    FIR_Transposed<FIR_ORDER> *fir_r, *fir_g, *fir_b;
 private:
-    int traceCnt, fillFIR, speedVal;
+    int traceCnt, speedVal, cnt;
     double kpVal;
 };
 
@@ -390,7 +292,6 @@ public:
     BackRun(int direction, int count) : dir(direction), cnt(count) {}
     Status update() override {
 
-//            _log("きたぞ！ %d\n",cnt);
             if(cnt >= 0 && 400 > cnt){
                 leftMotor->setBrake(true);
                 rightMotor->setBrake(true);
@@ -401,15 +302,17 @@ public:
 //                leftMotor->setBrake(false);
                 leftMotor->setPWM(-9);
                 rightMotor->setPWM(-9);
-            }else if(cnt>=600 && cnt <1200){
+            }else if(cnt >= 600 && cnt < 1200){
                 leftMotor->setPWM(9);
-                rightMotor->setPWM(2);
-            }else if(cnt <=1200 &&  cnt <1700){
+                rightMotor->setPWM(1);
+            }else if(cnt >= 1200 &&  cnt < 1720){
                 leftMotor->setPWM(10);
-                rightMotor->setPWM(9);
-            }else if(cnt <=1600 &&  cnt <12000){
+                rightMotor->setPWM(10);
+            }else if(cnt >= 1700 &&  cnt < 2000){
                 leftMotor->setPWM(12);
                 rightMotor->setPWM(9);
+            }else if(cnt >= 2000 && cnt < 4000){
+                armMotor->setPWM(30);
             }
             cnt++;
             return Node::Status::Running;
@@ -426,7 +329,7 @@ private:
 class WakeUpMain : public BrainTree::Node {
 public:
     Status update() override {
-        //_log("waking up main...");
+        _log("waking up main...");
         /* wake up the main task */
         // ER ercd = wup_tsk(MAIN_TASK);
         // assert(ercd == E_OK);
@@ -456,12 +359,13 @@ void main_task(intptr_t unused) {
     clock       = new Clock();
     touchSensor = new TouchSensor(PORT_1);
     sonarSensor = new SonarSensor(PORT_2);
-    colorSensor = new ColorSensor(PORT_3);
+    filteredColorSensor = new FilteredColorSensor(PORT_3);
     gyroSensor  = new GyroSensor(PORT_4);
     leftMotor   = new Motor(PORT_C);
     rightMotor  = new Motor(PORT_B);
     tailMotor   = new Motor(PORT_D);
     armMotor    = new Motor(PORT_A);
+    plotter     = new Plotter(leftMotor, rightMotor, gyroSensor);
     /* indicate initialization completion by LED color */
     _log("initialization completed.");
     ev3_led_set_color(LED_ORANGE);
@@ -478,12 +382,11 @@ void main_task(intptr_t unused) {
        while its location keeps being tracked. */
     tree = (BrainTree::BehaviorTree*) BrainTree::Builder()
         .composite<BrainTree::MemSequence>()
-            .leaf<IsTouchOn>()
-            // .leaf<RotateEV3>(_EDGE, 100) /* TODO magic number */
+            //.leaf<IsTouchOn>()
+            // .leaf<RotateEV3>(30 * _COURSE)
             // .leaf<MoveToLine>()
-            // .leaf<RotateEV3>((-1) * _EDGE, 100) /* TODO magic number */
+            // .leaf<RotateEV3>(-30 * _COURSE)
             .composite<BrainTree::ParallelSequence>(1,1)
-                .leaf<EstimateLocation>()
                 .leaf<IsSonarOn>()
                 .leaf<IsBackOn>()
                 .composite<BrainTree::ParallelSequence>(2,2)
@@ -503,9 +406,9 @@ void main_task(intptr_t unused) {
     //trial - sano family add
     tree_test = (BrainTree::BehaviorTree*) BrainTree::Builder() 
         .composite<BrainTree::MemSequence>()
-            .leaf<SpinEV3>(_EDGE, 0) /* TODO magic number */
-            .leaf<TraceLine2>(SPEED_SLOW, P_CONST2)
-            .leaf<BackRun>(_EDGE, 0) /* TODO magic number */
+            .leaf<SpinEV3>(_COURSE, 0) /* TODO magic number */
+            .leaf<TraceLine2>(SPEED_SLOW2, P_CONST2)
+            .leaf<BackRun>(_COURSE, 0) /* TODO magic number */
             .leaf<WakeUpMain>()
         .end()
         .build();
@@ -524,12 +427,13 @@ void main_task(intptr_t unused) {
     /* destroy behavior tree */
     delete tree;
     /* destroy EV3 objects */
+    delete plotter;
     delete armMotor;
     delete tailMotor;
     delete rightMotor;
     delete leftMotor;
     delete gyroSensor;
-    delete colorSensor;
+    delete filteredColorSensor;
     delete sonarSensor;
     delete touchSensor;
     delete clock;
@@ -541,13 +445,12 @@ void main_task(intptr_t unused) {
 
 /* periodic task to update the behavior tree */
 void update_task(intptr_t unused) {
+    filteredColorSensor->sense();
+    plotter->plot();
 
-    //if (tree != nullptr) tree->update();
-
-    //sano family add
-     if(runningMode==0){
-        if (tree != nullptr) tree->update();
-     }else if(runningMode==1){
+    if(runningMode==1){
         if (tree_test != nullptr) tree_test->update();
-     }
+    }else{
+        if (tree != nullptr) tree->update();
+    }
 }

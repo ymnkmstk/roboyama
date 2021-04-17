@@ -28,18 +28,18 @@ void StateMachine::initialize() {
     steering    = new Steering(*leftMotor, *rightMotor);
     
     /* LCD画面表示 */
-    ev3_lcd_fill_rect(0, 0, EV3_LCD_WIDTH, EV3_LCD_HEIGHT, EV3_LCD_WHITE);
-    ev3_lcd_draw_string("EV3way-ET aflac2020", 0, CALIB_FONT_HEIGHT*1);
+    //ev3_lcd_fill_rect(0, 0, EV3_LCD_WIDTH, EV3_LCD_HEIGHT, EV3_LCD_WHITE);
+    //ev3_lcd_draw_string("EV3way-ET aflac2020", 0, CALIB_FONT_HEIGHT*1);
     
     observer = new Observer(leftMotor, rightMotor, armMotor, tailMotor, touchSensor, sonarSensor, gyroSensor, colorSensor);    observer->freeze(); // Do NOT attempt to collect sensor data until unfreeze() is invoked
     observer->activate();
     blindRunner = new BlindRunner(leftMotor, rightMotor, tailMotor);
     lineTracer = new LineTracer(leftMotor, rightMotor, tailMotor);
-    lineTracer->activate();
+    //lineTracer->activate();
     challengeRunner = new ChallengeRunner(leftMotor, rightMotor, tailMotor,armMotor);
-    challengeRunner->activate();
+    //challengeRunner->activate();  // cause of defect - removed on Oct.17
     
-    ev3_led_set_color(LED_ORANGE); /* 初期化完了通知 */
+    //ev3_led_set_color(LED_ORANGE); /* 初期化完了通知 */
 
     state = ST_start;
 }
@@ -63,7 +63,8 @@ void StateMachine::sendTrigger(uint8_t event) {
                     
                     /* ジャイロセンサーリセット */
                     gyroSensor->reset();
-                    ev3_led_set_color(LED_GREEN); /* スタート通知 */
+                    //ev3_led_set_color(LED_GREEN); /* スタート通知 */
+                    lineTracer->activate();
                     
                     observer->freeze();
                     lineTracer->freeze();
@@ -73,7 +74,7 @@ void StateMachine::sendTrigger(uint8_t event) {
                     lineTracer->unfreeze();
                     observer->unfreeze();
                     syslog(LOG_NOTICE, "%08u, Departed", clock->now());
-                    observer->notifyOfDistance(600); // switch to ST_Blind after 600
+                    observer->notifyOfDistance(DIST_force_blind); // switch to ST_Blind forcefully after DIST_force_blind reached
                     break;
                 default:
                     break;
@@ -86,6 +87,7 @@ void StateMachine::sendTrigger(uint8_t event) {
                     wakeupMain();
                     break;
                 case EVT_dist_reached:
+                case EVT_robot_aligned:
                     state = ST_blind;
                     blindRunner->haveControl();
                     break;
@@ -93,9 +95,19 @@ void StateMachine::sendTrigger(uint8_t event) {
                 case EVT_bk2bl:
                     break;
                 case EVT_sonar_On:
+                    if (observer->getDistance() >= DIST_end_blind) {
+                        state = ST_slalom;
+                        challengeRunner->haveControl();
+                    }
                     break;
                 case EVT_sonar_Off:
                     break;
+                case EVT_black_found:
+                    lineTracer->setSpeed(10);
+                    break;
+                case EVT_distance_over:
+                    lineTracer->setSpeed(30);
+                    break;    
                 case EVT_cmdStop:
                     state = ST_stopping;
                     observer->notifyOfDistance(FINAL_APPROACH_LEN);
@@ -108,8 +120,20 @@ void StateMachine::sendTrigger(uint8_t event) {
         case ST_blind:
             switch (event) {
                 case EVT_dist_reached:
-                    state = ST_tracing;
-                    lineTracer->haveControl();
+                    if (observer->getDistance() >= DIST_end_blind) {
+                        state = ST_tracing;
+                        lineTracer->setSpeed(SPEED_SLOW);
+                        lineTracer->haveControl();
+                    }
+                    break;
+                case EVT_sonar_On: // just in case transition to st_tracing failed
+                    if (observer->getDistance() >= DIST_end_blind) {
+                        state = ST_slalom;
+                        challengeRunner->haveControl();
+                    }
+                    break;
+                case EVT_robot_aligned:
+                    syslog(LOG_NOTICE, "%08u, StateMachine::sendTrigger(): EVT_robot_aligned too late and ignored", clock->now());
                     break;
                 // case EVT_tilt: // Ignore EVT_TILT as SPEED_BLIND -> SPEED_SLOW may generate EVT_TILT
                 case EVT_cmdStop:
@@ -139,6 +163,15 @@ void StateMachine::sendTrigger(uint8_t event) {
                 case EVT_slalom_challenge:
                     challengeRunner->runChallenge();
                     break;
+                case EVT_line_on_pid_cntl: //hinutest
+                    lineTracer->haveControl();
+                    lineTracer->setSpeed(50);
+                    lineTracer->setCntlP(false);
+                    break;
+                case EVT_block_area_in: //hinutest
+                    challengeRunner->haveControl();
+                    challengeRunner->runChallenge();
+                    break;
                 default:
                     break;
             }
@@ -150,7 +183,7 @@ void StateMachine::sendTrigger(uint8_t event) {
                     break;
                 case EVT_line_on_p_cntl:
                     lineTracer->haveControl();
-                    lineTracer->setSpeed(30);
+                    lineTracer->setSpeed(25);
                     lineTracer->setCntlP(true);
                     break;
                 case EVT_line_on_pid_cntl:

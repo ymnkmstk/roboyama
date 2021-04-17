@@ -23,24 +23,21 @@ using namespace ev3api;
 #include <math.h>
 
 #include "BrainTree.h"
+#include "FilteredColorSensor.hpp"
+#include "Plotter.hpp"
 #include "PIDcalculator.hpp"
-
-#include "FIR.hpp"
-/* FIR filter parameter */
-static const int FIR_ORDER = 10; 
-static const double hn[FIR_ORDER+1] = { -1.247414986406201e-18, -1.270350182429102e-02, -2.481243022283666e-02, 6.381419731491805e-02, 2.761351394755998e-01, 4.000000000000000e-01, 2.761351394755998e-01, 6.381419731491805e-02, -2.481243022283666e-02, -1.270350182429102e-02, -1.247414986406201e-18 };
 
 /* global variables */
 extern FILE*        bt;
 extern Clock*       clock;
 extern TouchSensor* touchSensor;
 extern SonarSensor* sonarSensor;
-extern ColorSensor* colorSensor;
 extern GyroSensor*  gyroSensor;
 extern Motor*       leftMotor;
 extern Motor*       rightMotor;
 extern Motor*       tailMotor;
 extern Motor*       armMotor;
+extern FilteredColorSensor* filteredColorSensor;
 
 #define DEBUG
 
@@ -68,30 +65,36 @@ extern Motor*       armMotor;
 #define STR(var) #var
 
 /* macro for making program compatible for both left and right courses.
-   the default is left course, tracing left edge of line. */ 
+   the default is left course. */ 
 #if defined(MAKE_RIGHT)
-    static const int _LEFT = 0;
-    static const int _EDGE = 1;
+    static const int _COURSE = -1;
 #else
-    static const int _LEFT = 1;
-    static const int _EDGE = -1;
+    static const int _COURSE = 1;
 #endif
 
-#define PERIOD_TRACE_MSG   1000 * 1000 /* Trace message in every 1000 ms    */
+/* these parameters are intended to be given as a compiler directive,
+   e.g., -D=SPEED_NORM=50, for fine tuning                                  */
+#ifndef SPEED_NORM
+#define SPEED_NORM           10  /* was 50 for 2020 program                 */
+#endif
+#ifndef P_CONST
 #define P_CONST           0.85D
 #define P_CONST2          0.1D
 #define I_CONST     0.00000001D
+#endif
+#ifndef D_CONST
 #define D_CONST            0.5D
+#endif
+
+#define PERIOD_TRACE_MSG   1000 * 1000 /* Trace message in every 1000 ms    */
 #define TURN_MIN            -16  /* minimum value PID calculator returns    */
 #define TURN_MAX             16  /* maximum value PID calculator returns    */
-#define SPEED_SLOW           9
-#define SPEED_NORM           9  /* was 50 for 2020 program                 */
+#define SPEED_SLOW           15
+#define SPEED_SLOW2          10
 #define GS_TARGET            47  /* was 47 for 2020 program                 */
-#define GS_TARGET2            35  /* was 47 for 2020 program                 */
+#define GS_TARGET2           35
 #define SONAR_ALERT_DISTANCE 5  /* in centimeters                          */
-#define TIRE_DIAMETER    100.0F  /* diameter of tire in milimater           */
-#define WHEEL_TREAD      150.0F  /* distance between right and left wheels  */
-#define BLUE_DISTANCE     120000  /* 2nd blue part should be further than this   */ 
+#define BLUE_DISTANCE     100000  /* 2nd blue part should be further than this   */ 
 
 enum BoardItem {
     LOCX, /* horizontal location    */

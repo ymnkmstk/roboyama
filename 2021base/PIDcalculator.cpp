@@ -16,7 +16,7 @@ PIDcalculator::PIDcalculator(double p, double i, double d, int16_t t, int16_t mi
     traceCnt = 0;
 }
 
-PIDcalculator::~PIDcalculator() {};
+PIDcalculator::~PIDcalculator() {}
 
 int16_t PIDcalculator::math_limit(int16_t input, int16_t min, int16_t max) {
     if (input < min) {
