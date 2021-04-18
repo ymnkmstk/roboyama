@@ -216,7 +216,7 @@ public:
                 rightMotor->setPWM(0);
                 armMotor->setPWM(-50);
                 cnt++;
-                if(cnt >= 500){
+                if(cnt >= 200){
                     return Node::Status::Success;
                 }
             }else{
@@ -273,7 +273,7 @@ public:
                 (int)plotter->getDegree(), (int)plotter->getDistance());
         }
         cnt++;
-        if(cnt > 2470){
+        if(cnt > 2110){
             return Node::Status::Success;
         }else{
             return Node::Status::Running;
@@ -292,27 +292,50 @@ public:
     BackRun(int direction, int count) : dir(direction), cnt(count) {}
     Status update() override {
 
-            if(cnt >= 0 && 400 > cnt){
-                leftMotor->setBrake(true);
-                rightMotor->setBrake(true);
-                leftMotor->setPWM(0);
-                rightMotor->setPWM(0);
-            }
-            if(cnt >= 200 && 600 > cnt){
-//                leftMotor->setBrake(false);
-                leftMotor->setPWM(-9);
-                rightMotor->setPWM(-9);
-            }else if(cnt >= 600 && cnt < 1200){
+            // if(cnt >= 0 && 400 > cnt){
+            //     leftMotor->setBrake(true);
+            //     rightMotor->setBrake(true);
+            //     leftMotor->setPWM(0);
+            //     rightMotor->setPWM(0);
+            // }
+            // pattern 1
+            // if(cnt >= 1 && 400 > cnt){
+            //     leftMotor->setPWM(-9);
+            //     rightMotor->setPWM(-9);
+            // }else if(cnt >= 400 && cnt < 1000){
+            //     leftMotor->setPWM(9);
+            //     rightMotor->setPWM(1);
+            // }else if(cnt >= 1000 &&  cnt < 1500){
+            //     leftMotor->setPWM(10);
+            //     rightMotor->setPWM(3);
+            // }else if(cnt >= 1500 &&  cnt < 1770){
+            //     leftMotor->setPWM(10);
+            //     rightMotor->setPWM(1);
+            // }else if(cnt >= 1800 &&  cnt < 4000){
+            //     armMotor->setPWM(30);
+            //     leftMotor->setPWM(6);
+            //     rightMotor->setPWM(10);
+            // }
+            // pattern 2
+            if(cnt==1){
+                cnt = 400;
+            }else if(cnt >= 400 && cnt < 1000){
                 leftMotor->setPWM(9);
                 rightMotor->setPWM(1);
-            }else if(cnt >= 1200 &&  cnt < 1720){
+            }else if(cnt >= 1000 &&  cnt < 1500){
                 leftMotor->setPWM(10);
-                rightMotor->setPWM(10);
-            }else if(cnt >= 1700 &&  cnt < 2000){
-                leftMotor->setPWM(12);
-                rightMotor->setPWM(9);
-            }else if(cnt >= 2000 && cnt < 5000){
+                rightMotor->setPWM(4);
+            }else if(cnt >= 1500 &&  cnt < 1820){
+                leftMotor->setPWM(10);
+                rightMotor->setPWM(3);
+            }else if(cnt >= 1820 &&  cnt < 2070){
                 armMotor->setPWM(30);
+                leftMotor->setPWM(9);
+                rightMotor->setPWM(10);
+            }else if(cnt >= 2200 &&  cnt < 3500){
+                leftMotor->setPWM(2);
+                rightMotor->setPWM(10);
+                armMotor->setPWM(-100);
             }
             cnt++;
             return Node::Status::Running;
