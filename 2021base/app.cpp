@@ -135,9 +135,8 @@ public:
         /* display trace message in every PERIOD_TRACE_MSG ms */
         if (++traceCnt * PERIOD_UPD_TSK >= PERIOD_TRACE_MSG) {
             traceCnt = 0;
-            _log("sensor = %d, pwm_L = %d, pwm_R = %d",
-                sensor, pwm_L, pwm_R);
-            _log("locX = %d, locY = %d, degree = %d, distance = %d",
+            _log("sensor = %d, deltaAngL = %d, deltaAngR = %d, locX = %d, locY = %d, degree = %d, distance = %d",
+                sensor, (int)plotter->getDeltaAngL(), (int)plotter->getDeltaAngR(),
                 (int)plotter->getLocX(), (int)plotter->getLocY(),
                 (int)plotter->getDegree(), (int)plotter->getDistance());
         }

@@ -42,12 +42,32 @@ int32_t Plotter::getLocY() {
     return (int32_t)locY;
 }
 
+int32_t Plotter::getDeltaAngL() {
+    return deltaAngL;
+}
+
+int32_t Plotter::getDeltaAngR() {
+    return deltaAngR;
+}
+
 void Plotter::plot() {
     /* accumulate distance */
     int32_t curAngL = leftMotor->getCount();
     int32_t curAngR = rightMotor->getCount();
-    double deltaDistL = M_PI * TIRE_DIAMETER * (curAngL - prevAngL) / 360.0;
-    double deltaDistR = M_PI * TIRE_DIAMETER * (curAngR - prevAngR) / 360.0;
+    deltaAngL = curAngL - prevAngL;
+    if (deltaAngL > 180) {
+        deltaAngL -= 360;
+    } else if (deltaAngL < -180) {
+        deltaAngL += 360;
+    }
+    deltaAngR = curAngR - prevAngR;
+    if (deltaAngR > 180) {
+        deltaAngR -= 360;
+    } else if (deltaAngR < -180) {
+        deltaAngR += 360;
+    }
+    double deltaDistL = M_PI * TIRE_DIAMETER * deltaAngL / 360.0;
+    double deltaDistR = M_PI * TIRE_DIAMETER * deltaAngR / 360.0;
     double deltaDist = (deltaDistL + deltaDistR) / 2.0;
     distance += deltaDist;
     prevAngL = curAngL;

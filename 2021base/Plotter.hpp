@@ -25,12 +25,14 @@ public:
     int16_t getDegree();
     int32_t getLocX();
     int32_t getLocY();
+    int32_t getDeltaAngL();
+    int32_t getDeltaAngR();
     void plot();
 protected:
     ev3api::Motor *leftMotor, *rightMotor;
     ev3api::GyroSensor *gyroSensor;
     double distance, azimuth, locX, locY;
-    int32_t prevAngL, prevAngR;
+    int32_t prevAngL, prevAngR, deltaAngL, deltaAngR;
 };
 
 #endif /* Plotter_hpp */
