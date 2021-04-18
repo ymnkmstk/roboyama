@@ -311,7 +311,7 @@ public:
             }else if(cnt >= 1700 &&  cnt < 2000){
                 leftMotor->setPWM(12);
                 rightMotor->setPWM(9);
-            }else if(cnt >= 2000 && cnt < 4000){
+            }else if(cnt >= 2000 && cnt < 5000){
                 armMotor->setPWM(30);
             }
             cnt++;
@@ -382,7 +382,7 @@ void main_task(intptr_t unused) {
        while its location keeps being tracked. */
     tree = (BrainTree::BehaviorTree*) BrainTree::Builder()
         .composite<BrainTree::MemSequence>()
-            //.leaf<IsTouchOn>()
+            .leaf<IsTouchOn>()
             // .leaf<RotateEV3>(30 * _COURSE)
             // .leaf<MoveToLine>()
             // .leaf<RotateEV3>(-30 * _COURSE)
