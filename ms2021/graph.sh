@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 if [ -z "$ETROBO_ENV" ]; then
     echo "etrobo environment is not available."
     exit 1

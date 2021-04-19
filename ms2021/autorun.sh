@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 trap 'kill $(jobs -p)' EXIT
 
 if [ -z "$ETROBO_ENV" ]; then
