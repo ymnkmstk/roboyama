@@ -3,6 +3,8 @@ mkfile_path := $(dir $(lastword $(MAKEFILE_LIST)))
 APPL_COBJS +=
 
 APPL_CXXOBJS += \
+FilteredColorSensor.o \
+Plotter.o \
 PIDcalculator.o
 
 SRCLANG := c++
@@ -24,4 +26,4 @@ INCLUDES += \
 
 #COPTS += -fno-use-cxa-atexit
 #COPTS += -DNDEBUG -std=gnu++11
-COPTS += -std=gnu++11
+COPTS += -std=gnu++11 $(USER_COPTS)
