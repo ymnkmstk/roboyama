@@ -87,7 +87,7 @@ extern FilteredColorSensor* filteredColorSensor;
 #define D_CONST            0.5D
 #endif
 
-#define PERIOD_TRACE_MSG   1000 * 1000 /* Trace message in every 1000 ms    */
+#define PERIOD_TRACE_MSG     20 * 1000 /* Trace message in every 20 ms      */
 #define TURN_MIN            -16  /* minimum value PID calculator returns    */
 #define TURN_MAX             16  /* maximum value PID calculator returns    */
 #define SPEED_SLOW           15

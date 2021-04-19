@@ -111,7 +111,7 @@ private:
 
 class TraceLine : public BrainTree::Node {
 public:
-    TraceLine() : traceCnt(0) {
+    TraceLine() : traceCnt(0),prevAngL(0),prevAngR(0) {
         ltPid = new PIDcalculator(P_CONST, I_CONST, D_CONST, PERIOD_UPD_TSK, TURN_MIN, TURN_MAX);
     }
     ~TraceLine() {
@@ -135,15 +135,20 @@ public:
         /* display trace message in every PERIOD_TRACE_MSG ms */
         if (++traceCnt * PERIOD_UPD_TSK >= PERIOD_TRACE_MSG) {
             traceCnt = 0;
-            _log("sensor = %d, deltaAngL = %d, deltaAngR = %d, locX = %d, locY = %d, degree = %d, distance = %d",
-                sensor, (int)plotter->getDeltaAngL(), (int)plotter->getDeltaAngR(),
+            int32_t angL = plotter->getAngL();
+            int32_t angR = plotter->getAngR();
+            _log("sensor = %d, deltaAngDiff = %d, locX = %d, locY = %d, degree = %d, distance = %d",
+                sensor, (int)((angL-prevAngL)-(angR-prevAngR)),
                 (int)plotter->getLocX(), (int)plotter->getLocY(),
                 (int)plotter->getDegree(), (int)plotter->getDistance());
+            prevAngL = angL;
+            prevAngR = angR;
         }
         return Node::Status::Running;
     }
 protected:
     PIDcalculator* ltPid;
+    int32_t prevAngL, prevAngR;
 private:
     int traceCnt;
 };
@@ -161,11 +166,27 @@ public:
             /* move EV3 closer to the line */
             leftMotor->setPWM(SPEED_SLOW);
             rightMotor->setPWM(SPEED_SLOW);
+            /* display trace message in every PERIOD_TRACE_MSG ms */
+            if (++traceCnt * PERIOD_UPD_TSK >= PERIOD_TRACE_MSG) {
+                traceCnt = 0;
+                int32_t angL = plotter->getAngL();
+                int32_t angR = plotter->getAngR();
+                _log("sensor = %d, deltaAngDiff = %d, locX = %d, locY = %d, degree = %d, distance = %d",
+                    sensor, (int)((angL-prevAngL)-(angR-prevAngR)),
+                    (int)plotter->getLocX(), (int)plotter->getLocY(),
+                    (int)plotter->getDegree(), (int)plotter->getDistance());
+                prevAngL = angL;
+                prevAngR = angR;
+            }
             return Node::Status::Running;
         } else {
             return Node::Status::Success;
         }
     }
+protected:
+    int32_t prevAngL, prevAngR;
+private:
+    int traceCnt;
 };
 
 class RotateEV3 : public BrainTree::Node {

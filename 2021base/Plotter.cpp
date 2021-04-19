@@ -28,9 +28,6 @@ int16_t Plotter::getAzimuth() {
 int16_t Plotter::getDegree() {
     // degree = 360.0 * radian / M_TWOPI;
     int16_t degree = (360.0 * azimuth / M_TWOPI);
-    if (degree > 360){
-        degree -= 360;
-    }
     return degree;
 }
 
@@ -42,38 +39,26 @@ int32_t Plotter::getLocY() {
     return (int32_t)locY;
 }
 
-int32_t Plotter::getDeltaAngL() {
-    return deltaAngL;
+int32_t Plotter::getAngL() {
+    return prevAngL;
 }
 
-int32_t Plotter::getDeltaAngR() {
-    return deltaAngR;
+int32_t Plotter::getAngR() {
+    return prevAngR;
 }
 
 void Plotter::plot() {
     /* accumulate distance */
     int32_t curAngL = leftMotor->getCount();
     int32_t curAngR = rightMotor->getCount();
-    deltaAngL = curAngL - prevAngL;
-    if (deltaAngL > 180) {
-        deltaAngL -= 360;
-    } else if (deltaAngL < -180) {
-        deltaAngL += 360;
-    }
-    deltaAngR = curAngR - prevAngR;
-    if (deltaAngR > 180) {
-        deltaAngR -= 360;
-    } else if (deltaAngR < -180) {
-        deltaAngR += 360;
-    }
-    double deltaDistL = M_PI * TIRE_DIAMETER * deltaAngL / 360.0;
-    double deltaDistR = M_PI * TIRE_DIAMETER * deltaAngR / 360.0;
+    double deltaDistL = M_PI * TIRE_DIAMETER * (curAngL - prevAngL) / 360.0;
+    double deltaDistR = M_PI * TIRE_DIAMETER * (curAngR - prevAngR) / 360.0;
     double deltaDist = (deltaDistL + deltaDistR) / 2.0;
     distance += deltaDist;
     prevAngL = curAngL;
     prevAngR = curAngR;
     /* calculate azimuth */
-    double deltaAzi = atan2((deltaDistL - deltaDistR), WHEEL_TREAD);
+    double deltaAzi = (deltaDistL - deltaDistR) / WHEEL_TREAD;
     azimuth += deltaAzi;
     if (azimuth > M_TWOPI) {
         azimuth -= M_TWOPI;
