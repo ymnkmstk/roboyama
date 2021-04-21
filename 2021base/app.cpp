@@ -112,7 +112,7 @@ private:
 class TraceLine : public BrainTree::Node {
 public:
     TraceLine() : traceCnt(0),prevAngL(0),prevAngR(0) {
-        ltPid = new PIDcalculator(P_CONST, I_CONST, D_CONST, PERIOD_UPD_TSK, TURN_MIN, TURN_MAX);
+        ltPid = new PIDcalculator(P_CONST, I_CONST, D_CONST, PERIOD_UPD_TSK, (-1) * SPEED_NORM, SPEED_NORM);
     }
     ~TraceLine() {
         delete ltPid;

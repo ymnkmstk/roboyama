@@ -25,8 +25,8 @@ while ls $DSTDIR | grep -w $BASE >/dev/null; do
   echo processing ${LOGFILE}...
   CONDFILE=${DSTDIR}/${COND}_${SEQ}.${EXT}
   DATAFILE=${DSTDIR}/${DATA}_${SEQ}.${EXT}
-  cat $LOGFILE | grep "TraceLine::update()" | awk '{print $7, $10, $13, $16, $19, $22}' | sed s:,::g > $DATAFILE
-  for TYPE in xy degree curvature; do
+  cat $LOGFILE | grep "TraceLine::update()" | awk '{print $1/1000, $7, $10, $13, $16, $19, $22}' | sed s:,::g > $DATAFILE
+  for TYPE in xy degree curvature distance; do
     PNGFILE=${DSTDIR}/${GRAPH}_${SEQ}_${TYPE}.png
     CMDFILE=${DSTDIR}/${CMD}_${SEQ}_${TYPE}.gp
     cat ${TMPL}_${TYPE}.gp | sed "s:@TITLE:`cat ${CONDFILE}`:g" | sed "s:@PNGFILE:${PNGFILE}:g" | sed "s:@DATAFILE:${DATAFILE}:g" > $CMDFILE

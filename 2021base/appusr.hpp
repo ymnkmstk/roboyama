@@ -88,8 +88,6 @@ extern FilteredColorSensor* filteredColorSensor;
 #endif
 
 #define PERIOD_TRACE_MSG     20 * 1000 /* Trace message in every 20 ms      */
-#define TURN_MIN            -16  /* minimum value PID calculator returns    */
-#define TURN_MAX             16  /* maximum value PID calculator returns    */
 #define SPEED_SLOW           15
 #define GS_TARGET            47  /* was 47 for 2020 program                 */
 #define SONAR_ALERT_DISTANCE 10  /* in centimeters                          */
