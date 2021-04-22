@@ -6,18 +6,23 @@ if [ -z "$ETROBO_ENV" ]; then
     exit 1
 fi
 
-MAXTIME=40
+if [ "$1" = "right" ]; then
+    LR="right"
+else
+    LR=""
+fi
+
+MAXTIME=65
 DSTDIR=${ETROBO_HRP3_WORKSPACE}/ms2021/work
 MAKELOG="makelog"
 BTLOG="btlog"
 COND="cond"
 EXT="txt"
 SEQ=1
-I=0.0D
-D=0.0D
-#P=0.85D
-#I=0.00000001D
-#D=0.5D
+SPEED=55
+P=0.75D
+I=0.39D
+D=0.08D
 
 cd $ETROBO_ROOT
 if [ ! -d $DSTDIR ]; then
@@ -26,13 +31,14 @@ fi
 
 BASE=${MAKELOG}_${SEQ}
 
-for SPEED in 50; do
-    #for P in 0.24D 0.25D 0.26D 0.27D 0.28D 0.29D 0.30D; do # Ku = 0.28, Pu = 1.1 (1100ms)
-    # Kp = 0.6*Ku = 0.168, Ti = 0.5*Pu = 0.55, Td = 0.125*Pu = 0.1375
-    # Kp = 0.168, Ki = Kp/Ti = 0.3055, Kd = Kp*Td = 0.0231
-    for P in 0.168D; do
-    for I in 0.3055D 0.2D 0.1D; do
-    for D in 0.0231D; do
+#for SPEED in 54 55 56; do
+#for P in 0.24D 0.25D 0.26D 0.27D 0.28D 0.29D 0.30D; do # Ku = 0.28, Pu = 1.1 (1100ms)
+# Kp = 0.6*Ku = 0.168, Ti = 0.5*Pu = 0.55, Td = 0.125*Pu = 0.1375
+# Kp = 0.168, Ki = Kp/Ti = 0.3055, Kd = Kp*Td = 0.0231
+#for D in 0.08D 0.09D; do
+#for I in 0.35D 0.36D 0.37D 0.38D 0.39D; do
+#for P in 0.7D 0.75D 0.8D; do
+    for N in `seq 3`; do
         while ls $DSTDIR | grep -w $BASE >/dev/null; do
         SEQ=`expr $SEQ + 1`
         BASE=${MAKELOG}_${SEQ}
@@ -40,12 +46,10 @@ for SPEED in 50; do
 
         echo P=${P} I=${I} D=${D} Speed=${SPEED} > ${DSTDIR}/${COND}_${SEQ}.${EXT}
         export USER_COPTS="-DP_CONST=${P} -DI_CONST=${I} -DD_CONST=${D} -DSPEED_NORM=${SPEED}"
-        btcat > ${DSTDIR}/${BTLOG}_${SEQ}.${EXT} &
-        timeout $MAXTIME make app=2021base sim up 2>&1 | tee ${DSTDIR}/${MAKELOG}_${SEQ}.${EXT}
+        btcat $LR > ${DSTDIR}/${BTLOG}_${SEQ}.${EXT} &
+        timeout $MAXTIME make $LR app=2021base sim up 2>&1 | tee ${DSTDIR}/${MAKELOG}_${SEQ}.${EXT}
     done
-    done
-    done
-done
+#done
 
 exit 0
 

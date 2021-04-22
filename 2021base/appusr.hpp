@@ -75,16 +75,16 @@ extern FilteredColorSensor* filteredColorSensor;
 /* these parameters are intended to be given as a compiler directive,
    e.g., -D=SPEED_NORM=50, for fine tuning                                  */
 #ifndef SPEED_NORM
-#define SPEED_NORM           25  /* was 50 for 2020 program                 */
+#define SPEED_NORM           55  /* was 50 for 2020 program                 */
 #endif
 #ifndef P_CONST
-#define P_CONST           0.85D
+#define P_CONST           0.75D
 #endif
 #ifndef I_CONST
-#define I_CONST     0.00000001D
+#define I_CONST           0.39D
 #endif
 #ifndef D_CONST
-#define D_CONST            0.5D
+#define D_CONST           0.08D
 #endif
 
 #define PERIOD_TRACE_MSG     20 * 1000 /* Trace message in every 20 ms      */
