@@ -23,6 +23,7 @@ Motor*          armMotor;
 Plotter*        plotter;
 
 BrainTree::BehaviorTree* tree = nullptr;
+BrainTree::BehaviorTree* tree_test = nullptr; //sano family add
 
 class IsTouchOn : public BrainTree::Node {
 public:
@@ -83,7 +84,7 @@ public:
     Status update() override {
         int32_t distance = sonarSensor->getDistance();
         if ((distance <= SONAR_ALERT_DISTANCE) && (distance >= 0)) {
-            _log("SONAR_ALERT_DISTANCE");
+            _log("SONAR_ALERT_DISTANCE, distance=%d", distance);
             return Node::Status::Success;
         } else {
             return Node::Status::Failure;
@@ -137,10 +138,10 @@ public:
             traceCnt = 0;
             int32_t angL = plotter->getAngL();
             int32_t angR = plotter->getAngR();
-            _log("sensor = %d, deltaAngDiff = %d, locX = %d, locY = %d, degree = %d, distance = %d",
-                sensor, (int)((angL-prevAngL)-(angR-prevAngR)),
-                (int)plotter->getLocX(), (int)plotter->getLocY(),
-                (int)plotter->getDegree(), (int)plotter->getDistance());
+            // _log("sensor = %d, deltaAngDiff = %d, locX = %d, locY = %d, degree = %d, distance = %d",
+            //     sensor, (int)((angL-prevAngL)-(angR-prevAngR)),
+            //     (int)plotter->getLocX(), (int)plotter->getLocY(),
+            //     (int)plotter->getDegree(), (int)plotter->getDistance());
             prevAngL = angL;
             prevAngR = angR;
         }
@@ -171,10 +172,10 @@ public:
                 traceCnt = 0;
                 int32_t angL = plotter->getAngL();
                 int32_t angR = plotter->getAngR();
-                _log("sensor = %d, deltaAngDiff = %d, locX = %d, locY = %d, degree = %d, distance = %d",
-                    sensor, (int)((angL-prevAngL)-(angR-prevAngR)),
-                    (int)plotter->getLocX(), (int)plotter->getLocY(),
-                    (int)plotter->getDegree(), (int)plotter->getDistance());
+                // _log("sensor = %d, deltaAngDiff = %d, locX = %d, locY = %d, degree = %d, distance = %d",
+                //     sensor, (int)((angL-prevAngL)-(angR-prevAngR)),
+                //     (int)plotter->getLocX(), (int)plotter->getLocY(),
+                //     (int)plotter->getDegree(), (int)plotter->getDistance());
                 prevAngL = angL;
                 prevAngR = angR;
             }
@@ -240,14 +241,15 @@ public:
                 }
             }else{
                 armMotor->setPWM(30);
-                leftMotor->setPWM(23);
-                rightMotor->setPWM(25);
-
+                leftMotor->setPWM(25);
+                rightMotor->setPWM(24);
+                
                 if(curAngle < -9){
                     prevAngle = curAngle;
                 }
                 if (prevAngle < -9 && curAngle >= 0){
                     ++cnt;
+                    _log("ON BOARD");
                 }
                 return Node::Status::Running;
             }
@@ -261,8 +263,8 @@ private:
 
 class TraceLine2 : public BrainTree::Node {
 public:
-    TraceLine2(int sp, double kp) : speedVal(sp), kpVal(kp), traceCnt(0), cnt(0) {
-        ltPid = new PIDcalculator(kpVal, I_CONST, D_CONST, PERIOD_UPD_TSK, TURN_MIN, TURN_MAX);
+    TraceLine2() : traceCnt(0),cnt(0), prevAngL(0),prevAngR(0) {
+        ltPid = new PIDcalculator(P_CONST2, I_CONST2, D_CONST2, PERIOD_UPD_TSK, (-1) * SPEED_SLOW2, SPEED_SLOW2);
     }
     ~TraceLine2() {
         delete ltPid;
@@ -276,7 +278,7 @@ public:
         sensor = cur_rgb.r;
         /* compute necessary amount of steering by PID control */
         turn = (-1) * _COURSE * ltPid->compute(sensor, (int16_t)GS_TARGET2);
-        forward = speedVal;
+        forward = SPEED_SLOW2;
         /* steer EV3 by setting different speed to the motors */
         pwm_L = forward - turn;
         pwm_R = forward + turn;
@@ -285,14 +287,17 @@ public:
         /* display trace message in every PERIOD_TRACE_MSG ms */
         if (++traceCnt * PERIOD_UPD_TSK >= PERIOD_TRACE_MSG) {
             traceCnt = 0;
-            _log("sensor = %d, pwm_L = %d, pwm_R = %d",
-                sensor, pwm_L, pwm_R);
-            _log("locX = %d, locY = %d, degree = %d, distance = %d",
-                (int)plotter->getLocX(), (int)plotter->getLocY(),
-                (int)plotter->getDegree(), (int)plotter->getDistance());
+            int32_t angL = plotter->getAngL();
+            int32_t angR = plotter->getAngR();
+            // _log("sensor = %d, deltaAngDiff = %d, locX = %d, locY = %d, degree = %d, distance = %d",
+            //     sensor, (int)((angL-prevAngL)-(angR-prevAngR)),
+            //     (int)plotter->getLocX(), (int)plotter->getLocY(),
+            //     (int)plotter->getDegree(), (int)plotter->getDistance());
+            prevAngL = angL;
+            prevAngR = angR;
         }
         cnt++;
-        if(cnt > 2110){
+        if(cnt > 2150){
             return Node::Status::Success;
         }else{
             return Node::Status::Running;
@@ -300,9 +305,9 @@ public:
     }
 protected:
     PIDcalculator* ltPid;
+    int32_t prevAngL, prevAngR;
 private:
-    int traceCnt, speedVal, cnt;
-    double kpVal;
+    int traceCnt, cnt;
 };
 
 //sano family add test
@@ -340,10 +345,10 @@ public:
                 cnt = 400;
             }else if(cnt >= 400 && cnt < 1000){
                 leftMotor->setPWM(9);
-                rightMotor->setPWM(1);
+                rightMotor->setPWM(2);
             }else if(cnt >= 1000 &&  cnt < 1500){
                 leftMotor->setPWM(10);
-                rightMotor->setPWM(4);
+                rightMotor->setPWM(2);
             }else if(cnt >= 1500 &&  cnt < 1820){
                 leftMotor->setPWM(10);
                 rightMotor->setPWM(3);
@@ -351,8 +356,12 @@ public:
                 armMotor->setPWM(30);
                 leftMotor->setPWM(9);
                 rightMotor->setPWM(10);
-            }else if(cnt >= 2200 &&  cnt < 3500){
-                leftMotor->setPWM(2);
+            }else if(cnt >= 2070 &&  cnt < 2350){
+                leftMotor->setPWM(1);
+                rightMotor->setPWM(10);
+                armMotor->setPWM(10);
+            }else if(cnt >= 2350 &&  cnt < 3500){
+                leftMotor->setPWM(10);
                 rightMotor->setPWM(10);
                 armMotor->setPWM(-100);
             }
@@ -377,8 +386,8 @@ public:
         //if (ercd != E_OK) {
         //    syslog(LOG_NOTICE, "wup_tsk() returned %d", ercd);
         //}
-        leftMotor->setPWM(0);
-        rightMotor->setPWM(0);
+        leftMotor->setPWM(20);
+        rightMotor->setPWM(20);
         runningMode = 1;
        return Node::Status::Success;
     }
@@ -448,7 +457,7 @@ void main_task(intptr_t unused) {
     tree_test = (BrainTree::BehaviorTree*) BrainTree::Builder() 
         .composite<BrainTree::MemSequence>()
             .leaf<ClimbBoard>(_COURSE, 0) /* TODO magic number */
-            .leaf<TraceLine2>(SPEED_SLOW2, P_CONST2)
+            .leaf<TraceLine2>()
             .leaf<RunSlalom>(_COURSE, 0) /* TODO magic number */
             .leaf<WakeUpMain>()
         .end()
@@ -494,3 +503,4 @@ void update_task(intptr_t unused) {
     }else{
         if (tree != nullptr) tree->update();
     }
+}

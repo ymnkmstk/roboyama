@@ -15,6 +15,7 @@ private:
 public:
     PIDcalculator(double p, double i, double d, int16_t t, int16_t min, int16_t max);
     int16_t compute(int16_t sensor, int16_t target);
+    int16_t compute2(int16_t sensor, int16_t target);
     ~PIDcalculator();
 };
 
