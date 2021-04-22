@@ -353,17 +353,15 @@ public:
                 leftMotor->setPWM(10);
                 rightMotor->setPWM(3);
             }else if(cnt >= 1820 &&  cnt < 2070){
-                armMotor->setPWM(30);
                 leftMotor->setPWM(9);
                 rightMotor->setPWM(10);
             }else if(cnt >= 2070 &&  cnt < 2350){
                 leftMotor->setPWM(1);
                 rightMotor->setPWM(10);
-                armMotor->setPWM(10);
             }else if(cnt >= 2350 &&  cnt < 3500){
                 leftMotor->setPWM(10);
                 rightMotor->setPWM(10);
-                armMotor->setPWM(-100);
+                armMotor->setPWM(30);
             }
             cnt++;
             return Node::Status::Running;
