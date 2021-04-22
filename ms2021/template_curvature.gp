@@ -1,6 +1,7 @@
 set terminal png
 set output "@PNGFILE"
 set title "@TITLE"
-set xlabel "Distance"
+set xlabel "Time (ms)"
 set ylabel "Sensor Value and Curvature"
-plot "@DATAFILE" using 6:1 w lp ps 0, "@DATAFILE" using 6:2 w lp ps 0
+set grid xtics mxtics
+plot "@DATAFILE" using 1:2 w lp ps 0, "@DATAFILE" using 1:3 w lp ps 0
