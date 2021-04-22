@@ -25,6 +25,8 @@ public:
     int16_t getDegree();
     int32_t getLocX();
     int32_t getLocY();
+    int32_t getAngL();
+    int32_t getAngR();
     void plot();
 protected:
     ev3api::Motor *leftMotor, *rightMotor;

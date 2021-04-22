@@ -36,11 +36,11 @@ int16_t PIDcalculator::compute(int16_t sensor, int16_t target) {
         diff[0] = diff[1];
         diff[1] = sensor - target;
     }
-    integral += (double)(diff[0] + diff[1]) / 2.0 * deltaT / 1000.0;
+    integral += (double)(diff[0] + diff[1]) / 2.0 * deltaT / 1000000.0;
     
     p = kp * diff[1];
     i = ki * integral;
-    d = kd * (diff[1] - diff[0]) * 1000.0 / deltaT;
+    d = kd * (diff[1] - diff[0]) * 1000000.0 / deltaT;
 
     return math_limit(p + i + d, minimum, maximum);
 }

@@ -23,7 +23,6 @@ Motor*          armMotor;
 Plotter*        plotter;
 
 BrainTree::BehaviorTree* tree = nullptr;
-BrainTree::BehaviorTree* tree_test = nullptr; //sano family add
 
 class IsTouchOn : public BrainTree::Node {
 public:
@@ -84,7 +83,7 @@ public:
     Status update() override {
         int32_t distance = sonarSensor->getDistance();
         if ((distance <= SONAR_ALERT_DISTANCE) && (distance >= 0)) {
-            _log("SONAR_ALERT_DISTANCE=%d", distance);
+            _log("SONAR_ALERT_DISTANCE");
             return Node::Status::Success;
         } else {
             return Node::Status::Failure;
@@ -112,8 +111,8 @@ private:
 
 class TraceLine : public BrainTree::Node {
 public:
-    TraceLine() : traceCnt(0) {
-        ltPid = new PIDcalculator(P_CONST, I_CONST, D_CONST, PERIOD_UPD_TSK, TURN_MIN, TURN_MAX);
+    TraceLine() : traceCnt(0),prevAngL(0),prevAngR(0) {
+        ltPid = new PIDcalculator(P_CONST, I_CONST, D_CONST, PERIOD_UPD_TSK, (-1) * SPEED_NORM, SPEED_NORM);
     }
     ~TraceLine() {
         delete ltPid;
@@ -136,16 +135,20 @@ public:
         /* display trace message in every PERIOD_TRACE_MSG ms */
         if (++traceCnt * PERIOD_UPD_TSK >= PERIOD_TRACE_MSG) {
             traceCnt = 0;
-            _log("sensor = %d, pwm_L = %d, pwm_R = %d",
-                sensor, pwm_L, pwm_R);
-            _log("locX = %d, locY = %d, degree = %d, distance = %d",
+            int32_t angL = plotter->getAngL();
+            int32_t angR = plotter->getAngR();
+            _log("sensor = %d, deltaAngDiff = %d, locX = %d, locY = %d, degree = %d, distance = %d",
+                sensor, (int)((angL-prevAngL)-(angR-prevAngR)),
                 (int)plotter->getLocX(), (int)plotter->getLocY(),
                 (int)plotter->getDegree(), (int)plotter->getDistance());
+            prevAngL = angL;
+            prevAngR = angR;
         }
         return Node::Status::Running;
     }
 protected:
     PIDcalculator* ltPid;
+    int32_t prevAngL, prevAngR;
 private:
     int traceCnt;
 };
@@ -163,11 +166,27 @@ public:
             /* move EV3 closer to the line */
             leftMotor->setPWM(SPEED_SLOW);
             rightMotor->setPWM(SPEED_SLOW);
+            /* display trace message in every PERIOD_TRACE_MSG ms */
+            if (++traceCnt * PERIOD_UPD_TSK >= PERIOD_TRACE_MSG) {
+                traceCnt = 0;
+                int32_t angL = plotter->getAngL();
+                int32_t angR = plotter->getAngR();
+                _log("sensor = %d, deltaAngDiff = %d, locX = %d, locY = %d, degree = %d, distance = %d",
+                    sensor, (int)((angL-prevAngL)-(angR-prevAngR)),
+                    (int)plotter->getLocX(), (int)plotter->getLocY(),
+                    (int)plotter->getDegree(), (int)plotter->getDistance());
+                prevAngL = angL;
+                prevAngR = angR;
+            }
             return Node::Status::Running;
         } else {
             return Node::Status::Success;
         }
     }
+protected:
+    int32_t prevAngL, prevAngR;
+private:
+    int traceCnt;
 };
 
 class RotateEV3 : public BrainTree::Node {
@@ -206,9 +225,9 @@ private:
 };
 
 //sano family add test
-class SpinEV3 : public BrainTree::Node { 
+class ClimbBoard : public BrainTree::Node { 
 public:
-    SpinEV3(int direction, int count) : dir(direction), cnt(count) {}
+    ClimbBoard(int direction, int count) : dir(direction), cnt(count) {}
     Status update() override {
         curAngle = gyroSensor->getAngle();
             if(cnt >= 1){
@@ -287,9 +306,9 @@ private:
 };
 
 //sano family add test
-class BackRun : public BrainTree::Node { 
+class RunSlalom : public BrainTree::Node { 
 public:
-    BackRun(int direction, int count) : dir(direction), cnt(count) {}
+    RunSlalom(int direction, int count) : dir(direction), cnt(count) {}
     Status update() override {
 
             // if(cnt >= 0 && 400 > cnt){
@@ -346,7 +365,6 @@ private:
     int32_t curAngle;
     int32_t prevAngle;
 };
-
 
 /* method to wake up the main task for termination */
 class WakeUpMain : public BrainTree::Node {
@@ -406,9 +424,9 @@ void main_task(intptr_t unused) {
     tree = (BrainTree::BehaviorTree*) BrainTree::Builder()
         .composite<BrainTree::MemSequence>()
             .leaf<IsTouchOn>()
-            // .leaf<RotateEV3>(30 * _COURSE)
-            // .leaf<MoveToLine>()
-            // .leaf<RotateEV3>(-30 * _COURSE)
+            .leaf<RotateEV3>(30 * _COURSE)
+            .leaf<MoveToLine>()
+            .leaf<RotateEV3>(-30 * _COURSE)
             .composite<BrainTree::ParallelSequence>(1,1)
                 .leaf<IsSonarOn>()
                 .leaf<IsBackOn>()
@@ -429,9 +447,9 @@ void main_task(intptr_t unused) {
     //trial - sano family add
     tree_test = (BrainTree::BehaviorTree*) BrainTree::Builder() 
         .composite<BrainTree::MemSequence>()
-            .leaf<SpinEV3>(_COURSE, 0) /* TODO magic number */
+            .leaf<ClimbBoard>(_COURSE, 0) /* TODO magic number */
             .leaf<TraceLine2>(SPEED_SLOW2, P_CONST2)
-            .leaf<BackRun>(_COURSE, 0) /* TODO magic number */
+            .leaf<RunSlalom>(_COURSE, 0) /* TODO magic number */
             .leaf<WakeUpMain>()
         .end()
         .build();
@@ -476,4 +494,3 @@ void update_task(intptr_t unused) {
     }else{
         if (tree != nullptr) tree->update();
     }
-}

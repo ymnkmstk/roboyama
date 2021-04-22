@@ -28,9 +28,6 @@ int16_t Plotter::getAzimuth() {
 int16_t Plotter::getDegree() {
     // degree = 360.0 * radian / M_TWOPI;
     int16_t degree = (360.0 * azimuth / M_TWOPI);
-    if (degree > 360){
-        degree -= 360;
-    }
     return degree;
 }
 
@@ -40,6 +37,14 @@ int32_t Plotter::getLocX() {
 
 int32_t Plotter::getLocY() {
     return (int32_t)locY;
+}
+
+int32_t Plotter::getAngL() {
+    return prevAngL;
+}
+
+int32_t Plotter::getAngR() {
+    return prevAngR;
 }
 
 void Plotter::plot() {
@@ -53,7 +58,7 @@ void Plotter::plot() {
     prevAngL = curAngL;
     prevAngR = curAngR;
     /* calculate azimuth */
-    double deltaAzi = atan2((deltaDistL - deltaDistR), WHEEL_TREAD);
+    double deltaAzi = (deltaDistL - deltaDistR) / WHEEL_TREAD;
     azimuth += deltaAzi;
     if (azimuth > M_TWOPI) {
         azimuth -= M_TWOPI;
