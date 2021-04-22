@@ -14,7 +14,7 @@ FILE*           bt;
 Clock*          clock;
 TouchSensor*    touchSensor;
 SonarSensor*    sonarSensor;
-FilteredColorSensor* filteredColorSensor;
+FilteredColorSensor*    colorSensor;
 GyroSensor*     gyroSensor;
 Motor*          leftMotor;
 Motor*          rightMotor;
@@ -54,7 +54,7 @@ class IsBlueDetected : public BrainTree::Node {
 public:
     Status update() override {
         rgb_raw_t cur_rgb;
-        filteredColorSensor->getRawColor(cur_rgb);
+        colorSensor->getRawColor(cur_rgb);
         if (cur_rgb.b - cur_rgb.r > 60 && cur_rgb.b <= 255 && cur_rgb.r <= 255) {
             _log("line color changed black to blue.");
             return Node::Status::Success;
@@ -68,7 +68,7 @@ class IsBlackDetected : public BrainTree::Node {
 public:
     Status update() override {
         rgb_raw_t cur_rgb;
-        filteredColorSensor->getRawColor(cur_rgb);
+        colorSensor->getRawColor(cur_rgb);
         if (cur_rgb.b - cur_rgb.r < 40) {
             _log("line color changed blue to black.");
             return Node::Status::Success;
@@ -122,7 +122,7 @@ public:
         int8_t forward, turn, pwm_L, pwm_R;
         rgb_raw_t cur_rgb;
 
-        filteredColorSensor->getRawColor(cur_rgb);
+        colorSensor->getRawColor(cur_rgb);
         sensor = cur_rgb.r;
         /* compute necessary amount of steering by PID control */
         turn = (-1) * _COURSE * ltPid->compute(sensor, (int16_t)GS_TARGET);
@@ -159,7 +159,7 @@ public:
         int16_t sensor;
         rgb_raw_t cur_rgb;
 
-        filteredColorSensor->getRawColor(cur_rgb);
+        colorSensor->getRawColor(cur_rgb);
         sensor = cur_rgb.r;
 
         if (sensor >= GS_TARGET) {
@@ -255,7 +255,7 @@ void main_task(intptr_t unused) {
     clock       = new Clock();
     touchSensor = new TouchSensor(PORT_1);
     sonarSensor = new SonarSensor(PORT_2);
-    filteredColorSensor = new FilteredColorSensor(PORT_3);
+    colorSensor = new FilteredColorSensor(PORT_3);
     gyroSensor  = new GyroSensor(PORT_4);
     leftMotor   = new Motor(PORT_C);
     rightMotor  = new Motor(PORT_B);
@@ -319,7 +319,7 @@ void main_task(intptr_t unused) {
     delete rightMotor;
     delete leftMotor;
     delete gyroSensor;
-    delete filteredColorSensor;
+    delete colorSensor;
     delete sonarSensor;
     delete touchSensor;
     delete clock;
@@ -331,7 +331,7 @@ void main_task(intptr_t unused) {
 
 /* periodic task to update the behavior tree */
 void update_task(intptr_t unused) {
-    filteredColorSensor->sense();
+    colorSensor->sense();
     plotter->plot();
     if (tree != nullptr) tree->update();
 }
