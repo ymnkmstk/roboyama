@@ -5,8 +5,8 @@
 */
 #include "FilteredMotor.hpp"
 
-FilteredMotor::FilteredMotor(ePortM port) : Motor(port), fillFIR(FIR_ORDER + 1) {
-    fir_pwm = new FIR_Transposed<FIR_ORDER>(hn);
+FilteredMotor::FilteredMotor(ePortM port) : Motor(port), fillFIR(MFIR_ORDER + 1) {
+    fir_pwm = new FIR_Transposed<MFIR_ORDER>(mhn);
 }
 
 FilteredMotor::~FilteredMotor() {
@@ -17,7 +17,7 @@ void FilteredMotor::setPWM(int pwm) {
     /* process pwm by the Low Pass Filter */
     filtered_pwm = fir_pwm->Execute(pwm);
     /* decrement counter */
-    fillFIR--;
+    //fillFIR--;
     /* pass through until FIR array is filled */
     if (fillFIR > 0) {
         ev3api::Motor::setPWM(pwm);

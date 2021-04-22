@@ -9,12 +9,9 @@
 #include "Motor.h"
 #include "FIR.hpp"
 
-#ifndef FIR_PARM
-#define FIR_PARM
 /* FIR filter parameter */
-static const int FIR_ORDER = 10; 
-static const double hn[FIR_ORDER+1] = { -1.247414986406201e-18, -1.270350182429102e-02, -2.481243022283666e-02, 6.381419731491805e-02, 2.761351394755998e-01, 4.000000000000000e-01, 2.761351394755998e-01, 6.381419731491805e-02, -2.481243022283666e-02, -1.270350182429102e-02, -1.247414986406201e-18 };
-#endif /* FIR_PARM */
+static const int MFIR_ORDER = 10; 
+static const double mhn[MFIR_ORDER+1] = { 1.573810628933549e-03, -3.321813563286734e-03, 7.910007566689100e-03, -1.360707786661095e-02, 1.823095533324903e-02, 9.800000000000000e-01, 1.823095533324903e-02, -1.360707786661095e-02, 7.910007566689100e-03, -3.321813563286734e-03, 1.573810628933549e-03 };
 
 class FilteredMotor : public ev3api::Motor {
 public:
@@ -22,7 +19,7 @@ public:
     ~FilteredMotor(void);
     void setPWM(int pwm);
 protected:
-    FIR_Transposed<FIR_ORDER> *fir_pwm;
+    FIR_Transposed<MFIR_ORDER> *fir_pwm;
     int fillFIR, filtered_pwm;
 };
 
