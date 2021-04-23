@@ -35,8 +35,8 @@ extern TouchSensor* touchSensor;
 extern SonarSensor* sonarSensor;
 extern FilteredColorSensor* colorSensor;
 extern GyroSensor*  gyroSensor;
-extern FilteredMotor*       leftMotor;
-extern FilteredMotor*       rightMotor;
+extern Motor*       leftMotor;
+extern Motor*       rightMotor;
 extern Motor*       tailMotor;
 extern Motor*       armMotor;
 
