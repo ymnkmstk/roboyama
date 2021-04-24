@@ -241,8 +241,8 @@ public:
                 }
             }else{
                 armMotor->setPWM(30);
-                leftMotor->setPWM(25);
-                rightMotor->setPWM(24);
+                leftMotor->setPWM(24);
+                rightMotor->setPWM(25);
                 
                 if(curAngle < -9){
                     prevAngle = curAngle;
@@ -352,13 +352,13 @@ public:
             }else if(cnt >= 1500 &&  cnt < 1820){
                 leftMotor->setPWM(10);
                 rightMotor->setPWM(3);
-            }else if(cnt >= 1820 &&  cnt < 2070){
+            }else if(cnt >= 1820 &&  cnt < 2060){
                 leftMotor->setPWM(9);
                 rightMotor->setPWM(10);
-            }else if(cnt >= 2070 &&  cnt < 2350){
+            }else if(cnt >= 2060 &&  cnt < 2370){
                 leftMotor->setPWM(1);
                 rightMotor->setPWM(10);
-            }else if(cnt >= 2350 &&  cnt < 3500){
+            }else if(cnt >= 2370 &&  cnt < 3500){
                 leftMotor->setPWM(10);
                 rightMotor->setPWM(10);
                 armMotor->setPWM(30);
@@ -431,9 +431,9 @@ void main_task(intptr_t unused) {
     tree = (BrainTree::BehaviorTree*) BrainTree::Builder()
         .composite<BrainTree::MemSequence>()
             .leaf<IsTouchOn>()
-            .leaf<RotateEV3>(30 * _COURSE)
-            .leaf<MoveToLine>()
-            .leaf<RotateEV3>(-30 * _COURSE)
+            // .leaf<RotateEV3>(30 * _COURSE)
+            // .leaf<MoveToLine>()
+            // .leaf<RotateEV3>(-30 * _COURSE)
             .composite<BrainTree::ParallelSequence>(1,1)
                 .leaf<IsSonarOn>()
                 .leaf<IsBackOn>()

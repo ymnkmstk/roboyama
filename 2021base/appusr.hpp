@@ -101,7 +101,7 @@ extern FilteredColorSensor* filteredColorSensor;
 #define SPEED_SLOW           15
 #define SPEED_SLOW2          10
 #define GS_TARGET            47  /* was 47 for 2020 program                 */
-#define GS_TARGET2           35
+#define GS_TARGET2           30
 #define SONAR_ALERT_DISTANCE 15  /* in centimeters                          */
 #define BLUE_DISTANCE     20000  /* 2nd blue part should be further than this   */ 
 
