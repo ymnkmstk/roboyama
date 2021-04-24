@@ -23,6 +23,7 @@ using namespace ev3api;
 #include <math.h>
 
 #include "BrainTree.h"
+#include "FilteredMotor.hpp"
 #include "FilteredColorSensor.hpp"
 #include "Plotter.hpp"
 #include "PIDcalculator.hpp"
@@ -32,12 +33,12 @@ extern FILE*        bt;
 extern Clock*       clock;
 extern TouchSensor* touchSensor;
 extern SonarSensor* sonarSensor;
+extern FilteredColorSensor* colorSensor;
 extern GyroSensor*  gyroSensor;
 extern Motor*       leftMotor;
 extern Motor*       rightMotor;
 extern Motor*       tailMotor;
 extern Motor*       armMotor;
-extern FilteredColorSensor* filteredColorSensor;
 
 #define DEBUG
 

@@ -7,6 +7,8 @@
       ASIN: B005FOHWA2
     Copyright © 2006 Naoki Mikami. All rights reserved.
 */
+#ifndef FIR_hpp
+#define FIR_hpp
 
 template<int ORDER> class FIR_Direct {
 private:
@@ -51,3 +53,5 @@ inline double FIR_Transposed<ORDER>::Execute(const double xin) {
     un[ORDER] = hm[ORDER] * xin;
     return un[0];
 }
+
+#endif /* FIR_hpp */

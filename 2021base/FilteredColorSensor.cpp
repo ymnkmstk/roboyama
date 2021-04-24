@@ -4,6 +4,7 @@
     Copyright © 2021 Wataru Taniguchi. All rights reserved.
 */
 #include "FilteredColorSensor.hpp"
+constexpr const double FilteredColorSensor::hn[FIR_ORDER+1];
 
 FilteredColorSensor::FilteredColorSensor(ePortS port) : ColorSensor(port), fillFIR(FIR_ORDER + 1) {
     fir_r = new FIR_Transposed<FIR_ORDER>(hn);
