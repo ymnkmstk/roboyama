@@ -241,7 +241,7 @@ public:
                 }
             }else{
                 armMotor->setPWM(30);
-                leftMotor->setPWM(24);
+                leftMotor->setPWM(23);
                 rightMotor->setPWM(25);
                 
                 if(curAngle < -9){
@@ -263,7 +263,7 @@ private:
 
 class TraceLine2 : public BrainTree::Node {
 public:
-    TraceLine2() : traceCnt(0),cnt(0), prevAngL(0),prevAngR(0) {
+    TraceLine2() : traceCnt(0),cnt(0), prevAngL(0),prevAngR(0), prevDistance(0) {
         ltPid = new PIDcalculator(P_CONST2, I_CONST2, D_CONST2, PERIOD_UPD_TSK, (-1) * SPEED_SLOW2, SPEED_SLOW2);
     }
     ~TraceLine2() {
@@ -273,6 +273,10 @@ public:
         int16_t sensor;
         int8_t forward, turn, pwm_L, pwm_R;
         rgb_raw_t cur_rgb;
+
+        if(cnt == 0){
+            prevDistance = plotter->getDistance();
+        }
 
         filteredColorSensor->getRawColor(cur_rgb);
         sensor = cur_rgb.r;
@@ -289,10 +293,10 @@ public:
             traceCnt = 0;
             int32_t angL = plotter->getAngL();
             int32_t angR = plotter->getAngR();
-            // _log("sensor = %d, deltaAngDiff = %d, locX = %d, locY = %d, degree = %d, distance = %d",
-            //     sensor, (int)((angL-prevAngL)-(angR-prevAngR)),
-            //     (int)plotter->getLocX(), (int)plotter->getLocY(),
-            //     (int)plotter->getDegree(), (int)plotter->getDistance());
+            _log("sensor = %d, deltaAngDiff = %d, locX = %d, locY = %d, degree = %d, distance = %d",
+                sensor, (int)((angL-prevAngL)-(angR-prevAngR)),
+                (int)plotter->getLocX(), (int)plotter->getLocY(),
+                (int)plotter->getDegree(), (int)plotter->getDistance() - (int)prevDistance);
             prevAngL = angL;
             prevAngR = angR;
         }
@@ -305,7 +309,7 @@ public:
     }
 protected:
     PIDcalculator* ltPid;
-    int32_t prevAngL, prevAngR;
+    int32_t prevAngL, prevAngR, prevDistance;
 private:
     int traceCnt, cnt;
 };
@@ -355,10 +359,10 @@ public:
             }else if(cnt >= 1820 &&  cnt < 2060){
                 leftMotor->setPWM(9);
                 rightMotor->setPWM(10);
-            }else if(cnt >= 2060 &&  cnt < 2370){
+            }else if(cnt >= 2060 &&  cnt < 2390){
                 leftMotor->setPWM(1);
                 rightMotor->setPWM(10);
-            }else if(cnt >= 2370 &&  cnt < 3500){
+            }else if(cnt >= 2390 &&  cnt < 3500){
                 leftMotor->setPWM(10);
                 rightMotor->setPWM(10);
                 armMotor->setPWM(30);
