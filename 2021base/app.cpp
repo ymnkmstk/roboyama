@@ -22,18 +22,24 @@ Motor*          tailMotor;
 Motor*          armMotor;
 Plotter*        plotter;
 
-BrainTree::BehaviorTree* tree = nullptr;
+BrainTree::BehaviorTree* tr_calibration = nullptr;
+BrainTree::BehaviorTree* tr_run         = nullptr;
+BrainTree::BehaviorTree* tr_slalom      = nullptr;
+BrainTree::BehaviorTree* tr_garage      = nullptr;
+State state = ST_initial;
 
 class IsTouchOn : public BrainTree::Node {
 public:
     Status update() override {
+        /* keep resetting clock until touch sensor gets pressed */
+        clock->reset();
         if (touchSensor->isPressed()) {
             _log("touch sensor pressed.");
             /* indicate departure by LED color */
             ev3_led_set_color(LED_GREEN);
-            return Node::Status::Success;
+            return Status::Success;
         } else {
-            return Node::Status::Failure;
+            return Status::Failure;
         }
     }
 };
@@ -43,9 +49,9 @@ public:
     Status update() override {
         if (ev3_button_is_pressed(BACK_BUTTON)) {
             _log("back button pressed.");
-            return Node::Status::Success;
+            return Status::Success;
         } else {
-            return Node::Status::Failure;
+            return Status::Failure;
         }
     }
 };
@@ -57,9 +63,9 @@ public:
         colorSensor->getRawColor(cur_rgb);
         if (cur_rgb.b - cur_rgb.r > 60 && cur_rgb.b <= 255 && cur_rgb.r <= 255) {
             _log("line color changed black to blue.");
-            return Node::Status::Success;
+            return Status::Success;
         } else {
-            return Node::Status::Failure;
+            return Status::Failure;
         }
     }
 };
@@ -71,9 +77,9 @@ public:
         colorSensor->getRawColor(cur_rgb);
         if (cur_rgb.b - cur_rgb.r < 40) {
             _log("line color changed blue to black.");
-            return Node::Status::Success;
+            return Status::Success;
         } else {
-            return Node::Status::Failure;
+            return Status::Failure;
         }
     }
 };
@@ -84,28 +90,29 @@ public:
         int32_t distance = sonarSensor->getDistance();
         if ((distance <= SONAR_ALERT_DISTANCE) && (distance >= 0)) {
             _log("SONAR_ALERT_DISTANCE");
-            return Node::Status::Success;
+            return Status::Success;
         } else {
-            return Node::Status::Failure;
+            return Status::Failure;
         }
     }
 };
 
 class IsDistanceReached : public BrainTree::Node {
 public:
-    IsDistanceReached() : flag(false) {}
+    IsDistanceReached(int32_t d) : distance(d), flag(false) {}
     Status update() override {
-        if (plotter->getDistance() >= BLUE_DISTANCE) {
+        if (plotter->getDistance() >= distance) {
             if (!flag) {
-                _log("BLUE_DISTANCE is reached.");
+                _log("Distance %d is reached.", distance);
                 flag = true;
             }
-            return Node::Status::Success;
+            return Status::Success;
         } else {
-            return Node::Status::Failure;
+            return Status::Failure;
         }
     }
-private:
+protected:
+    int32_t distance;
     bool flag;
 };
 
@@ -144,7 +151,7 @@ public:
             prevAngL = angL;
             prevAngR = angR;
         }
-        return Node::Status::Running;
+        return Status::Running;
     }
 protected:
     PIDcalculator* ltPid;
@@ -153,8 +160,12 @@ private:
     int traceCnt;
 };
 
+/*  usage:
+    ".leaf<MoveToLine>(SPEED_SLOW)"
+    is to move robot straight ahead until a line is detected by speed SPEED_SLOW  */
 class MoveToLine : public BrainTree::Node {
 public:
+    MoveToLine(int s) : speed(s) {}
     Status update() override {
         int16_t sensor;
         rgb_raw_t cur_rgb;
@@ -164,8 +175,8 @@ public:
 
         if (sensor >= GS_TARGET) {
             /* move EV3 closer to the line */
-            leftMotor->setPWM(SPEED_SLOW);
-            rightMotor->setPWM(SPEED_SLOW);
+            leftMotor->setPWM(speed);
+            rightMotor->setPWM(speed);
             /* display trace message in every PERIOD_TRACE_MSG ms */
             if (++traceCnt * PERIOD_UPD_TSK >= PERIOD_TRACE_MSG) {
                 traceCnt = 0;
@@ -178,17 +189,21 @@ public:
                 prevAngL = angL;
                 prevAngR = angR;
             }
-            return Node::Status::Running;
+            return Status::Running;
         } else {
-            return Node::Status::Success;
+            return Status::Success;
         }
     }
 protected:
+    int speed;
     int32_t prevAngL, prevAngR;
 private:
     int traceCnt;
 };
 
+/*  usage:
+    ".leaf<RotateEV3>(30 * _COURSE)"
+    is to rotate robot 30 degrees clockwise when in L course */
 class RotateEV3 : public BrainTree::Node {
 public:
     RotateEV3(int16_t degree) : deltaDegreeTarget(degree),updated(false) {
@@ -213,9 +228,9 @@ public:
         if (clockwise * deltaDegree < clockwise * deltaDegreeTarget) {
             leftMotor->setPWM(clockwise * SPEED_SLOW);
             rightMotor->setPWM((-clockwise) * SPEED_SLOW);
-            return Node::Status::Running;
+            return Status::Running;
         } else {
-            return Node::Status::Success;
+            return Status::Success;
         }
     }
 private:
@@ -224,19 +239,39 @@ private:
     bool updated;
 };
 
-/* method to wake up the main task for termination */
-class WakeUpMain : public BrainTree::Node {
+class ClimbBoard : public BrainTree::Node { 
 public:
+    ClimbBoard(int direction, int count) : dir(direction), cnt(count) {}
     Status update() override {
-        _log("waking up main...");
-        /* wake up the main task */
-        ER ercd = wup_tsk(MAIN_TASK);
-        assert(ercd == E_OK);
-        if (ercd != E_OK) {
-            syslog(LOG_NOTICE, "wup_tsk() returned %d", ercd);
-        }
-       return Node::Status::Success;
+        curAngle = gyroSensor->getAngle();
+            if(cnt >= 1){
+                leftMotor->setPWM(0);
+                rightMotor->setPWM(0);
+                armMotor->setPWM(-50);
+                cnt++;
+                if(cnt >= 200){
+                    return Status::Success;
+                }
+            }else{
+                armMotor->setPWM(30);
+                leftMotor->setPWM(23);
+                rightMotor->setPWM(25);
+                
+                if(curAngle < -9){
+                    prevAngle = curAngle;
+                }
+                if (prevAngle < -9 && curAngle >= 0){
+                    ++cnt;
+                    _log("ON BOARD");
+                }
+                return Status::Running;
+            }
     }
+private:
+    int8_t dir;
+    int cnt;
+    int32_t curAngle;
+    int32_t prevAngle;
 };
 
 /* a cyclic handler to activate a task */
@@ -262,45 +297,58 @@ void main_task(intptr_t unused) {
     tailMotor   = new Motor(PORT_D);
     armMotor    = new Motor(PORT_A);
     plotter     = new Plotter(leftMotor, rightMotor, gyroSensor);
-    /* indicate initialization completion by LED color */
-    _log("initialization completed.");
-    ev3_led_set_color(LED_ORANGE);
 
     /* BEHAVIOR TREE DEFINITION */
 
-    /* robot starts line tracing
-       when touch sensor is turned on.
-       it continues running unless:
-         ultrasonic sonar detects an obstacle or
-         back button is pressed or
-         the second blue part of line is reached at
-         further than BLUE_DISTANCE,
-       while its location keeps being tracked. */
-    tree = (BrainTree::BehaviorTree*) BrainTree::Builder()
-        .composite<BrainTree::MemSequence>()
+    /* robot starts when touch sensor is turned on */
+    tr_calibration = (BrainTree::BehaviorTree*) BrainTree::Builder()
+        .decorator<BrainTree::UntilSuccess>()
             .leaf<IsTouchOn>()
-            //.leaf<RotateEV3>(30 * _COURSE)
-            //.leaf<MoveToLine>()
-            //.leaf<RotateEV3>(-30 * _COURSE)
-            .composite<BrainTree::ParallelSequence>(1,1)
-                .leaf<IsSonarOn>()
-                .leaf<IsBackOn>()
-                .composite<BrainTree::ParallelSequence>(2,2)
-                    .leaf<IsDistanceReached>()
-                    .composite<BrainTree::MemSequence>()
-                        .leaf<IsBlueDetected>()
-                        .leaf<IsBlackDetected>()
-                        .leaf<IsBlueDetected>()
-                    .end()
+        .end()
+        .build();
+
+    /* robot continues running unless:
+        ultrasonic sonar detects an obstacle or
+        back button is pressed or
+        the second blue part of line is reached at further than BLUE_DISTANCE */
+    tr_run = (BrainTree::BehaviorTree*) BrainTree::Builder()
+        .composite<BrainTree::ParallelSequence>(1,4)
+            .leaf<IsSonarOn>()
+            .leaf<IsBackOn>()
+            .composite<BrainTree::ParallelSequence>(2,2)
+                .leaf<IsDistanceReached>(BLUE_DISTANCE)
+                .composite<BrainTree::MemSequence>()
+                    .leaf<IsBlueDetected>()
+                    .leaf<IsBlackDetected>()
+                    .leaf<IsBlueDetected>()
                 .end()
-                .leaf<TraceLine>()
             .end()
-            .leaf<WakeUpMain>()
+            .leaf<TraceLine>()
+        .end()
+        .build();
+
+    tr_slalom = (BrainTree::BehaviorTree*) BrainTree::Builder()
+        .composite<BrainTree::MemSequence>()
+            .leaf<ClimbBoard>(_COURSE, 0)
+            .leaf<RotateEV3>(30 * _COURSE)
+        .end()
+        .build();
+
+    tr_garage = (BrainTree::BehaviorTree*) BrainTree::Builder()
+        .composite<BrainTree::MemSequence>()
+            .leaf<RotateEV3>(30 * _COURSE)
+            .leaf<RotateEV3>(30 * _COURSE)
         .end()
         .build();
 
     /* register cyclic handler to EV3RT */
     sta_cyc(CYC_UPD_TSK);
+
+    /* indicate initialization completion by LED color */
+    _log("initialization completed.");
+    ev3_led_set_color(LED_ORANGE);
+    state = ST_calibrating;
+
     /* sleep until being waken up */
     _log("going to sleep...");
     ER ercd = slp_tsk();
@@ -308,10 +356,14 @@ void main_task(intptr_t unused) {
     if (ercd != E_OK) {
         syslog(LOG_NOTICE, "slp_tsk() returned %d", ercd);
     }
+
     /* deregister cyclic handler from EV3RT */
     stp_cyc(CYC_UPD_TSK);
     /* destroy behavior tree */
-    delete tree;
+    delete tr_garage;
+    delete tr_slalom;
+    delete tr_run;
+    delete tr_calibration;
     /* destroy EV3 objects */
     delete plotter;
     delete armMotor;
@@ -331,7 +383,91 @@ void main_task(intptr_t unused) {
 
 /* periodic task to update the behavior tree */
 void update_task(intptr_t unused) {
+    BrainTree::Node::Status status;
+    ER ercd;
+
     colorSensor->sense();
     plotter->plot();
-    if (tree != nullptr) tree->update();
+    switch (state) {
+    case ST_calibrating:
+        if (tr_calibration != nullptr) {
+            status = tr_calibration->update();
+            switch (status) {
+            case BrainTree::Node::Status::Success:
+                state = ST_running;
+                _log("State changed: ST_calibration to ST_running");
+                break;
+            case BrainTree::Node::Status::Failure:
+                state = ST_ending;
+                _log("State changed: ST_calibration to ST_ending");
+                break;
+            default:
+                break;
+            }
+        }
+        break;
+    case ST_running:
+        if (tr_run != nullptr) {
+            status = tr_run->update();
+            switch (status) {
+            case BrainTree::Node::Status::Success:
+                state = ST_slalom;
+                _log("State changed: ST_running to ST_slalom");
+                break;
+            case BrainTree::Node::Status::Failure:
+                state = ST_ending;
+                _log("State changed: ST_running to ST_ending");
+                break;
+            default:
+                break;
+            }
+        }
+        break;
+    case ST_slalom:
+        if (tr_slalom != nullptr) {
+            status = tr_slalom->update();
+            switch (status) {
+            case BrainTree::Node::Status::Success:
+                state = ST_garage;
+                _log("State changed: ST_slalom to ST_garage");
+                break;
+            case BrainTree::Node::Status::Failure:
+                state = ST_ending;
+                _log("State changed: ST_slalom to ST_ending");
+                break;
+            default:
+                break;
+            }
+        }
+        break;
+    case ST_garage:
+        if (tr_garage != nullptr) {
+            status = tr_garage->update();
+            switch (status) {
+            case BrainTree::Node::Status::Success:
+            case BrainTree::Node::Status::Failure:
+                state = ST_ending;
+                _log("State changed: ST_garage to ST_ending");
+                break;
+            default:
+                break;
+            }
+        }
+        break;
+    case ST_ending:
+        _log("waking up main...");
+        /* wake up the main task */
+        ercd = wup_tsk(MAIN_TASK);
+        assert(ercd == E_OK);
+        if (ercd != E_OK) {
+            syslog(LOG_NOTICE, "wup_tsk() returned %d", ercd);
+        }
+        state = ST_end;
+        _log("State changed: ST_ending to ST_end");
+        break;    
+    case ST_initial:
+    case ST_end:
+    default:
+        break;
+    }
 }

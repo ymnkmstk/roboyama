@@ -569,12 +569,12 @@ class UntilSuccess : public Decorator
 public:
     Status update() override
     {
-        while (1) {
-            auto status = child->tick();
+        auto status = child->tick();
 
-            if (status == Status::Success) {
-                return Status::Success;
-            }
+        if (status == Status::Success) {
+            return Status::Success;
+        } else {
+            return Status::Running;
         }
     }
 };
@@ -585,12 +585,12 @@ class UntilFailure : public Decorator
 public:
     Status update() override
     {
-        while (1) {
-            auto status = child->tick();
+        auto status = child->tick();
 
-            if (status == Status::Failure) {
-                return Status::Success;
-            }
+        if (status == Status::Failure) {
+            return Status::Success;
+        } else {
+            return Status::Running;
         }
     }
 };

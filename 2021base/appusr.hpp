@@ -100,4 +100,14 @@ enum BoardItem {
     DIST, /* accumulated distance   */
 };
 
+enum State {
+    ST_initial,
+    ST_calibrating,
+    ST_running,
+    ST_slalom,
+    ST_garage,
+    ST_ending,
+    ST_end,
+};
+
 #endif /* appusr_hpp */
