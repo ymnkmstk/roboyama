@@ -6,6 +6,7 @@
 // 3/26/2021 Modified by Wataru Taniguchi to avoid the use of shared_ptr,
 //           being executable on TOPPERS/EV3RT (HRP3) with Athrill
 // 3/30/2021 Modified by Wataru Taniguchi to make use of Blackboard
+// 4/28/2021 Modified by Wataru Taniguchi to correct the behavior of UntilSuccess and UntilFailure
 
 #pragma once
 
