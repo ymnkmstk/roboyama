@@ -97,14 +97,19 @@ public:
     }
 };
 
-class IsDistanceReached : public BrainTree::Node {
+class IsDistanceEarned : public BrainTree::Node {
 public:
-    IsDistanceReached(int32_t d) : distance(d), flag(false) {}
+    IsDistanceEarned(int32_t d) : deltaDistTarget(d),updated(false),earned(false) {}
     Status update() override {
-        if (plotter->getDistance() >= distance) {
-            if (!flag) {
-                _log("Distance %d is reached.", distance);
-                flag = true;
+        if (!updated) {
+            originalDist = plotter->getDistance();
+            updated = true;
+        }
+        int32_t deltaDist = plotter->getDistance() - originalDist;
+        if (deltaDist >= deltaDistTarget) {
+            if (!earned) {
+                _log("Delta %d is earned at absolute distance %d.", deltaDistTarget, plotter->getDistance());
+                earned = true;
             }
             return Status::Success;
         } else {
@@ -112,14 +117,15 @@ public:
         }
     }
 protected:
-    int32_t distance;
-    bool flag;
+    int32_t deltaDistTarget, originalDist;
+    int32_t target_distance;
+    bool updated, earned;
 };
 
 class TraceLine : public BrainTree::Node {
 public:
-    TraceLine() : traceCnt(0),prevAngL(0),prevAngR(0) {
-        ltPid = new PIDcalculator(P_CONST, I_CONST, D_CONST, PERIOD_UPD_TSK, (-1) * SPEED_NORM, SPEED_NORM);
+    TraceLine(int s, int t, double p, double i, double d) : speed(s),target(t),traceCnt(0),prevAngL(0),prevAngR(0) {
+        ltPid = new PIDcalculator(p, i, d, PERIOD_UPD_TSK, -speed, speed);
     }
     ~TraceLine() {
         delete ltPid;
@@ -132,8 +138,8 @@ public:
         colorSensor->getRawColor(cur_rgb);
         sensor = cur_rgb.r;
         /* compute necessary amount of steering by PID control */
-        turn = (-1) * _COURSE * ltPid->compute(sensor, (int16_t)GS_TARGET);
-        forward = SPEED_NORM;
+        turn = (-1) * _COURSE * ltPid->compute(sensor, (int16_t)target);
+        forward = speed;
         /* steer EV3 by setting different speed to the motors */
         pwm_L = forward - turn;
         pwm_R = forward + turn;
@@ -154,6 +160,7 @@ public:
         return Status::Running;
     }
 protected:
+    int speed, target;
     PIDcalculator* ltPid;
     int32_t prevAngL, prevAngR;
 private:
@@ -252,10 +259,11 @@ public:
                 if(cnt >= 200){
                     return Status::Success;
                 }
+                return Status::Running;
             }else{
                 armMotor->setPWM(30);
                 leftMotor->setPWM(23);
-                rightMotor->setPWM(25);
+                rightMotor->setPWM(23);
                 
                 if(curAngle < -9){
                     prevAngle = curAngle;
@@ -316,27 +324,30 @@ void main_task(intptr_t unused) {
             .leaf<IsSonarOn>()
             .leaf<IsBackOn>()
             .composite<BrainTree::ParallelSequence>(2,2)
-                .leaf<IsDistanceReached>(BLUE_DISTANCE)
+                .leaf<IsDistanceEarned>(BLUE_DISTANCE)
                 .composite<BrainTree::MemSequence>()
                     .leaf<IsBlueDetected>()
                     .leaf<IsBlackDetected>()
                     .leaf<IsBlueDetected>()
                 .end()
             .end()
-            .leaf<TraceLine>()
+            .leaf<TraceLine>(SPEED_NORM, GS_TARGET, P_CONST, I_CONST, D_CONST)
         .end()
         .build();
 
     tr_slalom = (BrainTree::BehaviorTree*) BrainTree::Builder()
         .composite<BrainTree::MemSequence>()
             .leaf<ClimbBoard>(_COURSE, 0)
-            .leaf<RotateEV3>(30 * _COURSE)
+            .composite<BrainTree::ParallelSequence>(1,2)
+                .leaf<IsDistanceEarned>(1200)
+                .leaf<TraceLine>(SPEED_SLOW, GS_TARGET2, P_CONST2, I_CONST2, D_CONST2)
+            .end()
         .end()
         .build();
 
     tr_garage = (BrainTree::BehaviorTree*) BrainTree::Builder()
         .composite<BrainTree::MemSequence>()
-            .leaf<RotateEV3>(30 * _COURSE)
+            .leaf<RotateEV3>(-30 * _COURSE)
             .leaf<RotateEV3>(30 * _COURSE)
         .end()
         .build();
