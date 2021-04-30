@@ -170,11 +170,11 @@ private:
 };
 
 /*  usage:
-    ".leaf<MoveToLine>(SPEED_SLOW)"
-    is to move robot straight ahead until a line is detected by speed SPEED_SLOW  */
+    ".leaf<MoveToLine>(speed, target)"
+    is to move robot straight ahead till color sensor value reaches to the target at the speed  */
 class MoveToLine : public BrainTree::Node {
 public:
-    MoveToLine(int s) : speed(s) {}
+    MoveToLine(int s, int t) : speed(s),target(t) {}
     Status update() override {
         int16_t sensor;
         rgb_raw_t cur_rgb;
@@ -182,7 +182,7 @@ public:
         colorSensor->getRawColor(cur_rgb);
         sensor = cur_rgb.r;
 
-        if (sensor >= GS_TARGET) {
+        if (sensor >= target) {
             /* move EV3 closer to the line */
             leftMotor->setPWM(speed);
             rightMotor->setPWM(speed);
@@ -204,18 +204,18 @@ public:
         }
     }
 protected:
-    int speed;
+    int speed, target;
     int32_t prevAngL, prevAngR;
 private:
     int traceCnt;
 };
 
 /*  usage:
-    ".leaf<RotateEV3>(30 * _COURSE)"
-    is to rotate robot 30 degrees clockwise when in L course */
+    ".leaf<RotateEV3>(30 * _COURSE, speed)"
+    is to rotate robot 30 degrees clockwise at the speed when in L course */
 class RotateEV3 : public BrainTree::Node {
 public:
-    RotateEV3(int16_t degree) : deltaDegreeTarget(degree),updated(false) {
+    RotateEV3(int16_t degree, int s) : deltaDegreeTarget(degree),speed(s),updated(false) {
         assert(degree >= -180 && degree <= 180);
         if (degree > 0) {
             clockwise = 1;
@@ -235,8 +235,8 @@ public:
             deltaDegree += 360;
         }
         if (clockwise * deltaDegree < clockwise * deltaDegreeTarget) {
-            leftMotor->setPWM(clockwise * SPEED_SLOW);
-            rightMotor->setPWM((-clockwise) * SPEED_SLOW);
+            leftMotor->setPWM(clockwise * speed);
+            rightMotor->setPWM((-clockwise) * speed);
             return Status::Running;
         } else {
             return Status::Success;
@@ -244,7 +244,7 @@ public:
     }
 private:
     int16_t deltaDegreeTarget, originalDegree;
-    int clockwise;
+    int clockwise, speed;
     bool updated;
 };
 
@@ -349,8 +349,8 @@ void main_task(intptr_t unused) {
 
     tr_garage = (BrainTree::BehaviorTree*) BrainTree::Builder()
         .composite<BrainTree::MemSequence>()
-            .leaf<RotateEV3>(-30 * _COURSE)
-            .leaf<RotateEV3>(30 * _COURSE)
+            .leaf<RotateEV3>(-30 * _COURSE, SPEED_SLOW)
+            .leaf<RotateEV3>(30 * _COURSE, SPEED_SLOW)
         .end()
         .build();
 
