@@ -86,15 +86,18 @@ public:
 
 class IsSonarOn : public BrainTree::Node {
 public:
+    IsSonarOn(int32_t d) : alertDistance(d) {}
     Status update() override {
         int32_t distance = sonarSensor->getDistance();
-        if ((distance <= SONAR_ALERT_DISTANCE) && (distance >= 0)) {
-            _log("SONAR_ALERT_DISTANCE");
+        if ((distance <= alertDistance) && (distance >= 0)) {
+            _log("sonar alert at %d", distance);
             return Status::Success;
         } else {
             return Status::Failure;
         }
     }
+protected:
+    int32_t alertDistance;
 };
 
 class IsDistanceEarned : public BrainTree::Node {
@@ -118,7 +121,6 @@ public:
     }
 protected:
     int32_t deltaDistTarget, originalDist;
-    int32_t target_distance;
     bool updated, earned;
 };
 
@@ -321,7 +323,7 @@ void main_task(intptr_t unused) {
         the second blue part of line is reached at further than BLUE_DISTANCE */
     tr_run = (BrainTree::BehaviorTree*) BrainTree::Builder()
         .composite<BrainTree::ParallelSequence>(1,4)
-            .leaf<IsSonarOn>()
+            .leaf<IsSonarOn>(SONAR_ALERT_DISTANCE)
             .leaf<IsBackOn>()
             .composite<BrainTree::ParallelSequence>(2,2)
                 .leaf<IsDistanceEarned>(BLUE_DISTANCE)
