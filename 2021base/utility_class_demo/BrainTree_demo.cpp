@@ -1,7 +1,7 @@
 // this example demonstrates the beviorial difference between
 // Sequence, MemSequence, Selector, StatefulSelector
 //
-// g++ -std=c++11 demo.cpp && ./a.out
+// g++ -std=c++11 BrainTree_demo.cpp && ./a.out
 #include <iostream>
 using namespace std;
 #include "../BrainTree.h"
@@ -22,7 +22,7 @@ public:
         sprintf(buffer, "    message from success");
         assert(blackboard != nullptr && "The Blackboard is empty!");
         blackboard->setString(STR(MSG), buffer);
-        return Node::Status::Success;
+        return Status::Success;
     }
 private:
     char buffer[128]; 
@@ -35,7 +35,7 @@ public:
         cout << "  fail action" << endl;
         assert(blackboard != nullptr && "The Blackboard is empty!");
         cout << blackboard->getString(STR(MSG)) << endl;
-        return Node::Status::Failure;
+        return Status::Failure;
     }
 };
 
