@@ -11,6 +11,8 @@ fi
 
 DSTDIR=${ETROBO_HRP3_WORKSPACE}/ms2021/work
 TMPL=${ETROBO_HRP3_WORKSPACE}/ms2021/template
+SRC=${ETROBO_HRP3_WORKSPACE}/ms2021/fourier.c
+OBJ=${ETROBO_HRP3_WORKSPACE}/ms2021/work/fourier.o
 BTLOG="btlog"
 COND="cond"
 CMD="cmd"
@@ -25,7 +27,10 @@ while ls $DSTDIR | grep -w $BASE >/dev/null; do
   echo processing ${LOGFILE}...
   CONDFILE=${DSTDIR}/${COND}_${SEQ}.${EXT}
   DATAFILE=${DSTDIR}/${DATA}_${SEQ}.${EXT}
-  cat $LOGFILE | grep "TraceLine::update()" | awk '{print $1/1000000, $7}' | sed s:,::g > $DATAFILE
+  gcc ${SRC} -o ${OBJ} -lfftw3
+  # Use data for ten seconds as if it were for one second - do NOT forget to divide output frequency by ten!!! 
+  cat $LOGFILE | grep "TraceLine::update()" | awk '{print $7}' | head -n 1000 | sed s:,::g | ${OBJ} > $DATAFILE
+  gcc ${SRC} -o ${OBJ} -lfftw3
   for TYPE in fourier; do
     PNGFILE=${DSTDIR}/${GRAPH}_${SEQ}_${TYPE}.png
     CMDFILE=${DSTDIR}/${CMD}_${SEQ}_${TYPE}.gp
