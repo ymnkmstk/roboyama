@@ -27,7 +27,7 @@ killpstree(){
 }
 
 usage_exit() {
-        echo "Usage: $0 [-r] [-c count] [-t maxtime] [-s speed] [-p p_value] [-i i_value] [-d d_value]" 1>&2
+        echo "Usage: $0 [-r] [-c count] [-t maxtime] [-s speed] [-p p_value] [-i i_value] [-d d_value] -f" 1>&2
         echo "  -r rightコース走行時に指定" 1>&2
         echo "  count 繰り返し回数" 1>&2
         echo "  maxtime make開始から走行打ち切りまでの実時間" 1>&2
@@ -35,6 +35,7 @@ usage_exit() {
         echo "  p_valud ライントレースPID制御用のP定数" 1>&2
         echo "  i_valud ライントレースPID制御用のI定数" 1>&2
         echo "  d_valud ライントレースPID制御用のD定数" 1>&2
+        echo "  -f フーリエ解析用ログ出力（10ms毎）時に指定" 1>&2
         echo "" 1>&2
         echo "  ログは${DSTDIR}に格納されています" 1>&2
         echo "  ${MAKELOG}_(順序番号).${EXT}は、make時のログです" 1>&2
@@ -64,6 +65,7 @@ SPEED=55
 P=0.75
 I=0.39
 D=0.08
+FOURIER=""
 
 cd $ETROBO_ROOT
 if [ ! -d $DSTDIR ]; then
@@ -72,7 +74,7 @@ fi
 
 BASE=${MAKELOG}_${SEQ}
 
-while getopts rc:t:s:p:i:d:h OPT
+while getopts rc:t:s:p:i:d:fh OPT
 do
     case $OPT in
         r)  LR="right"
@@ -88,6 +90,8 @@ do
         i)  I=$OPTARG
             ;;
         d)  D=$OPTARG
+            ;;
+        f)  FOURIER="-DFOURIER"
             ;;
         h)  usage_exit
             ;;
@@ -123,7 +127,7 @@ for N in `seq ${COUNT}`; do
     done
 
     echo P=${P} I=${I} D=${D} Speed=${SPEED} > ${DSTDIR}/${COND}_${SEQ}.${EXT}
-    export USER_COPTS="-DP_CONST=${P}D -DI_CONST=${I}D -DD_CONST=${D}D -DSPEED_NORM=${SPEED}"
+    export USER_COPTS="-DP_CONST=${P}D -DI_CONST=${I}D -DD_CONST=${D}D -DSPEED_NORM=${SPEED} ${FOURIER}"
     btcat $LR > ${DSTDIR}/${BTLOG}_${SEQ}.${EXT} &
     timeout $MAXTIME make $LR app=ms2021 sim up 2>&1 | tee ${DSTDIR}/${MAKELOG}_${SEQ}.${EXT}
 done

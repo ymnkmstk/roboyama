@@ -147,9 +147,11 @@ public:
         pwm_R = forward + turn;
         leftMotor->setPWM(pwm_L);
         rightMotor->setPWM(pwm_R);
+#ifndef FOURIER
         /* display trace message in every PERIOD_TRACE_MSG ms */
         if (++traceCnt * PERIOD_UPD_TSK >= PERIOD_TRACE_MSG) {
             traceCnt = 0;
+#endif /* FOURIER */
             int32_t angL = plotter->getAngL();
             int32_t angR = plotter->getAngR();
             _log("sensor = %d, deltaAngDiff = %d, locX = %d, locY = %d, degree = %d, distance = %d",
@@ -158,7 +160,9 @@ public:
                 (int)plotter->getDegree(), (int)plotter->getDistance());
             prevAngL = angL;
             prevAngR = angR;
+#ifndef FOURIER
         }
+#endif /* FOURIER */
         return Status::Running;
     }
 protected:
