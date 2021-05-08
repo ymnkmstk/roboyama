@@ -133,15 +133,22 @@ public:
         pwm_R = forward + turn;
         leftMotor->setPWM(pwm_L);
         rightMotor->setPWM(pwm_R);
+
+        //sano family added
+        plotter->setPwmL(pwm_L);
+        plotter->setPwmR(pwm_R);
+        //sano family added
+
         /* display trace message in every PERIOD_TRACE_MSG ms */
         if (++traceCnt * PERIOD_UPD_TSK >= PERIOD_TRACE_MSG) {
             traceCnt = 0;
             int32_t angL = plotter->getAngL();
             int32_t angR = plotter->getAngR();
-            // _log("sensor = %d, deltaAngDiff = %d, locX = %d, locY = %d, degree = %d, distance = %d",
-            //     sensor, (int)((angL-prevAngL)-(angR-prevAngR)),
-            //     (int)plotter->getLocX(), (int)plotter->getLocY(),
-            //     (int)plotter->getDegree(), (int)plotter->getDistance());
+             _log("sensor = %d, deltaAngDiff = %d, locX = %d, locY = %d, degree = %d, distance = %d , pwm_L = %d,  pwm_R = %d,DeltaDistL = %lf,DeltaDistR=%lf",
+                 sensor, (int)((angL-prevAngL)-(angR-prevAngR)),
+                 (int)plotter->getLocX(), (int)plotter->getLocY(),
+                 (int)plotter->getDegree(), (int)plotter->getDistance(),pwm_L,pwm_R,
+                 plotter->getprmDeltaDistL(),plotter->getprmDeltaDistR());
             prevAngL = angL;
             prevAngR = angR;
         }
@@ -153,6 +160,7 @@ protected:
 private:
     int traceCnt;
 };
+
 
 class MoveToLine : public BrainTree::Node {
 public:
@@ -395,6 +403,50 @@ public:
     }
 };
 
+/* method to wake up the main task for termination */
+class Vclass : public BrainTree::Node {
+public:
+    Status update() override {
+        _log("waking up main...");
+        /* wake up the main task */
+        // ER ercd = wup_tsk(MAIN_TASK);
+        // assert(ercd == E_OK);
+        //if (ercd != E_OK) {
+        //    syslog(LOG_NOTICE, "wup_tsk() returned %d", ercd);
+        //}
+        leftMotor->setPWM(20);
+        rightMotor->setPWM(20);
+        runningMode = 1;
+        setPwmR(6);
+       return Node::Status::Success;
+    }
+    virtual void setPwmR(int pwm) {
+        printf("ほげほげ%d\n",pwm);
+    }
+};
+
+class Vclass2 : public Vclass {
+public:
+    Status update() override {
+        _log("waking up main...");
+        /* wake up the main task */
+        // ER ercd = wup_tsk(MAIN_TASK);
+        // assert(ercd == E_OK);
+        //if (ercd != E_OK) {
+        //    syslog(LOG_NOTICE, "wup_tsk() returned %d", ercd);
+        //}
+        leftMotor->setPWM(20);
+        rightMotor->setPWM(20);
+        setPwmR(5);
+        runningMode = 1;
+       return Node::Status::Success;
+    }
+    // void setPwmR(int pwm) override {
+    //     printf("ひげひげ %d\n",pwm);
+    // }
+};
+
+
 /* a cyclic handler to activate a task */
 void task_activator(intptr_t tskid) {
     ER ercd = act_tsk(tskid);
@@ -460,6 +512,7 @@ void main_task(intptr_t unused) {
         .composite<BrainTree::MemSequence>()
             .leaf<ClimbBoard>(_COURSE, 0) /* TODO magic number */
             .leaf<TraceLine2>()
+            .leaf<Vclass2>()
             .leaf<RunSlalom>(_COURSE, 0) /* TODO magic number */
             .leaf<WakeUpMain>()
         .end()
@@ -498,7 +551,7 @@ void main_task(intptr_t unused) {
 /* periodic task to update the behavior tree */
 void update_task(intptr_t unused) {
     filteredColorSensor->sense();
-    plotter->plot();
+    plotter->plot(1);
 
     if(runningMode==1){
         if (tree_test != nullptr) tree_test->update();

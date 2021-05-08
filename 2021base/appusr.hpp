@@ -76,7 +76,7 @@ extern Motor*       armMotor;
 /* these parameters are intended to be given as a compiler directive,
    e.g., -D=SPEED_NORM=50, for fine tuning                                  */
 #ifndef SPEED_NORM
-#define SPEED_NORM           55  /* was 50 for 2020 program                 */
+#define SPEED_NORM           45  /* was 50 for 2020 program                 */
 #endif
 #ifndef P_CONST
 #define P_CONST           0.75D
@@ -98,7 +98,7 @@ extern Motor*       armMotor;
 #define D_CONST2           0.5D
 #endif
 
-#define PERIOD_TRACE_MSG     20 * 1000 /* Trace message in every 20 ms      */
+#define PERIOD_TRACE_MSG     10 * 1000 /* Trace message in every 20 ms      */
 #define SPEED_SLOW           15
 #define SPEED_SLOW2          10
 #define GS_TARGET            47  /* was 47 for 2020 program                 */
