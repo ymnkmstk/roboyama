@@ -329,7 +329,6 @@ public:
                 armMotor->setPWM(30);
                 leftMotor->setPWM(23);
                 rightMotor->setPWM(23); /* start from linetrace */
-                // rightMotor->setPWM(24); /* start from slalom */
                 
                 if(curAngle < -9){
                     prevAngle = curAngle;
@@ -501,8 +500,8 @@ void update_task(intptr_t unused) {
             status = tr_calibration->update();
             switch (status) {
             case BrainTree::Node::Status::Success:
-                state = ST_running; /* start from linetrace */
-                //state = ST_slalom; /* start from slalom */
+                //state = ST_running; /* start from linetrace */
+                state = ST_slalom; /* start from slalom */
                 _log("State changed: ST_calibration to ST_running");
                 break;
             case BrainTree::Node::Status::Failure:
