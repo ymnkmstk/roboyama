@@ -76,7 +76,7 @@ extern Motor*       armMotor;
 /* these parameters are intended to be given as a compiler directive,
    e.g., -D=SPEED_NORM=50, for fine tuning                                  */
 #ifndef SPEED_NORM
-#define SPEED_NORM           45  /* was 50 for 2020 program                 */
+#define SPEED_NORM           55  /* was 50 for 2020 program                 */
 #endif
 #ifndef P_CONST
 #define P_CONST           0.75D
@@ -87,7 +87,6 @@ extern Motor*       armMotor;
 #ifndef D_CONST
 #define D_CONST           0.08D
 #endif
-
 #ifndef P_CONST2
 #define P_CONST2           0.1D
 #endif
@@ -98,18 +97,27 @@ extern Motor*       armMotor;
 #define D_CONST2           0.5D
 #endif
 
-#define PERIOD_TRACE_MSG     10 * 1000 /* Trace message in every 20 ms      */
-#define SPEED_SLOW           15
-#define SPEED_SLOW2          10
+#define PERIOD_TRACE_MSG     20 * 1000 /* Trace message in every 20 ms      */
+#define SPEED_SLOW           10
 #define GS_TARGET            47  /* was 47 for 2020 program                 */
-#define GS_TARGET2           30
-#define SONAR_ALERT_DISTANCE 15  /* in centimeters                          */
-#define BLUE_DISTANCE     20000  /* 2nd blue part should be further than this   */ 
+#define GS_TARGET2           25
+#define SONAR_ALERT_DISTANCE 10  /* in centimeters                          */
+#define BLUE_DISTANCE     10000  /* 2nd blue part should be further than this   */ 
 
 enum BoardItem {
     LOCX, /* horizontal location    */
     LOCY, /* virtical   location    */
     DIST, /* accumulated distance   */
+};
+
+enum State {
+    ST_initial,
+    ST_calibrating,
+    ST_running,
+    ST_slalom,
+    ST_garage,
+    ST_ending,
+    ST_end,
 };
 
 #endif /* appusr_hpp */

@@ -6,6 +6,7 @@
 // 3/26/2021 Modified by Wataru Taniguchi to avoid the use of shared_ptr,
 //           being executable on TOPPERS/EV3RT (HRP3) with Athrill
 // 3/30/2021 Modified by Wataru Taniguchi to make use of Blackboard
+// 4/28/2021 Modified by Wataru Taniguchi to correct the behavior of UntilSuccess and UntilFailure
 
 #pragma once
 
@@ -569,12 +570,12 @@ class UntilSuccess : public Decorator
 public:
     Status update() override
     {
-        while (1) {
-            auto status = child->tick();
+        auto status = child->tick();
 
-            if (status == Status::Success) {
-                return Status::Success;
-            }
+        if (status == Status::Success) {
+            return Status::Success;
+        } else {
+            return Status::Running;
         }
     }
 };
@@ -585,12 +586,12 @@ class UntilFailure : public Decorator
 public:
     Status update() override
     {
-        while (1) {
-            auto status = child->tick();
+        auto status = child->tick();
 
-            if (status == Status::Failure) {
-                return Status::Success;
-            }
+        if (status == Status::Failure) {
+            return Status::Success;
+        } else {
+            return Status::Running;
         }
     }
 };
