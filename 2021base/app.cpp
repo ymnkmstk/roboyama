@@ -328,7 +328,7 @@ public:
             }else{
                 armMotor->setPWM(30);
                 leftMotor->setPWM(23);
-                rightMotor->setPWM(23); /* start from linetrace */
+                rightMotor->setPWM(23);
                 // rightMotor->setPWM(24); /* start from slalom */
                 
                 if(curAngle < -9){
@@ -405,7 +405,17 @@ void main_task(intptr_t unused) {
         .composite<BrainTree::MemSequence>()
             .leaf<ClimbBoard>(_COURSE, 0)
             .composite<BrainTree::ParallelSequence>(1,2)
-                .leaf<IsTimeEarned>(2150)
+                .leaf<IsTimeEarned>(500)
+                //.leaf<IsDistanceEarned>(913)
+                .leaf<TraceLine>(SPEED_SLOW, GS_TARGET2, P_CONST2, I_CONST2, D_CONST2)
+            .end()
+            .composite<BrainTree::ParallelSequence>(1,2)
+                .leaf<IsTimeEarned>(300)
+                //.leaf<IsDistanceEarned>(300)
+                .leaf<RunAsInstructed>(8,10, false)
+            .end()
+            .composite<BrainTree::ParallelSequence>(1,2)
+                .leaf<IsTimeEarned>(1420)
                 //.leaf<IsDistanceEarned>(913)
                 .leaf<TraceLine>(SPEED_SLOW, GS_TARGET2, P_CONST2, I_CONST2, D_CONST2)
             .end()
@@ -501,8 +511,8 @@ void update_task(intptr_t unused) {
             status = tr_calibration->update();
             switch (status) {
             case BrainTree::Node::Status::Success:
-                state = ST_running; /* start from linetrace */
-                //state = ST_slalom; /* start from slalom */
+                //state = ST_running; /* start from linetrace */
+                state = ST_slalom; /* start from slalom */
                 _log("State changed: ST_calibration to ST_running");
                 break;
             case BrainTree::Node::Status::Failure:
