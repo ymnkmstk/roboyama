@@ -134,7 +134,6 @@ public:
             updated = true;
         }
         deltaTime = round((int32_t)clock->now() / 10000) - originalTime;
-        _log("Delta %d, getnow= %d, t=%d ,originalTime =%d", deltaTime,clock->now(),deltaTimeTarget,originalTime);
 
         if (deltaTime >= deltaTimeTarget ) {
             if (!earned) {
@@ -175,17 +174,17 @@ public:
         leftMotor->setPWM(pwm_L);
         rightMotor->setPWM(pwm_R);
         /* display trace message in every PERIOD_TRACE_MSG ms */
-        if (++traceCnt * PERIOD_UPD_TSK >= PERIOD_TRACE_MSG) {
-            traceCnt = 0;
-            int32_t angL = plotter->getAngL();
-            int32_t angR = plotter->getAngR();
-            _log("sensor = %d, deltaAngDiff = %d, locX = %d, locY = %d, degree = %d, distance = %d",
-                sensor, (int)((angL-prevAngL)-(angR-prevAngR)),
-                (int)plotter->getLocX(), (int)plotter->getLocY(),
-                (int)plotter->getDegree(), (int)plotter->getDistance());
-            prevAngL = angL;
-            prevAngR = angR;
-        }
+        // if (++traceCnt * PERIOD_UPD_TSK >= PERIOD_TRACE_MSG) {
+        //     traceCnt = 0;
+        //     int32_t angL = plotter->getAngL();
+        //     int32_t angR = plotter->getAngR();
+        //     _log("sensor = %d, deltaAngDiff = %d, locX = %d, locY = %d, degree = %d, distance = %d",
+        //         sensor, (int)((angL-prevAngL)-(angR-prevAngR)),
+        //         (int)plotter->getLocX(), (int)plotter->getLocY(),
+        //         (int)plotter->getDegree(), (int)plotter->getDistance());
+        //     prevAngL = angL;
+        //     prevAngR = angR;
+        // }
         return Status::Running;
     }
 protected:
