@@ -329,7 +329,6 @@ public:
                 armMotor->setPWM(30);
                 leftMotor->setPWM(23);
                 rightMotor->setPWM(23);
-                // rightMotor->setPWM(24); /* start from slalom */
                 
                 if(curAngle < -9){
                     prevAngle = curAngle;
