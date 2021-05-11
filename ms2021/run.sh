@@ -27,7 +27,7 @@ killpstree(){
 }
 
 usage_exit() {
-        echo "Usage: $0 [-r] [-c count] [-t maxtime] [-s speed] [-p p_value] [-i i_value] [-d d_value] -f" 1>&2
+        echo "Usage: $0 [-r] [-c count] [-t maxtime] [-s speed] [-p p_value] [-i i_value] [-d d_value] [-j dest] [-f]" 1>&2
         echo "  -r rightコース走行時に指定" 1>&2
         echo "  count 繰り返し回数" 1>&2
         echo "  maxtime make開始から走行打ち切りまでの実時間" 1>&2
@@ -35,6 +35,7 @@ usage_exit() {
         echo "  p_valud ライントレースPID制御用のP定数" 1>&2
         echo "  i_valud ライントレースPID制御用のI定数" 1>&2
         echo "  d_valud ライントレースPID制御用のD定数" 1>&2
+        echo "  dest 走行体ジャンプ先（0: normal, 1: slalom, 2: garage）" 1>&2
         echo "  -f フーリエ解析用ログ出力（10ms毎）時に指定" 1>&2
         echo "" 1>&2
         echo "  ログは${DSTDIR}に格納されています" 1>&2
@@ -50,6 +51,7 @@ if [ -z "$ETROBO_ENV" ]; then
     exit 1
 fi
 
+SRCDIR=${ETROBO_HRP3_WORKSPACE}/ms2021
 DSTDIR=${ETROBO_HRP3_WORKSPACE}/ms2021/work
 MAKELOG="makelog"
 BTLOG="btlog"
@@ -65,16 +67,18 @@ SPEED=55
 P=0.75
 I=0.39
 D=0.08
+JUMP=0
 FOURIER=""
 
 cd $ETROBO_ROOT
+sim
 if [ ! -d $DSTDIR ]; then
     mkdir -p $DSTDIR
 fi
 
 BASE=${MAKELOG}_${SEQ}
 
-while getopts rc:t:s:p:i:d:fh OPT
+while getopts rc:t:s:p:i:d:j:fh OPT
 do
     case $OPT in
         r)  LR="right"
@@ -90,6 +94,8 @@ do
         i)  I=$OPTARG
             ;;
         d)  D=$OPTARG
+            ;;
+        j)  JUMP=$OPTARG
             ;;
         f)  FOURIER="-DFOURIER"
             ;;
@@ -119,6 +125,16 @@ for ARG in $P $I $D; do
         exit 1
     fi
 done
+for ARG in $JUMP; do
+    if echo "$ARG" | grep -q "^[0-2]$"; then
+        continue
+    else
+        echo "$ARG is out of range"
+        exit 1
+    fi
+done
+
+curl -X POST -H "Content-Type: application/json" -d @${SRCDIR}/init_JUMP_${JUMP}.json http://localhost:54000
 
 for N in `seq ${COUNT}`; do
     while ls $DSTDIR | grep -w $BASE >/dev/null; do
@@ -127,7 +143,7 @@ for N in `seq ${COUNT}`; do
     done
 
     echo P=${P} I=${I} D=${D} Speed=${SPEED} > ${DSTDIR}/${COND}_${SEQ}.${EXT}
-    export USER_COPTS="-DP_CONST=${P}D -DI_CONST=${I}D -DD_CONST=${D}D -DSPEED_NORM=${SPEED} ${FOURIER}"
+    export USER_COPTS="-DP_CONST=${P}D -DI_CONST=${I}D -DD_CONST=${D}D -DSPEED_NORM=${SPEED} -DJUMP=${JUMP} ${FOURIER}"
     btcat $LR > ${DSTDIR}/${BTLOG}_${SEQ}.${EXT} &
     timeout $MAXTIME make $LR app=ms2021 sim up 2>&1 | tee ${DSTDIR}/${MAKELOG}_${SEQ}.${EXT}
 done
