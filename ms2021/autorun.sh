@@ -72,6 +72,6 @@ for SPEED in 54 55 56; do
         echo P=${P} I=${I} D=${D} Speed=${SPEED} > ${DSTDIR}/${COND}_${SEQ}.${EXT}
         export USER_COPTS="-DP_CONST=${P}D -DI_CONST=${I}D -DD_CONST=${D}D -DSPEED_NORM=${SPEED}"
         btcat $LR > ${DSTDIR}/${BTLOG}_${SEQ}.${EXT} &
-        timeout $MAXTIME make $LR app=2021base sim up 2>&1 | tee ${DSTDIR}/${MAKELOG}_${SEQ}.${EXT}
+        timeout $MAXTIME make $LR app=ms2021 sim up 2>&1 | tee ${DSTDIR}/${MAKELOG}_${SEQ}.${EXT}
     done
 done
