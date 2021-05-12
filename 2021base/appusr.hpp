@@ -100,7 +100,7 @@ extern Motor*       armMotor;
 #define PERIOD_TRACE_MSG     20 * 1000 /* Trace message in every 20 ms      */
 #define SPEED_SLOW           10
 #define GS_TARGET            47  /* was 47 for 2020 program                 */
-#define GS_TARGET2           25
+#define GS_TARGET2           30
 #define SONAR_ALERT_DISTANCE 10  /* in centimeters                          */
 #define BLUE_DISTANCE     10000  /* 2nd blue part should be further than this   */ 
 

@@ -124,32 +124,6 @@ protected:
     bool updated, earned;
 };
 
-/* argument -> 100 = 1 sec */
-class IsTimeEarned : public BrainTree::Node {
-public:
-    IsTimeEarned(int32_t t) : deltaTimeTarget(t),updated(false),earned(false),flg(false) {}
-     Status update() override {
-        if (!updated) {
-            originalTime = round((int32_t)clock->now()/10000);
-            updated = true;
-        }
-        deltaTime = round((int32_t)clock->now() / 10000) - originalTime;
-
-        if (deltaTime >= deltaTimeTarget ) {
-            if (!earned) {
-                 _log("Delta %d getnow= %d", deltaTime,clock->now());
-                earned = true;
-            }
-            return Status::Success;
-        } else {
-            return Status::Failure;
-        }
-    }
-protected:
-    int32_t deltaTimeTarget, originalTime, deltaTime;
-    bool updated, earned, flg;
-};
-
 class TraceLine : public BrainTree::Node {
 public:
     TraceLine(int s, int t, double p, double i, double d) : speed(s),target(t),traceCnt(0),prevAngL(0),prevAngR(0) {
@@ -174,59 +148,23 @@ public:
         leftMotor->setPWM(pwm_L);
         rightMotor->setPWM(pwm_R);
         /* display trace message in every PERIOD_TRACE_MSG ms */
-        // if (++traceCnt * PERIOD_UPD_TSK >= PERIOD_TRACE_MSG) {
-        //     traceCnt = 0;
-        //     int32_t angL = plotter->getAngL();
-        //     int32_t angR = plotter->getAngR();
-        //     _log("sensor = %d, deltaAngDiff = %d, locX = %d, locY = %d, degree = %d, distance = %d",
-        //         sensor, (int)((angL-prevAngL)-(angR-prevAngR)),
-        //         (int)plotter->getLocX(), (int)plotter->getLocY(),
-        //         (int)plotter->getDegree(), (int)plotter->getDistance());
-        //     prevAngL = angL;
-        //     prevAngR = angR;
-        // }
+        if (++traceCnt * PERIOD_UPD_TSK >= PERIOD_TRACE_MSG) {
+            traceCnt = 0;
+            int32_t angL = plotter->getAngL();
+            int32_t angR = plotter->getAngR();
+            _log("sensor = %d, deltaAngDiff = %d, locX = %d, locY = %d, degree = %d, distance = %d",
+                sensor, (int)((angL-prevAngL)-(angR-prevAngR)),
+                (int)plotter->getLocX(), (int)plotter->getLocY(),
+                (int)plotter->getDegree(), (int)plotter->getDistance());
+            prevAngL = angL;
+            prevAngR = angR;
+        }
         return Status::Running;
     }
 protected:
     int speed, target;
     PIDcalculator* ltPid;
     int32_t prevAngL, prevAngR;
-private:
-    int traceCnt;
-};
-
-/*  usage:
-    ".leaf<RunAsInstructed>(pwm_l, pwm_r, trpz_calc_flg)"
-    is to move the robot at the instructed speed.
-    trpz_calc_flg enables a trapezoidal control of the motors until the current speed gradually reaches the instructed target speed. */
-class RunAsInstructed : public BrainTree::Node {
-public:
-    RunAsInstructed(int pwm_l, int pwm_r, bool trpz_calc_flg) : pwmL(pwm_l),pwmR(pwm_r),trapezoidalCalcFlg(trpz_calc_flg), traceCnt(0) {}
-    Status update() override {
-        if(!trapezoidalCalcFlg){
-            leftMotor->setPWM(pwmL);
-            rightMotor->setPWM(pwmR);
-        }else{
-            // To be implemented
-        }
-        return Status::Running;
-    }
-protected:
-    int pwmL, pwmR;
-    bool trapezoidalCalcFlg;
-private:
-    int traceCnt;
-};
-
-class ShiftArmPosition : public BrainTree::Node {
-public:
-    ShiftArmPosition(int armpwm) : armPwm(armpwm),traceCnt(0) {}
-    Status update() override {
-        armMotor->setPWM(armPwm);
-        return Status::Running;
-    }
-protected:
-    int armPwm;
 private:
     int traceCnt;
 };
@@ -320,7 +258,7 @@ public:
                 rightMotor->setPWM(0);
                 armMotor->setPWM(-50);
                 cnt++;
-                if(cnt >= 150){
+                if(cnt >= 200){
                     return Status::Success;
                 }
                 return Status::Running;
@@ -403,56 +341,16 @@ void main_task(intptr_t unused) {
         .composite<BrainTree::MemSequence>()
             .leaf<ClimbBoard>(_COURSE, 0)
             .composite<BrainTree::ParallelSequence>(1,2)
-                .leaf<IsTimeEarned>(500)
-                //.leaf<IsDistanceEarned>(913)
+                .leaf<IsDistanceEarned>(1200)
                 .leaf<TraceLine>(SPEED_SLOW, GS_TARGET2, P_CONST2, I_CONST2, D_CONST2)
-            .end()
-            .composite<BrainTree::ParallelSequence>(1,2)
-                .leaf<IsTimeEarned>(300)
-                //.leaf<IsDistanceEarned>(300)
-                .leaf<RunAsInstructed>(8,10, false)
-            .end()
-            .composite<BrainTree::ParallelSequence>(1,2)
-                .leaf<IsTimeEarned>(1420)
-                //.leaf<IsDistanceEarned>(913)
-                .leaf<TraceLine>(SPEED_SLOW, GS_TARGET2, P_CONST2, I_CONST2, D_CONST2)
-            .end()
-            .composite<BrainTree::ParallelSequence>(1,2)
-                .leaf<IsTimeEarned>(1200)
-                //.leaf<IsDistanceEarned>(300)
-                .leaf<RunAsInstructed>(10,2, false)
-            .end()
-            .composite<BrainTree::ParallelSequence>(1,2)
-                .leaf<IsTimeEarned>(460)
-                //.leaf<IsDistanceEarned>(150)
-                .leaf<RunAsInstructed>(8,10, false)
-            .end()
-            .composite<BrainTree::ParallelSequence>(1,2)
-                .leaf<IsTimeEarned>(250)
-                //.leaf<IsDistanceEarned>(70)
-                .leaf<RunAsInstructed>(1,10, false)
-            .end()
-            .composite<BrainTree::ParallelSequence>(1,2)
-                .leaf<IsTimeEarned>(350)
-                //.leaf<IsDistanceEarned>(200)
-                .leaf<RunAsInstructed>(10,10, false)
-            .end()
-            .composite<BrainTree::ParallelSequence>(1,2)
-                .leaf<IsTimeEarned>(300)
-                .leaf<ShiftArmPosition>(30)
-            .end()
-            .composite<BrainTree::ParallelSequence>(1,2)
-                .leaf<IsTimeEarned>(100)
-                .leaf<ShiftArmPosition>(-50)
-                .leaf<RunAsInstructed>(0,0,false)
             .end()
         .end()
         .build();
 
     tr_garage = (BrainTree::BehaviorTree*) BrainTree::Builder()
         .composite<BrainTree::MemSequence>()
-            // .leaf<RotateEV3>(-30 * _COURSE, SPEED_SLOW)
-            // .leaf<RotateEV3>(30 * _COURSE, SPEED_SLOW)
+            .leaf<RotateEV3>(-30 * _COURSE, SPEED_SLOW)
+            .leaf<RotateEV3>(30 * _COURSE, SPEED_SLOW)
         .end()
         .build();
 
@@ -509,8 +407,7 @@ void update_task(intptr_t unused) {
             status = tr_calibration->update();
             switch (status) {
             case BrainTree::Node::Status::Success:
-                //state = ST_running; /* start from linetrace */
-                state = ST_slalom; /* start from slalom */
+                state = ST_running;
                 _log("State changed: ST_calibration to ST_running");
                 break;
             case BrainTree::Node::Status::Failure:
