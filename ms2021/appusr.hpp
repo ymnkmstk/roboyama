@@ -79,11 +79,14 @@ extern Motor*       armMotor;
 #ifndef SPEED_NORM
 #define SPEED_NORM           55  /* was 50 for 2020 program                 */
 #endif
+#ifndef SPEED_MAX
+#define SPEED_MAX          85
+#endif
 #ifndef P_CONST
 #define P_CONST           0.75D
 #endif
 #ifndef I_CONST
-#define I_CONST           0.39D
+#define I_CONST           0.39D /*0.39*/
 #endif
 #ifndef D_CONST
 #define D_CONST           0.08D
