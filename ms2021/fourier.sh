@@ -11,10 +11,12 @@ fi
 
 DSTDIR=${ETROBO_HRP3_WORKSPACE}/ms2021/work
 TMPL=${ETROBO_HRP3_WORKSPACE}/ms2021/template
+SRC=${ETROBO_HRP3_WORKSPACE}/ms2021/fourier.c
+OBJ=${ETROBO_HRP3_WORKSPACE}/ms2021/work/fourier.o
 BTLOG="btlog"
 COND="cond"
 CMD="cmd"
-DATA="data"
+DATA="fdata"
 GRAPH="graph"
 EXT="txt"
 SEQ=1
@@ -25,15 +27,17 @@ while ls $DSTDIR | grep -w $BASE >/dev/null; do
   echo processing ${LOGFILE}...
   CONDFILE=${DSTDIR}/${COND}_${SEQ}.${EXT}
   DATAFILE=${DSTDIR}/${DATA}_${SEQ}.${EXT}
-  cat $LOGFILE | grep "TraceLine::update()" | awk '{print $1/1000, $7, $10, $13, $16, $19, $22}' | sed s:,::g > $DATAFILE
-  for TYPE in xy degree sensor curvature distance; do
+  gcc ${SRC} -o ${OBJ} -lfftw3
+  # Use data for ten seconds as if it were for one second - do NOT forget to divide output frequency by ten!!! 
+  cat $LOGFILE | grep "TraceLine::update()" | awk '{print $7}' | head -n 1000 | sed s:,::g | ${OBJ} > $DATAFILE
+  gcc ${SRC} -o ${OBJ} -lfftw3
+  for TYPE in fourier; do
     PNGFILE=${DSTDIR}/${GRAPH}_${SEQ}_${TYPE}.png
     CMDFILE=${DSTDIR}/${CMD}_${SEQ}_${TYPE}.gp
     cat ${TMPL}_${TYPE}.gp | sed "s:@TITLE:`cat ${CONDFILE}`:g" | sed "s:@PNGFILE:${PNGFILE}:g" | sed "s:@DATAFILE:${DATAFILE}:g" > $CMDFILE
     $GNUPLOT $CMDFILE
     rm $CMDFILE
   done
-  rm $DATAFILE
   SEQ=`expr $SEQ + 1`
   BASE=${BTLOG}_${SEQ}
 done

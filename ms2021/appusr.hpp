@@ -96,6 +96,9 @@ extern Motor*       armMotor;
 #ifndef D_CONST2
 #define D_CONST2           0.5D
 #endif
+#ifndef JUMP
+#define JUMP                  0
+#endif
 
 #define PERIOD_TRACE_MSG     20 * 1000 /* Trace message in every 20 ms      */
 #define SPEED_SLOW           10

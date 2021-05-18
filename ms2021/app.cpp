@@ -147,9 +147,11 @@ public:
         pwm_R = forward + turn;
         leftMotor->setPWM(pwm_L);
         rightMotor->setPWM(pwm_R);
+#ifndef FOURIER
         /* display trace message in every PERIOD_TRACE_MSG ms */
         if (++traceCnt * PERIOD_UPD_TSK >= PERIOD_TRACE_MSG) {
             traceCnt = 0;
+#endif /* FOURIER */
             int32_t angL = plotter->getAngL();
             int32_t angR = plotter->getAngR();
             _log("sensor = %d, deltaAngDiff = %d, locX = %d, locY = %d, degree = %d, distance = %d",
@@ -158,7 +160,9 @@ public:
                 (int)plotter->getDegree(), (int)plotter->getDistance());
             prevAngL = angL;
             prevAngR = angR;
+#ifndef FOURIER
         }
+#endif /* FOURIER */
         return Status::Running;
     }
 protected:
@@ -407,8 +411,20 @@ void update_task(intptr_t unused) {
             status = tr_calibration->update();
             switch (status) {
             case BrainTree::Node::Status::Success:
-                state = ST_running;
-                _log("State changed: ST_calibration to ST_running");
+                switch (JUMP) { /* JUMP = 1 or 2 is for testing only */
+                    case 1:
+                        state = ST_slalom;
+                        _log("State changed: ST_calibration to ST_slalom");
+                        break;
+                    case 2:
+                        state = ST_garage;
+                        _log("State changed: ST_calibration to ST_garage");
+                        break;
+                    default:
+                        state = ST_running;
+                        _log("State changed: ST_calibration to ST_running");
+                        break;
+                }
                 break;
             case BrainTree::Node::Status::Failure:
                 state = ST_ending;
