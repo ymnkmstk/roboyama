@@ -14,6 +14,7 @@ public:
     FilteredMotor(ePortM port);
     ~FilteredMotor(void);
     void setPWM(int pwm);
+    int32_t getPwm();
 protected:
     /* FIR filter parameter for normalized cut-off frequency 0.2 */
     static const int FIR_ORDER = 2; 

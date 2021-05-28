@@ -28,6 +28,7 @@ using namespace ev3api;
 #include "Plotter.hpp"
 #include "PIDcalculator.hpp"
 #include "TrapezoidalMtrControler.hpp"
+#include "Logger.hpp"
 
 /* global variables */
 extern FILE*        bt;
@@ -36,8 +37,8 @@ extern TouchSensor* touchSensor;
 extern SonarSensor* sonarSensor;
 extern FilteredColorSensor* colorSensor;
 extern GyroSensor*  gyroSensor;
-extern Motor*       leftMotor;
-extern Motor*       rightMotor;
+extern FilteredMotor*       leftMotor;
+extern FilteredMotor*       rightMotor;
 extern Motor*       tailMotor;
 extern Motor*       armMotor;
 
@@ -79,9 +80,6 @@ extern Motor*       armMotor;
 #ifndef SPEED_NORM
 #define SPEED_NORM           55  /* was 50 for 2020 program                 */
 #endif
-#ifndef SPEED_MAX
-#define SPEED_MAX          85
-#endif
 #ifndef P_CONST
 #define P_CONST           0.75D
 #endif
@@ -91,22 +89,48 @@ extern Motor*       armMotor;
 #ifndef D_CONST
 #define D_CONST           0.08D
 #endif
-#ifndef P_CONST2
-#define P_CONST2           0.1D
+
+#ifndef SPEED_FAST
+#define SPEED_FAST          85
 #endif
-#ifndef I_CONST2
-#define I_CONST2           0.0D
+#ifndef P_CONST_FAST
+#define P_CONST_FAST        0.5D
 #endif
-#ifndef D_CONST2
-#define D_CONST2           0.5D
+#ifndef I_CONST_FAST
+#define I_CONST_FAST        0.5D
+#endif
+#ifndef D_CONST_FAST
+#define D_CONST_FAST        0.08D
+#endif
+
+#ifndef SPEED_SLOW
+#define SPEED_SLOW         10
+#endif
+#ifndef P_CONST_SLOW
+#define P_CONST_SLOW       0.1D
+#endif
+#ifndef I_CONST_SLOW
+#define I_CONST_SLOW       0.0D
+#endif
+#ifndef D_CONST_SLOW
+#define D_CONST_SLOW       0.5D
 #endif
 
 #define PERIOD_TRACE_MSG     20 * 1000 /* Trace message in every 20 ms      */
-#define SPEED_SLOW           10
 #define GS_TARGET            47  /* was 47 for 2020 program                 */
-#define GS_TARGET2           25
+#define GS_TARGET_SLOW       25
 #define SONAR_ALERT_DISTANCE 10  /* in centimeters                          */
 #define BLUE_DISTANCE     10000  /* 2nd blue part should be further than this   */ 
+
+#define COLOR_BLACK         1
+#define COLOR_BLUE          2
+#define COLOR_RED           3
+#define COLOR_YELLOW        4
+#define COLOR_GREEN         5
+#define COLOR_WHITE         6
+
+#define C_INTERVAL    1       /* interval of changing pwd */
+#define C_PWD         1       /* chenge in pwd for interval time */
 
 enum BoardItem {
     LOCX, /* horizontal location    */

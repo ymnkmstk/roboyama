@@ -16,11 +16,12 @@ TouchSensor*    touchSensor;
 SonarSensor*    sonarSensor;
 FilteredColorSensor*    colorSensor;
 GyroSensor*     gyroSensor;
-Motor*          leftMotor;
-Motor*          rightMotor;
+FilteredMotor*  leftMotor;
+FilteredMotor*  rightMotor;
 Motor*          tailMotor;
 Motor*          armMotor;
 Plotter*        plotter;
+Logger*         logger;
 
 BrainTree::BehaviorTree* tr_calibration = nullptr;
 BrainTree::BehaviorTree* tr_run         = nullptr;
@@ -56,32 +57,59 @@ public:
     }
 };
 
-class IsBlueDetected : public BrainTree::Node {
+/* colorCode = 1:Black 2:Blue 3:Red 4:Yellow 5:Green 6:White */
+class IsTargetColorDetected : public BrainTree::Node {
 public:
+    IsTargetColorDetected(int c) : colorCode(c) {}
     Status update() override {
-        rgb_raw_t cur_rgb;
-        colorSensor->getRawColor(cur_rgb);
-        if (cur_rgb.b - cur_rgb.r > 60 && cur_rgb.b <= 255 && cur_rgb.r <= 255) {
-            _log("line color changed black to blue.");
-            return Status::Success;
-        } else {
-            return Status::Failure;
-        }
-    }
-};
 
-class IsBlackDetected : public BrainTree::Node {
-public:
-    Status update() override {
         rgb_raw_t cur_rgb;
         colorSensor->getRawColor(cur_rgb);
-        if (cur_rgb.b - cur_rgb.r < 40) {
-            _log("line color changed blue to black.");
-            return Status::Success;
-        } else {
-            return Status::Failure;
+
+        switch(colorCode){
+            case COLOR_BLACK:
+                if (cur_rgb.r <=50 && cur_rgb.g <=45 && cur_rgb.b <=60) {
+                    _log("found black.");
+                    return Status::Success;
+                }
+                break;
+            case COLOR_BLUE:
+                if (cur_rgb.b - cur_rgb.r > 60 && cur_rgb.b <= 255 && cur_rgb.r <= 255) {
+                    _log("found blue.");
+                    return Status::Success;
+                }
+                break;
+            case COLOR_RED:
+                if (cur_rgb.r - cur_rgb.b >= 40 && cur_rgb.g < 60 && cur_rgb.r - cur_rgb.g > 30) {
+                    _log("found red.");
+                    return Status::Success;
+                }
+                break;
+            case COLOR_YELLOW:
+                if (cur_rgb.r + cur_rgb.g - cur_rgb.b >= 130 &&  cur_rgb.r - cur_rgb.g <= 30) {
+                    _log("found Yellow.");
+                    return Status::Success;
+                }
+                break;
+            case COLOR_GREEN:
+                if (cur_rgb.r <= 13 && cur_rgb.b <= 50 && cur_rgb.g > 60) {
+                    _log("found Green.");
+                    return Status::Success;
+                }
+                break;
+            case COLOR_WHITE:
+                if (cur_rgb.r > 100 && cur_rgb.b > 100 && cur_rgb.g > 100) {
+                    _log("found White.");
+                    return Status::Success;
+                }
+                break;
+            default:
+                break;
         }
+        return Status::Running;
     }
+protected:
+    int8_t colorCode;
 };
 
 class IsSonarOn : public BrainTree::Node {
@@ -109,6 +137,9 @@ public:
             updated = true;
         }
         int32_t deltaDist = plotter->getDistance() - originalDist;
+        
+        if(deltaDist< 0){deltaDist= deltaDist* (-1);}
+
         if (deltaDist >= deltaDistTarget) {
             if (!earned) {
                 _log("Delta %d is earned at absolute distance %d.", deltaDistTarget, plotter->getDistance());
@@ -196,32 +227,38 @@ private:
 };
 
 /*  usage:
-    ".leaf<RunAsInstructed>(pwm_l, pwm_r, trpz_calc_flg)"
+    ".leaf<RunAsInstructed>(pwm_l, pwm_r, trpz_calc_flg, updown_interval, updown_pwm)"
     is to move the robot at the instructed speed.
     trpz_calc_flg enables a trapezoidal control of the motors until the current speed gradually reaches the instructed target speed. */
 class RunAsInstructed : public BrainTree::Node {
 public:
-    RunAsInstructed(int pwm_l, int pwm_r, bool trpz_calc_flg) : pwmL(pwm_l),pwmR(pwm_r),trpzCalcFlg(trpz_calc_flg), traceCnt(0) {
-        //trpzMtrCtrl = new TrapezoidalMtrControler(leftMotor, rightMotor);
-        trpzMtrCtrl = new TrapezoidalMtrControler();
+    RunAsInstructed(int pwm_l, int pwm_r, bool trpz_calc_flg, int updown_interval, int updown_pwm) : pwmL(pwm_l),pwmR(pwm_r),trpzCalcFlg(trpz_calc_flg), updownInterval(updown_interval), updownPwm(updown_pwm), traceCnt(0) {
+        trpzMtrCtrlL = new TrapezoidalMtrControler();
+        trpzMtrCtrlR = new TrapezoidalMtrControler();
     }
     ~RunAsInstructed() {
-        delete trpzMtrCtrl;
+        delete trpzMtrCtrlL;
+        delete trpzMtrCtrlR;
     }
     Status update() override {
         if(!trpzCalcFlg){
             leftMotor->setPWM(pwmL);
             rightMotor->setPWM(pwmR);
         }else{
-            leftMotor->setPWM(trpzMtrCtrl->getPwm(0,pwmL,1));
-            rightMotor->setPWM(trpzMtrCtrl->getPwm(0,pwmR,2));
+            leftMotor->setPWM(trpzMtrCtrlL->getPwm(leftMotor->getPwm(),pwmL,updownInterval,updownPwm));
+            rightMotor->setPWM(trpzMtrCtrlR->getPwm(rightMotor->getPwm(),pwmR,updownInterval,updownPwm));
+            //  _log("pwmL =%d, pwmR =%d,updownInterval = %d, updownPwm = %d ,locX = %d, locY = %d, degree = %d, distance = %d",
+            //     leftMotor->getPwm(),rightMotor->getPwm(),updownInterval,updownPwm,
+            //     (int)plotter->getLocX(), (int)plotter->getLocY(),
+            //     (int)plotter->getDegree(), (int)plotter->getDistance());        
         }
         return Status::Running;
     }
 protected:
-    int pwmL, pwmR;
+    int pwmL, pwmR, updownInterval, updownPwm;
     bool trpzCalcFlg;
-    TrapezoidalMtrControler* trpzMtrCtrl;
+    TrapezoidalMtrControler* trpzMtrCtrlL;
+    TrapezoidalMtrControler* trpzMtrCtrlR;
 private:
     int traceCnt;
 };
@@ -281,11 +318,14 @@ private:
 };
 
 /*  usage:
-    ".leaf<RotateEV3>(30 * _COURSE, speed)"
+    ".leaf<RotateEV3>(30 * _COURSE, speed, trpz_calc_flg)"
     is to rotate robot 30 degrees clockwise at the speed when in L course */
 class RotateEV3 : public BrainTree::Node {
 public:
-    RotateEV3(int16_t degree, int s) : deltaDegreeTarget(degree),speed(s),updated(false) {
+    RotateEV3(int16_t degree, int s, bool trpz_calc_flg) : deltaDegreeTarget(degree),speed(s), trpzCalcFlg(trpz_calc_flg),updated(false) {
+        trpzMtrCtrlL = new TrapezoidalMtrControler();
+        trpzMtrCtrlR = new TrapezoidalMtrControler();
+        deltaDegreeTrpzMtrCtrl = 0;
         assert(degree >= -180 && degree <= 180);
         if (degree > 0) {
             clockwise = 1;
@@ -304,18 +344,40 @@ public:
         } else if (deltaDegree < -180) {
             deltaDegree += 360;
         }
+
         if (clockwise * deltaDegree < clockwise * deltaDegreeTarget) {
-            leftMotor->setPWM(clockwise * speed);
-            rightMotor->setPWM((-clockwise) * speed);
+
+            if(!trpzCalcFlg){
+                leftMotor->setPWM(clockwise * speed);
+                rightMotor->setPWM((-clockwise) * speed);
+            }else{
+
+                if(clockwise * speed <= leftMotor->getPwm() && clockwise * deltaDegree < floor(clockwise * deltaDegreeTarget * 0.5) && deltaDegreeTrpzMtrCtrl == 0){
+                    deltaDegreeTrpzMtrCtrl = deltaDegree; 
+                }else if(clockwise * speed > leftMotor->getPwm() && clockwise * deltaDegree >= floor(clockwise * deltaDegreeTarget * 0.5) && deltaDegreeTrpzMtrCtrl == 0){
+                    deltaDegreeTrpzMtrCtrl = deltaDegreeTarget;
+                }
+
+                if(clockwise * deltaDegree < clockwise * deltaDegreeTarget - deltaDegreeTrpzMtrCtrl ){
+                    leftMotor->setPWM(trpzMtrCtrlL->getPwm(leftMotor->getPwm(),clockwise * speed,1,1));
+                    rightMotor->setPWM(trpzMtrCtrlR->getPwm(rightMotor->getPwm(),(-clockwise) * speed,1,1));
+                }else{
+                    leftMotor->setPWM(trpzMtrCtrlL->getPwm(leftMotor->getPwm(),clockwise * 3 ,1,1));
+                    rightMotor->setPWM(trpzMtrCtrlR->getPwm(rightMotor->getPwm(),(-clockwise) * 3,1,1));
+                }
+            }
             return Status::Running;
+            
         } else {
             return Status::Success;
         }
     }
 private:
-    int16_t deltaDegreeTarget, originalDegree;
+    int16_t deltaDegreeTarget, originalDegree, deltaDegreeTrpzMtrCtrl;
     int clockwise, speed;
-    bool updated;
+    bool updated, trpzCalcFlg;
+    TrapezoidalMtrControler* trpzMtrCtrlL;
+    TrapezoidalMtrControler* trpzMtrCtrlR;
 };
 
 class ClimbBoard : public BrainTree::Node { 
@@ -333,7 +395,7 @@ public:
                 }
                 return Status::Running;
             }else{
-                armMotor->setPWM(30);
+                armMotor->setPWM(80);
                 leftMotor->setPWM(23);
                 rightMotor->setPWM(23);
                 
@@ -372,11 +434,12 @@ void main_task(intptr_t unused) {
     sonarSensor = new SonarSensor(PORT_2);
     colorSensor = new FilteredColorSensor(PORT_3);
     gyroSensor  = new GyroSensor(PORT_4);
-    leftMotor   = new Motor(PORT_C);
-    rightMotor  = new Motor(PORT_B);
+    leftMotor   = new FilteredMotor(PORT_C);
+    rightMotor  = new FilteredMotor(PORT_B);
     tailMotor   = new Motor(PORT_D);
     armMotor    = new Motor(PORT_A);
     plotter     = new Plotter(leftMotor, rightMotor, gyroSensor);
+    logger      = new Logger(plotter,leftMotor, rightMotor, gyroSensor,colorSensor,sonarSensor,clock);
 
     /* BEHAVIOR TREE DEFINITION */
 
@@ -398,31 +461,72 @@ void main_task(intptr_t unused) {
             .composite<BrainTree::ParallelSequence>(2,2)
                 .leaf<IsDistanceEarned>(BLUE_DISTANCE)
                 .composite<BrainTree::MemSequence>()
-                    .leaf<IsBlueDetected>()
-                    .leaf<IsBlackDetected>()
-                    .leaf<IsBlueDetected>()
+                    .leaf<IsTargetColorDetected>(COLOR_BLUE)
+                    .leaf<IsTargetColorDetected>(COLOR_BLACK)
+                    .leaf<IsTargetColorDetected>(COLOR_BLUE)
                 .end()
             .end()
-            //.leaf<TraceLine>(SPEED_NORM, GS_TARGET, P_CONST, I_CONST, D_CONST)
             .composite<BrainTree::MemSequence>()
-                // race code starts.
                 .composite<BrainTree::ParallelSequence>(1,2)
-                    .leaf<IsTimeEarned>(200)
+                    .leaf<IsDistanceEarned>(300)
                     .leaf<TraceLine>(SPEED_NORM, GS_TARGET, P_CONST, I_CONST, D_CONST)
                 .end()
                 .composite<BrainTree::ParallelSequence>(1,2)
-                    .leaf<IsDistanceEarned>(1250)
-                    .leaf<TraceLine>(SPEED_MAX, GS_TARGET, 0.5, 0.5, D_CONST)
+                    .leaf<IsDistanceEarned>(1450) // 1250
+                    .leaf<TraceLine>(SPEED_FAST, GS_TARGET, P_CONST_FAST, I_CONST_FAST, D_CONST_FAST)
                 .end()
                 .composite<BrainTree::ParallelSequence>(1,2)
-                    .leaf<IsDistanceEarned>(590)
-                    .leaf<RunAsInstructed>(60,100, false)
+                    .leaf<IsDistanceEarned>(1135) // 1250
+                    .leaf<TraceLine>(65, GS_TARGET, 0.75, 1.0, D_CONST)
                 .end()
                 .composite<BrainTree::ParallelSequence>(1,2)
-                    .leaf<IsDistanceEarned>(540)
-                    .leaf<RunAsInstructed>(100,100, false)
+                    .leaf<IsDistanceEarned>(440)
+                    .leaf<RunAsInstructed>(37,100, false, 0, 0)
                 .end()
-                // race code ends.
+                .composite<BrainTree::ParallelSequence>(1,2)
+                    .leaf<IsDistanceEarned>(270)
+                    .leaf<RunAsInstructed>(100,90, false, 0, 0)
+                .end()
+                .composite<BrainTree::ParallelSequence>(1,2)
+                    .leaf<IsDistanceEarned>(450)
+                    .leaf<RunAsInstructed>(100,60, false, 0, 0)
+                .end()
+                .composite<BrainTree::ParallelSequence>(1,2)
+                    .leaf<IsDistanceEarned>(350)
+                    .leaf<RunAsInstructed>(100,50, false, 0, 0)
+                .end()
+                .composite<BrainTree::ParallelSequence>(1,2)
+                    .leaf<IsDistanceEarned>(740)
+                    .leaf<RunAsInstructed>(65,100, false, 0, 0)
+                .end()
+                .composite<BrainTree::ParallelSequence>(1,2)
+                    .leaf<IsDistanceEarned>(300)
+                    .leaf<RunAsInstructed>(50,100, false, 0, 0)
+                .end()
+                .composite<BrainTree::ParallelSequence>(1,2)
+                    .leaf<IsDistanceEarned>(210)
+                    .leaf<RunAsInstructed>(100,77, false, 0, 0)
+                .end()
+                .composite<BrainTree::ParallelSequence>(1,2)
+                    .leaf<IsDistanceEarned>(400)
+                    .leaf<RunAsInstructed>(100,38, false, 0, 0)
+                .end()
+                .composite<BrainTree::ParallelSequence>(1,2)
+                    .leaf<IsDistanceEarned>(240)
+                    .leaf<RunAsInstructed>(100,70, false, 0, 0)
+                .end()
+                .composite<BrainTree::ParallelSequence>(1,2)
+                    .leaf<IsDistanceEarned>(300)
+                    .leaf<TraceLine>(SPEED_NORM, GS_TARGET, P_CONST, I_CONST, D_CONST)
+                .end()
+                .composite<BrainTree::ParallelSequence>(1,2)
+                    .leaf<IsDistanceEarned>(1700)
+                    .leaf<TraceLine>(SPEED_FAST, GS_TARGET, P_CONST_FAST, I_CONST_FAST, D_CONST_FAST)
+                .end()
+                .composite<BrainTree::ParallelSequence>(1,2)
+                    .leaf<IsDistanceEarned>(1000)
+                    .leaf<TraceLine>(SPEED_NORM, GS_TARGET, P_CONST, I_CONST, D_CONST)
+                .end()
             .end()
         .end()
         .build();
@@ -432,56 +536,55 @@ void main_task(intptr_t unused) {
             .leaf<ClimbBoard>(_COURSE, 0)
             .composite<BrainTree::ParallelSequence>(1,2)
                 .leaf<IsTimeEarned>(500)
-                //.leaf<IsDistanceEarned>(913)
-                .leaf<TraceLine>(SPEED_SLOW, GS_TARGET2, P_CONST2, I_CONST2, D_CONST2)
+                .leaf<TraceLine>(SPEED_SLOW, GS_TARGET_SLOW, P_CONST_SLOW, I_CONST_SLOW, D_CONST_SLOW)
             .end()
             .composite<BrainTree::ParallelSequence>(1,2)
                 .leaf<IsTimeEarned>(300)
-                //.leaf<IsDistanceEarned>(300)
-                .leaf<RunAsInstructed>(8,10, false)
+                .leaf<RunAsInstructed>(8,10, false, 0, 0)
             .end()
             .composite<BrainTree::ParallelSequence>(1,2)
-                .leaf<IsTimeEarned>(1420)
-                //.leaf<IsDistanceEarned>(913)
-                .leaf<TraceLine>(SPEED_SLOW, GS_TARGET2, P_CONST2, I_CONST2, D_CONST2)
+                .leaf<IsTimeEarned>(1160)
+                .leaf<TraceLine>(SPEED_SLOW, GS_TARGET_SLOW, P_CONST_SLOW, I_CONST_SLOW, D_CONST_SLOW)
             .end()
             .composite<BrainTree::ParallelSequence>(1,2)
-                .leaf<IsTimeEarned>(1200)
-                //.leaf<IsDistanceEarned>(300)
-                .leaf<RunAsInstructed>(10,2, false)
+                .leaf<IsTimeEarned>(800)
+                .leaf<RunAsInstructed>(10,4, true, 2, 0)
             .end()
             .composite<BrainTree::ParallelSequence>(1,2)
-                .leaf<IsTimeEarned>(460)
-                //.leaf<IsDistanceEarned>(150)
-                .leaf<RunAsInstructed>(8,10, false)
+                .leaf<IsTimeEarned>(595)
+                .leaf<RunAsInstructed>(10,2, true, 2, 0)
             .end()
             .composite<BrainTree::ParallelSequence>(1,2)
-                .leaf<IsTimeEarned>(250)
-                //.leaf<IsDistanceEarned>(70)
-                .leaf<RunAsInstructed>(1,10, false)
+                .leaf<IsTimeEarned>(285)
+                .leaf<RunAsInstructed>(10,3, true, 2, 0)
+            .end()
+            .composite<BrainTree::ParallelSequence>(1,2)
+                .leaf<IsTimeEarned>(285)
+                .leaf<RunAsInstructed>(3,10, true, 2, 0)
+            .end()
+            .composite<BrainTree::ParallelSequence>(1,2)
+                .leaf<IsTimeEarned>(305)
+                .leaf<RunAsInstructed>(2,10, true, 2, 0)
             .end()
             .composite<BrainTree::ParallelSequence>(1,2)
                 .leaf<IsTimeEarned>(350)
-                //.leaf<IsDistanceEarned>(200)
-                .leaf<RunAsInstructed>(10,10, false)
+                .leaf<RunAsInstructed>(10,10, true, 2, 0)
             .end()
             .composite<BrainTree::ParallelSequence>(1,2)
-                .leaf<IsTimeEarned>(300)
+                .leaf<IsTimeEarned>(420)
                 .leaf<ShiftArmPosition>(30)
             .end()
             .composite<BrainTree::ParallelSequence>(1,2)
                 .leaf<IsTimeEarned>(100)
                 .leaf<ShiftArmPosition>(-100)
-                .leaf<RunAsInstructed>(0,0,false)
+                .leaf<RunAsInstructed>(0, 0, false, 0, 0)
             .end()
-            .leaf<RotateEV3>(130 * _COURSE, SPEED_SLOW)
         .end()
         .build();
 
     tr_garage = (BrainTree::BehaviorTree*) BrainTree::Builder()
         .composite<BrainTree::MemSequence>()
-            // .leaf<RotateEV3>(-30 * _COURSE, SPEED_SLOW)
-            // .leaf<RotateEV3>(30 * _COURSE, SPEED_SLOW)
+
         .end()
         .build();
 
@@ -615,4 +718,7 @@ void update_task(intptr_t unused) {
     default:
         break;
     }
+
+    //Log output
+    logger->outputLog(true,true,true,1,state);
 }

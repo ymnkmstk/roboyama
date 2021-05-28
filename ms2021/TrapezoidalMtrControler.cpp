@@ -15,42 +15,52 @@ TrapezoidalMtrControler::TrapezoidalMtrControler(){
 
 TrapezoidalMtrControler::~TrapezoidalMtrControler() {}
 
-int32_t TrapezoidalMtrControler::getPwm(int startpwm ,int endpwm,int lr){
-     return trapezoidalDriveCalc(startpwm,endpwm,lr);
+int32_t TrapezoidalMtrControler::getPwm(int startpwm ,int endpwm, int cntinterval, int cntpwd){
+    //_log("getPwm: cntinterval = %d, cntpwd = %d\n",cntinterval,cntpwd);
+     return trapezoidalDriveCalc(startpwm,endpwm,cntinterval,cntpwd);
 }
 
 
-//FilterdMoterができたら、そこにpwmのgetメソッドと追加。同時にstartpwm引数を削除
-//lr = 1:left 2:right
-int32_t TrapezoidalMtrControler::trapezoidalDriveCalc(int startpwm ,int endpwm,int lr){
+
+int32_t TrapezoidalMtrControler::trapezoidalDriveCalc(int startpwm ,int endpwm, int cntinterval, int cntpwd){
+
+    //_log("trapezoidalDriveCalc: cntinterval = %d, cntpwd = %d\n",cntinterval,cntpwd);
 
     if(endPwm != endpwm){
         cnt = 0;
-        endPwm = endpwm;
-        
-        pwm = startpwm; //仮
-        // if(lr = 1){
-        //     pwm = leftMotor->getPWM();
-        // }else{
-        //     pwm = rightMotor->getPWM();
-        // }
+        endPwm = endpwm;        
+        pwm = startpwm; 
 
     }else{
 
+        if(cntinterval == 0){
+            cntInterval = C_INTERVAL;
+        }else{
+            cntInterval = cntinterval;
+        }
+        if(cntpwd == 0){
+            cntPwd = C_PWD;
+        }else{
+            cntPwd = cntpwd;
+        }
+
         //in case of acceletion
         if(pwm < endPwm){
-            if(cnt % CNT_INTERVAL == 0){
-                pwm++;
+            if(cnt % cntInterval == 0){
+                pwm = pwm + cntPwd;
+                if(pwm > endPwm){
+                    pwm = endPwm;
+                }
             }
 
         //in case of decelerate
         }else if(pwm > endPwm){
-            if(cnt % CNT_INTERVAL == 0){
-                pwm--;
+            if(cnt % cntInterval == 0){
+                pwm = pwm - cntPwd;
+                if(pwm < endPwm){
+                    pwm = endPwm;
+                }                
             }
-
-        }else if(pwm == endPwm){
-            //printf("pwmがendPwmに到達しました:%d\n",pwm);
         }
         cnt++;
     }

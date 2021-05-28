@@ -7,7 +7,8 @@ FilteredMotor.o \
 FilteredColorSensor.o \
 Plotter.o \
 PIDcalculator.o \
-TrapezoidalMtrControler.o
+TrapezoidalMtrControler.o  \
+Logger.o  \
 
 SRCLANG := c++
 
