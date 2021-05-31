@@ -120,7 +120,7 @@ extern Motor*       armMotor;
 #define GS_TARGET            47  /* was 47 for 2020 program                 */
 #define GS_TARGET_SLOW       25
 #define SONAR_ALERT_DISTANCE 10  /* in centimeters                          */
-#define BLUE_DISTANCE     10000  /* 2nd blue part should be further than this   */ 
+#define BLUE_DISTANCE     9000  /* 2nd blue part should be further than this   */ 
 
 #define COLOR_BLACK         1
 #define COLOR_BLUE          2
