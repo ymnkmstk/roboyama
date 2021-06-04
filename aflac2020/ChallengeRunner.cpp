@@ -8,7 +8,6 @@
 #include "app.h"
 #include "ChallengeRunner.hpp"
 
-
 ChallengeRunner::ChallengeRunner(Motor* lm, Motor* rm, Motor* tm, Motor* am) : LineTracer(lm, rm, tm){
     _debug(syslog(LOG_NOTICE, "%08u, ChallengeRunner constructor", clock->now()));
     leftMotor   = lm;
