@@ -1,6 +1,5 @@
 /*
     FilteredColorSensor.hpp
-
     Copyright © 2021 Wataru Taniguchi. All rights reserved.
 */
 #ifndef FilteredColorSensor_hpp
@@ -16,9 +15,9 @@ public:
     void getRawColor(rgb_raw_t &rgb) const;
     void sense();
 protected:
-    /* FIR filter parameter for normalized cut-off frequency 0.2 */
-    static const int FIR_ORDER = 10; 
-    constexpr static const double hn[FIR_ORDER+1] = { -1.247414986406201e-18, -1.270350182429102e-02, -2.481243022283666e-02, 6.381419731491805e-02, 2.761351394755998e-01, 4.000000000000000e-01, 2.761351394755998e-01, 6.381419731491805e-02, -2.481243022283666e-02, -1.270350182429102e-02, -1.247414986406201e-18 };
+    /* FIR filter parameter for normalized cut-off frequency 0.2 by Hamming window function */
+    static const int FIR_ORDER = 4; 
+    constexpr static const double hn[FIR_ORDER+1] = { 7.483914270309116e-03, 1.634745733863819e-01, 4.000000000000000e-01, 1.634745733863819e-01, 7.483914270309116e-03 };
 
     FIR_Transposed<FIR_ORDER> *fir_r, *fir_g, *fir_b;
     rgb_raw_t filtered_rgb;
