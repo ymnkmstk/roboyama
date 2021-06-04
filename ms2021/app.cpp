@@ -545,6 +545,10 @@ void main_task(intptr_t unused) {
 
     tr_slalom = (BrainTree::BehaviorTree*) BrainTree::Builder()
         .composite<BrainTree::MemSequence>()
+            .composite<BrainTree::ParallelSequence>(1,2)
+                .leaf<IsDistanceEarned>(200)
+                .leaf<RunAsInstructed>(35,35, true, 0, 2)
+            .end()
             .leaf<ClimbBoard>(_COURSE, 0)
             .composite<BrainTree::ParallelSequence>(1,2)
                 .leaf<IsTimeEarned>(500)
@@ -596,7 +600,7 @@ void main_task(intptr_t unused) {
 
     tr_garage = (BrainTree::BehaviorTree*) BrainTree::Builder()
         .composite<BrainTree::MemSequence>()
-
+        
         .end()
         .build();
 
