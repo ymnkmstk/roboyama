@@ -26,3 +26,8 @@ void FilteredMotor::setPWM(int pwm) {
         ev3api::Motor::setPWM(filtered_pwm);
     }
 }
+
+int32_t FilteredMotor::getPwm(){
+    return ev3api::Motor::getPWM();
+}
+

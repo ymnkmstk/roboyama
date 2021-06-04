@@ -6,7 +6,9 @@ APPL_CXXOBJS += \
 FilteredMotor.o \
 FilteredColorSensor.o \
 Plotter.o \
-PIDcalculator.o
+PIDcalculator.o \
+TrapezoidalMtrControler.o  \
+Logger.o  \
 
 SRCLANG := c++
 
