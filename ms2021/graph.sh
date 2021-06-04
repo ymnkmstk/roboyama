@@ -25,7 +25,7 @@ while ls $DSTDIR | grep -w $BASE >/dev/null; do
   echo processing ${LOGFILE}...
   CONDFILE=${DSTDIR}/${COND}_${SEQ}.${EXT}
   DATAFILE=${DSTDIR}/${DATA}_${SEQ}.${EXT}
-  cat $LOGFILE | grep "TraceLine::update()" | awk '{print $1/1000, $7, $10, $13, $16, $19, $22}' | sed s:,::g > $DATAFILE
+  cat $LOGFILE | grep "Logger::outputLog" | grep -v "^00000000" | awk '{print $1/1000, $40, $43, $46, $49, $25, $28, $22, $19}' | sed s:\;::g > $DATAFILE
   for TYPE in xy degree sensor curvature distance; do
     PNGFILE=${DSTDIR}/${GRAPH}_${SEQ}_${TYPE}.png
     CMDFILE=${DSTDIR}/${CMD}_${SEQ}_${TYPE}.gp

@@ -22,11 +22,13 @@ void Logger::outputLog(bool runningBool ,bool slalomBool, bool garageBool,int lo
 
     if (++traceCnt  >= logInterval) {
         traceCnt = 0;
-        if((runningBool && state == ST_running) || 
-                (slalomBool && state == ST_slalom) || 
-                        (garageBool && state == ST_garage)){
+        //if((runningBool && state == ST_running) || 
+                //(slalomBool && state == ST_slalom) || 
+                        //(garageBool && state == ST_garage)){
                 
-                _log("pwdL = %d; pwdR = %d; time(sec) = %d; distance = %d; degree = %d; locX = %d; locY = %d; sonarDistance = %d; gyroAngle = %d; gyroAnglerVelocity = %d; red = %d; green = %d; blue = %d"
+                int32_t angL = plotter->getAngL();
+                int32_t angR = plotter->getAngR();
+                _log("pwdL = %d; pwdR = %d; time(sec) = %d; distance = %d; degree = %d; locX = %d; locY = %d; sonarDistance = %d; gyroAngle = %d; gyroAnglerVelocity = %d; red = %d; green = %d; blue = %d; deltaAngDiff = %d"
                     ,leftMotor->getPwm()
                     ,rightMotor->getPwm()
                     //,round((int32_t)clock->now()/10000)
@@ -41,8 +43,11 @@ void Logger::outputLog(bool runningBool ,bool slalomBool, bool garageBool,int lo
                     ,cur_rgb.r
                     ,cur_rgb.g
                     ,cur_rgb.b
+                    ,(int)((angL-prevAngL)-(angR-prevAngR))
                 );
-    }
+                prevAngL = angL;
+                prevAngR = angR;
+    //}
     }
 }
 

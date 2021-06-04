@@ -21,6 +21,7 @@ protected:
     ev3api::SonarSensor* sonarSenser;
     ev3api::Clock* clock;
     int traceCnt;
+    int32_t prevAngL, prevAngR;
 };
 
 #endif /* Logger_hpp */
