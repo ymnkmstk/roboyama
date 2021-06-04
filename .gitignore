@@ -13,12 +13,3 @@
 *.swp
 .DS_Store
 a.out
-aflac2020/ChallengeRunner.cpp
-ms2021/BrainTree_demo/demo.cpp
-ms2021/README.md
-ms2021/autorun.sh
-ms2021/behavior_tree.drawio.svg
-ms2021/behavior_tree_legends.drawio.svg
-ms2021/class_diagram.drawio.svg
-ms2021/sequence_diagram.drawio.svg
-
