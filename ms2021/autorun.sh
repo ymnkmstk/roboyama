@@ -14,7 +14,20 @@ timeout() {
 killbackground(){
     local jobs=`jobs -p`
     for job in $jobs; do
-	@@ -31,47 +21,23 @@ if [ -z "$ETROBO_ENV" ]; then
+        killpstree $job
+    done
+}
+
+killpstree(){
+    local children=`pgrep -P $1`
+    for child in $children; do
+        killpstree $child
+    done
+    kill $1
+}
+
+if [ -z "$ETROBO_ENV" ]; then
+    echo "etrobo environment is not available."
     exit 1
 fi
 
