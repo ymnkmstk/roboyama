@@ -137,10 +137,9 @@ sim
 curl -X POST -H "Content-Type: application/json" -d @${SRCDIR}/init_JUMP_${JUMP}.json http://localhost:54000
 
 for N in `seq ${COUNT}`; do
-    while ls $DSTDIR | grep -w $BASE >/dev/null; do
+    SEQ=`ls $DSTDIR | sed -n 's/'${MAKELOG}'_\([0-9]\{1,4\}\).'${EXT}'/\1/p' | tail -n 1`
     SEQ=`expr $SEQ + 1`
     BASE=${MAKELOG}_${SEQ}
-    done
 
     echo P=${P} I=${I} D=${D} Speed=${SPEED} > ${DSTDIR}/${COND}_${SEQ}.${EXT}
     export USER_COPTS="-DP_CONST=${P}D -DI_CONST=${I}D -DD_CONST=${D}D -DSPEED_NORM=${SPEED} -DJUMP=${JUMP} ${FOURIER}"
