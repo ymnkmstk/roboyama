@@ -28,7 +28,7 @@ inline double SRLF::apply(const double xin) {
     if (-srewRate > delta) {
         delta = -srewRate;
     }
-    prevXin += srewRate;
+    prevXin += delta;
     return prevXin;
 }
 
