@@ -21,6 +21,11 @@ protected:
 };
 
 inline double SRLF::apply(const double xin) {
+    if (srewRate == 0.0) { /* bypass mode */
+        prevXin = xin;
+        return xin;
+    }
+
     double delta = xin - prevXin;
     if (srewRate < delta) {
         delta = srewRate;
