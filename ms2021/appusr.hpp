@@ -24,6 +24,7 @@ using namespace ev3api;
 
 #include "BrainTree.h"
 #include "FilteredMotor.hpp"
+#include "SRLF.hpp"
 #include "FilteredColorSensor.hpp"
 #include "FIR.hpp"
 #include "Plotter.hpp"

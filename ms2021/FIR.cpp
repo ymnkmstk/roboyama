@@ -9,17 +9,18 @@
 */
 
 #include "FIR.hpp"
+#include <assert.h>
 
 FIR_Direct::FIR_Direct(const double hk[], int order)
     : hm(hk), _order(order) {
     un = new double[order + 1];
-    //assert(un);
+    assert(un);
     for (int i = 0; i <= order; i++) un[i] = 0.0;
 }
 
 FIR_Transposed::FIR_Transposed(const double hk[], int order)
     : hm(hk), _order(order) {
     un = new double[order + 1];
-    //assert(un);
+    assert(un);
     for (int i = 0; i <= order; i++) un[i] = 0.0;
 }
