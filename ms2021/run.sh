@@ -137,7 +137,7 @@ sim
 curl -X POST -H "Content-Type: application/json" -d @${SRCDIR}/init_JUMP_${JUMP}.json http://localhost:54000
 
 for N in `seq ${COUNT}`; do
-    SEQ=`ls $DSTDIR | sed -n 's/'${MAKELOG}'_\([0-9]\{1,4\}\).'${EXT}'/\1/p' | tail -n 1`
+    SEQ=`ls $DSTDIR | sed -n 's/'${MAKELOG}'_\([0-9]\{1,4\}\).'${EXT}'/\1/p' | sort -n | tail -n 1`
     SEQ=`expr $SEQ + 1`
     BASE=${MAKELOG}_${SEQ}
 

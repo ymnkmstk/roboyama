@@ -3,6 +3,7 @@ mkfile_path := $(dir $(lastword $(MAKEFILE_LIST)))
 APPL_COBJS +=
 
 APPL_CXXOBJS += \
+FIR.o \
 FilteredMotor.o \
 FilteredColorSensor.o \
 Plotter.o \

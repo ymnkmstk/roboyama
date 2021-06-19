@@ -244,8 +244,8 @@ public:
             leftMotor->setPWM(pwmL);
             rightMotor->setPWM(pwmR);
         }else{
-            leftMotor->setPWM(trpzMtrCtrlL->getPwm(leftMotor->getPwm(),pwmL,updownInterval,updownPwm));
-            rightMotor->setPWM(trpzMtrCtrlR->getPwm(rightMotor->getPwm(),pwmR,updownInterval,updownPwm));
+            leftMotor->setPWM(trpzMtrCtrlL->getPwm(leftMotor->getPWM(),pwmL,updownInterval,updownPwm));
+            rightMotor->setPWM(trpzMtrCtrlR->getPwm(rightMotor->getPWM(),pwmR,updownInterval,updownPwm));
             //  _log("pwmL =%d, pwmR =%d,updownInterval = %d, updownPwm = %d ,locX = %d, locY = %d, degree = %d, distance = %d",
             //     leftMotor->getPwm(),rightMotor->getPwm(),updownInterval,updownPwm,
             //     (int)plotter->getLocX(), (int)plotter->getLocY(),
@@ -350,19 +350,18 @@ public:
                 leftMotor->setPWM(clockwise * speed);
                 rightMotor->setPWM((-clockwise) * speed);
             }else{
-
-                if(clockwise * speed <= leftMotor->getPwm() && clockwise * deltaDegree < floor(clockwise * deltaDegreeTarget * 0.5) && deltaDegreeTrpzMtrCtrl == 0){
+                if(clockwise * speed <= leftMotor->getPWM() && clockwise * deltaDegree < floor(clockwise * deltaDegreeTarget * 0.5) && deltaDegreeTrpzMtrCtrl == 0){
                     deltaDegreeTrpzMtrCtrl = deltaDegree; 
-                }else if(clockwise * speed > leftMotor->getPwm() && clockwise * deltaDegree >= floor(clockwise * deltaDegreeTarget * 0.5) && deltaDegreeTrpzMtrCtrl == 0){
+                }else if(clockwise * speed > leftMotor->getPWM() && clockwise * deltaDegree >= floor(clockwise * deltaDegreeTarget * 0.5) && deltaDegreeTrpzMtrCtrl == 0){
                     deltaDegreeTrpzMtrCtrl = deltaDegreeTarget;
                 }
 
                 if(clockwise * deltaDegree < clockwise * deltaDegreeTarget - deltaDegreeTrpzMtrCtrl ){
-                    leftMotor->setPWM(trpzMtrCtrlL->getPwm(leftMotor->getPwm(),clockwise * speed,1,1));
-                    rightMotor->setPWM(trpzMtrCtrlR->getPwm(rightMotor->getPwm(),(-clockwise) * speed,1,1));
+                    leftMotor->setPWM(trpzMtrCtrlL->getPwm(leftMotor->getPWM(),clockwise * speed,1,1));
+                    rightMotor->setPWM(trpzMtrCtrlR->getPwm(rightMotor->getPWM(),(-clockwise) * speed,1,1));
                 }else{
-                    leftMotor->setPWM(trpzMtrCtrlL->getPwm(leftMotor->getPwm(),clockwise * 3 ,1,1));
-                    rightMotor->setPWM(trpzMtrCtrlR->getPwm(rightMotor->getPwm(),(-clockwise) * 3,1,1));
+                    leftMotor->setPWM(trpzMtrCtrlL->getPwm(leftMotor->getPWM(),clockwise * 3 ,1,1));
+                    rightMotor->setPWM(trpzMtrCtrlR->getPwm(rightMotor->getPWM(),(-clockwise) * 3,1,1));
                 }
             }
             return Status::Running;
@@ -439,6 +438,16 @@ void main_task(intptr_t unused) {
     armMotor    = new Motor(PORT_A);
     plotter     = new Plotter(leftMotor, rightMotor, gyroSensor);
     logger      = new Logger(plotter,leftMotor, rightMotor, gyroSensor,colorSensor,sonarSensor,clock);
+
+    /* FIR parameters for a low-pass filter with normalized cut-off frequency of 0.2
+        using a function of the Hamming Window */
+    const int FIR_ORDER = 4; 
+    const double hn[FIR_ORDER+1] = { 7.483914270309116e-03, 1.634745733863819e-01, 4.000000000000000e-01, 1.634745733863819e-01, 7.483914270309116e-03 };
+    /* set filters to FilteredColorSensor */
+    Filter *lpf_r = new FIR_Transposed(hn, FIR_ORDER);
+    Filter *lpf_g = new FIR_Transposed(hn, FIR_ORDER);
+    Filter *lpf_b = new FIR_Transposed(hn, FIR_ORDER);
+    colorSensor->setRawColorFilters(lpf_r, lpf_g, lpf_b);
 
     /* BEHAVIOR TREE DEFINITION */
 
@@ -600,7 +609,119 @@ void main_task(intptr_t unused) {
 
     tr_garage = (BrainTree::BehaviorTree*) BrainTree::Builder()
         .composite<BrainTree::MemSequence>()
-        
+            //スラロームから離れるため進みながらやや右に曲がる
+            .composite<BrainTree::ParallelSequence>(1,2)
+                .leaf<IsTimeEarned>(170)
+                .leaf<RunAsInstructed>(30,5, false, 0, 0)
+            .end()
+             //指定距離走行
+            .composite<BrainTree::ParallelSequence>(1,2)
+                .leaf<IsTimeEarned>(40)
+                .leaf<RunAsInstructed>(30,20, false, 0, 0)
+            .end()
+             //指定距離走行
+            .composite<BrainTree::ParallelSequence>(1,2)
+                .leaf<IsTimeEarned>(80)
+                .leaf<RunAsInstructed>(30,30, false, 0, 0)
+            .end()
+            //黒色検知
+            .composite<BrainTree::ParallelSequence>(1,2)
+                .leaf<IsTargetColorDetected>(COLOR_BLACK)
+                .leaf<RunAsInstructed>(30,30, false, 0, 0)
+            .end()
+             //指定距離走行
+            .composite<BrainTree::ParallelSequence>(1,2)
+                .leaf<IsTimeEarned>(120)
+                .leaf<RunAsInstructed>(30,30, false, 0, 0)
+            .end()
+            //黒色検知
+            .composite<BrainTree::ParallelSequence>(1,2)
+                .leaf<IsTargetColorDetected>(COLOR_BLACK)
+                .leaf<RunAsInstructed>(30,30, false, 0, 0)
+            .end()
+             //指定距離走行
+            .composite<BrainTree::ParallelSequence>(1,2)
+                .leaf<IsTimeEarned>(140)
+                .leaf<RunAsInstructed>(30,30, false, 0, 0)
+            .end()
+//             //左にXX度回転 10の速さ　台形駆動無
+            .leaf<RotateEV3>(-80,10,false)
+            // .leaf<RotateEV3>(-83,10,false)
+             //指定距離走行
+            .composite<BrainTree::ParallelSequence>(1,2)
+                .leaf<IsTimeEarned>(100)
+                .leaf<RunAsInstructed>(30,30, false, 0, 0)
+            .end()
+            //黒色検知
+            .composite<BrainTree::ParallelSequence>(1,2)
+                .leaf<IsTargetColorDetected>(COLOR_BLACK)
+                .leaf<RunAsInstructed>(30,30, false, 0, 0)
+            .end()
+            //左にXX度回転 10の速さ　台形駆動無
+            .leaf<RotateEV3>(-75,10,false)
+            //指定時間走行
+            .composite<BrainTree::ParallelSequence>(1,2)
+                .leaf<IsTimeEarned>(5)
+                .leaf<RunAsInstructed>(5,5, false, 0, 0)
+            .end()
+            //ライントレース
+            .composite<BrainTree::ParallelSequence>(1,2)
+                .leaf<IsTimeEarned>(30)
+                .leaf<TraceLine>(SPEED_SLOW, GS_TARGET_SLOW, P_CONST_SLOW, I_CONST_SLOW, D_CONST_SLOW)
+            .end()
+            // //赤色検知
+            .composite<BrainTree::ParallelSequence>(1,2)
+                .leaf<IsTargetColorDetected>(COLOR_RED)
+                .leaf<RunAsInstructed>(30,30, false, 0, 0)
+            .end()
+            //指定時間走行
+            .composite<BrainTree::ParallelSequence>(1,2)
+                .leaf<IsTimeEarned>(110)
+                .leaf<RunAsInstructed>(30,30, false, 0, 0)
+            .end()
+            // //ライントレース
+            // .composite<BrainTree::ParallelSequence>(1,2)
+            //     .leaf<IsTimeEarned>(30)
+            //     .leaf<TraceLine>(SPEED_SLOW, GS_TARGET_SLOW, P_CONST_SLOW, I_CONST_SLOW, D_CONST_SLOW)
+            // .end()
+            //やや左に指定時間走行
+            .composite<BrainTree::ParallelSequence>(1,2)
+                .leaf<IsTimeEarned>(70)
+                .leaf<RunAsInstructed>(37,50, false, 0, 0)
+            .end()
+            //指定時間走行
+            .composite<BrainTree::ParallelSequence>(1,2)
+                .leaf<IsTimeEarned>(320)
+                .leaf<RunAsInstructed>(50,50, false, 0, 0)
+            .end()
+            //やや右に指定時間走行
+            .composite<BrainTree::ParallelSequence>(1,2)
+                .leaf<IsTimeEarned>(30)
+                .leaf<RunAsInstructed>(50,40, false, 0, 0)
+            .end()
+            //青か黒色検知
+            .composite<BrainTree::ParallelSequence>(1,2)
+                .leaf<IsTargetColorDetected>(COLOR_BLUE)
+                .leaf<IsTargetColorDetected>(COLOR_BLACK)
+                .leaf<RunAsInstructed>(20,20, false, 0, 0)
+            .end()
+            //右回転
+            .leaf<RotateEV3>(81,5,false)
+            //まっすぐ距離調整用
+            .composite<BrainTree::ParallelSequence>(1,2)
+                .leaf<IsTimeEarned>(10)
+                .leaf<RunAsInstructed>(8,8, false, 0, 0)
+            .end()
+            //ライントレース
+            .composite<BrainTree::ParallelSequence>(1,2)
+                .leaf<IsTimeEarned>(35)
+               .leaf<TraceLine>(SPEED_SLOW, GS_TARGET_SLOW, P_CONST_SLOW, I_CONST_SLOW, D_CONST_SLOW)
+            .end() 
+            //まっすぐ距離調整用
+            .composite<BrainTree::ParallelSequence>(1,2)
+                .leaf<IsTimeEarned>(235)
+                .leaf<RunAsInstructed>(30,30, false, 0, 0)
+            .end()
         .end()
         .build();
 
@@ -628,6 +749,9 @@ void main_task(intptr_t unused) {
     delete tr_run;
     delete tr_calibration;
     /* destroy EV3 objects */
+    delete lpf_b;
+    delete lpf_g;
+    delete lpf_r;
     delete plotter;
     delete armMotor;
     delete tailMotor;
@@ -748,4 +872,6 @@ void update_task(intptr_t unused) {
 
     //Log output
     logger->outputLog(false,false,false,1,state);
+    rightMotor->drive();
+    leftMotor->drive();
 }
