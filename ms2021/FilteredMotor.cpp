@@ -12,7 +12,6 @@ void FilteredMotor::setPWMFilter(Filter *filter) {
 }
 
 void FilteredMotor::drive() {
-    int filtered_pwm;
     /* process pwm by the Filter */
     if (fil == nullptr) {
         filtered_pwm = original_pwm;

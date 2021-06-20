@@ -18,11 +18,11 @@ public:
     void drive();
 protected:
     Filter *fil;
-    int original_pwm;
+    int original_pwm, filtered_pwm;
 };
 
 inline int FilteredMotor::getPWM() const {
-    return original_pwm;
+    return filtered_pwm;
 }
 
 inline void FilteredMotor::setPWM(int pwm) {

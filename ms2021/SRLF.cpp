@@ -10,7 +10,6 @@
 #include <assert.h>
 
 SRLF::SRLF(const double rate) : prevXin(0.0) {
-    assert(rate >= 0.0);
     srewRate = rate;
 }
 
