@@ -1,33 +1,22 @@
 /*
     FilteredMotor.cpp
 
-    Copyright © 2021 Wataru Taniguchi. All rights reserved.
+    Copyright © 2021 MS Mode 2. All rights reserved.
 */
 #include "FilteredMotor.hpp"
-constexpr const double FilteredMotor::hn[FIR_ORDER+1];
 
-FilteredMotor::FilteredMotor(ePortM port) : Motor(port), fillFIR(FIR_ORDER + 1) {
-    fir_pwm = new FIR_Transposed<FIR_ORDER>(hn);
+FilteredMotor::FilteredMotor(ePortM port) : Motor(port),fil(nullptr) {}
+
+void FilteredMotor::setPWMFilter(Filter *filter) {
+    fil = filter;
 }
 
-FilteredMotor::~FilteredMotor() {
-    delete fir_pwm;
-}
-
-void FilteredMotor::setPWM(int pwm) {
-    /* process pwm by the Low Pass Filter */
-    filtered_pwm = fir_pwm->Execute(pwm);
-    /* decrement counter */
-    fillFIR--;
-    /* pass through until FIR array is filled */
-    if (fillFIR > 0) {
-        ev3api::Motor::setPWM(pwm);
+void FilteredMotor::drive() {
+    /* process pwm by the Filter */
+    if (fil == nullptr) {
+        filtered_pwm = original_pwm;
     } else {
-        ev3api::Motor::setPWM(filtered_pwm);
+        filtered_pwm = fil->apply(original_pwm);
     }
+    ev3api::Motor::setPWM(filtered_pwm);
 }
-
-int32_t FilteredMotor::getPwm(){
-    return ev3api::Motor::getPWM();
-}
-

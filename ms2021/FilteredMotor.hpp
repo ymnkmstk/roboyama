@@ -1,27 +1,32 @@
 /*
     FilteredMotor.hpp
 
-    Copyright © 2021 Wataru Taniguchi. All rights reserved.
+    Copyright © 2021 MS Mode 2. All rights reserved.
 */
 #ifndef FilteredMotor_hpp
 #define FilteredMotor_hpp
 
 #include "Motor.h"
-#include "FIR.hpp"
+#include "Filter.hpp"
 
 class FilteredMotor : public ev3api::Motor {
 public:
     FilteredMotor(ePortM port);
-    ~FilteredMotor(void);
-    void setPWM(int pwm);
-    int32_t getPwm();
+    inline int getPWM() const;
+    inline void setPWM(int pwm);
+    void setPWMFilter(Filter *filter);
+    void drive();
 protected:
-    /* FIR filter parameter for normalized cut-off frequency 0.2 */
-    static const int FIR_ORDER = 2; 
-    constexpr static const double hn[FIR_ORDER+1] = { 3.027306914562628e-01, 4.000000000000000e-01, 3.027306914562628e-01 };
-
-    FIR_Transposed<FIR_ORDER> *fir_pwm;
-    int fillFIR, filtered_pwm;
+    Filter *fil;
+    int original_pwm, filtered_pwm;
 };
+
+inline int FilteredMotor::getPWM() const {
+    return filtered_pwm;
+}
+
+inline void FilteredMotor::setPWM(int pwm) {
+    original_pwm = pwm;
+}
 
 #endif /* FilteredMotor_hpp */

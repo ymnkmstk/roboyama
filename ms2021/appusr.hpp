@@ -24,10 +24,11 @@ using namespace ev3api;
 
 #include "BrainTree.h"
 #include "FilteredMotor.hpp"
+#include "SRLF.hpp"
 #include "FilteredColorSensor.hpp"
+#include "FIR.hpp"
 #include "Plotter.hpp"
 #include "PIDcalculator.hpp"
-#include "TrapezoidalMtrControler.hpp"
 #include "Logger.hpp"
 
 /* global variables */
@@ -37,10 +38,14 @@ extern TouchSensor* touchSensor;
 extern SonarSensor* sonarSensor;
 extern FilteredColorSensor* colorSensor;
 extern GyroSensor*  gyroSensor;
+extern SRLF*        srlf_l;
 extern FilteredMotor*       leftMotor;
+extern SRLF*        srlf_r;
 extern FilteredMotor*       rightMotor;
 extern Motor*       tailMotor;
 extern Motor*       armMotor;
+extern Plotter*     plotter;
+extern Logger*      logger;
 
 #define DEBUG
 

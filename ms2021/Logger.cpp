@@ -29,8 +29,8 @@ void Logger::outputLog(bool runningBool ,bool slalomBool, bool garageBool,int lo
                 int32_t angL = plotter->getAngL();
                 int32_t angR = plotter->getAngR();
                 _log("pwdL = %d; pwdR = %d; time(sec) = %d; distance = %d; degree = %d; locX = %d; locY = %d; sonarDistance = %d; gyroAngle = %d; gyroAnglerVelocity = %d; red = %d; green = %d; blue = %d; deltaAngDiff = %d"
-                    ,leftMotor->getPwm()
-                    ,rightMotor->getPwm()
+                    ,leftMotor->getPWM()
+                    ,rightMotor->getPWM()
                     //,round((int32_t)clock->now()/10000)
                     ,clock->now()
                     ,(int)plotter->getDistance()
