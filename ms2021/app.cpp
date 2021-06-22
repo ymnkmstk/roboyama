@@ -237,6 +237,8 @@ public:
     }
     Status update() override {
         if(!trpzCalcFlg){
+            srlf_l->setRate(0.0);
+            srlf_r->setRate(0.0);
             leftMotor->setPWM(pwmL);
             rightMotor->setPWM(pwmR);
         }else{
@@ -361,6 +363,8 @@ public:
         if (clockwise * deltaDegree < clockwise * deltaDegreeTarget) {
 
             if(!trpzCalcFlg){
+                srlf_l->setRate(0.0);
+                srlf_r->setRate(0.0);
                 leftMotor->setPWM(clockwise * speed);
                 rightMotor->setPWM((-clockwise) * speed);
             }else{
