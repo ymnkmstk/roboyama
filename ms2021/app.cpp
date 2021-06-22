@@ -280,6 +280,7 @@ public:
             leftMotor->setPWM(0.0);
             rightMotor->setPWM(0.0);
             updated = true;
+            return Status::Running;
         }
         int16_t deltaDegree = plotter->getDegree() - originalDegree;
         if (deltaDegree > 180) {
