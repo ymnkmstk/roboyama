@@ -137,9 +137,6 @@ extern Logger*      logger;
 #define COLOR_GREEN         5
 #define COLOR_WHITE         6
 
-#define C_INTERVAL    1       /* interval of changing pwd */
-#define C_PWD         1       /* chenge in pwd for interval time */
-
 enum BoardItem {
     LOCX, /* horizontal location    */
     LOCY, /* virtical   location    */
