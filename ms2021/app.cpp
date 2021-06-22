@@ -159,7 +159,7 @@ protected:
 /* argument -> 100 = 1 sec */
 class IsTimeEarned : public BrainTree::Node {
 public:
-    IsTimeEarned(int32_t t) : deltaTimeTarget(t),updated(false),earned(false),flg(false) {}
+    IsTimeEarned(int32_t t) : deltaTimeTarget(t),updated(false),earned(false) {}
      Status update() override {
         if (!updated) {
             originalTime = round((int32_t)clock->now()/10000);
@@ -179,12 +179,12 @@ public:
     }
 protected:
     int32_t deltaTimeTarget, originalTime, deltaTime;
-    bool updated, earned, flg;
+    bool updated, earned;
 };
 
 class TraceLine : public BrainTree::Node {
 public:
-    TraceLine(int s, int t, double p, double i, double d) : speed(s),target(t),prevAngL(0),prevAngR(0) {
+    TraceLine(int s, int t, double p, double i, double d) : speed(s),target(t) {
         ltPid = new PIDcalculator(p, i, d, PERIOD_UPD_TSK, -speed, speed);
     }
     ~TraceLine() {
@@ -212,7 +212,6 @@ public:
 protected:
     int speed, target;
     PIDcalculator* ltPid;
-    int32_t prevAngL, prevAngR;
 };
 
 /*  usage:
@@ -395,6 +394,67 @@ private:
     int clockwise, speed;
     bool updated, trpzCalcFlg;
 };
+
+/*
+
+    usage:
+    ".leaf<RotateEV3>(30 * _COURSE, speed, srew_rate)"
+    is to rotate robot 30 degrees clockwise at the speed when in L course
+    srew_rate = 0.0 indidates NO tropezoidal motion.
+    srew_rate = 0.5 instructs FilteredMotor to change 1 pwm every two executions of update()
+    until the current speed gradually reaches the instructed target speed.
+
+class RotateEV3 : public BrainTree::Node {
+public:
+    RotateEV3(int16_t degree, int s, double srew_rate) : deltaDegreeTarget(degree),speed(s),srewRate(srew_rate),updated(false) {
+        deltaDegreeTrpzMtrCtrl = 0;
+        assert(degree >= -180 && degree <= 180);
+        if (degree > 0) {
+            clockwise = 1;
+        } else {
+            clockwise = -1;
+        }
+    }
+    Status update() override {
+        if (!updated) {
+            originalDegree = plotter->getDegree();
+            updated = true;
+        }
+        int16_t deltaDegree = plotter->getDegree() - originalDegree;
+        if (deltaDegree > 180) {
+            deltaDegree -= 360;
+        } else if (deltaDegree < -180) {
+            deltaDegree += 360;
+        }
+
+        if (clockwise * deltaDegree < clockwise * deltaDegreeTarget) {
+            srlf_l->setRate(srewRate);
+            srlf_r->setRate(srewRate);
+            if(clockwise * speed <= leftMotor->getPWM() && clockwise * deltaDegree < floor(clockwise * deltaDegreeTarget * 0.5) && deltaDegreeTrpzMtrCtrl == 0){
+                deltaDegreeTrpzMtrCtrl = deltaDegree; 
+            }else if(clockwise * speed > leftMotor->getPWM() && clockwise * deltaDegree >= floor(clockwise * deltaDegreeTarget * 0.5) && deltaDegreeTrpzMtrCtrl == 0){
+                deltaDegreeTrpzMtrCtrl = deltaDegreeTarget;
+            }
+
+            if(clockwise * deltaDegree < clockwise * deltaDegreeTarget - deltaDegreeTrpzMtrCtrl ){
+                leftMotor->setPWM(clockwise * speed);
+                rightMotor->setPWM((-clockwise) * speed);
+            }else{
+                leftMotor->setPWM(clockwise * 3);
+                rightMotor->setPWM((-clockwise) * 3);
+            }
+            return Status::Running;
+        } else {
+            return Status::Success;
+        }
+    }
+private:
+    int16_t deltaDegreeTarget, originalDegree, deltaDegreeTrpzMtrCtrl;
+    int clockwise, speed;
+    bool updated, trpzCalcFlg;
+    double srewRate;
+};
+*/
 
 class ClimbBoard : public BrainTree::Node { 
 public:
