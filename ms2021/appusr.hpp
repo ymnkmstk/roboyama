@@ -128,14 +128,19 @@ extern Logger*      logger;
 #define GS_TARGET            47  /* was 47 for 2020 program                 */
 #define GS_TARGET_SLOW       25
 #define SONAR_ALERT_DISTANCE 10  /* in centimeters                          */
-#define BLUE_DISTANCE     9000  /* 2nd blue part should be further than this   */ 
+#define BLUE_DISTANCE     8700  /* 2nd blue part should be further than this   */ 
 
-#define COLOR_BLACK         1
-#define COLOR_BLUE          2
-#define COLOR_RED           3
-#define COLOR_YELLOW        4
-#define COLOR_GREEN         5
-#define COLOR_WHITE         6
+enum Color {
+    Black,
+    Jetblack,
+    Blue,
+    Red,
+    Yellow,
+    Green,
+    White,
+};
+
+#define ARM_INITIAL_ANGLE     -58
 
 enum BoardItem {
     LOCX, /* horizontal location    */
