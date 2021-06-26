@@ -27,7 +27,7 @@ killpstree(){
 }
 
 usage_exit() {
-        echo "Usage: $0 [-r] [-c count] [-t maxtime] [-s speed] [-p p_value] [-i i_value] [-d d_value] [-j dest] [-f]" 1>&2
+        echo "Usage: $0 [-r] [-c count] [-t maxtime] [-s speed] [-p p_value] [-i i_value] [-d d_value] [-j dest] [-l log_interval]" 1>&2
         echo "  -r rightコース走行時に指定" 1>&2
         echo "  count 繰り返し回数" 1>&2
         echo "  maxtime make開始から走行打ち切りまでの実時間" 1>&2
@@ -36,7 +36,7 @@ usage_exit() {
         echo "  i_valud ライントレースPID制御用のI定数" 1>&2
         echo "  d_valud ライントレースPID制御用のD定数" 1>&2
         echo "  dest 走行体ジャンプ先（0: normal, 1: slalom, 2: garage）" 1>&2
-        echo "  -f フーリエ解析用ログ出力（10ms毎）時に指定" 1>&2
+        echo "  log_interval 詳細ログ出力頻度（0: なし, それ以外の正数: n回に1回）" 1>&2
         echo "" 1>&2
         echo "  ログは${DSTDIR}に格納されています" 1>&2
         echo "  ${MAKELOG}_(順序番号).${EXT}は、make時のログです" 1>&2
@@ -68,7 +68,7 @@ P=0.75
 I=0.39
 D=0.08
 JUMP=0
-FOURIER=""
+LOGINT=0
 
 cd $ETROBO_ROOT
 if [ ! -d $DSTDIR ]; then
@@ -77,7 +77,7 @@ fi
 
 BASE=${MAKELOG}_${SEQ}
 
-while getopts rc:t:s:p:i:d:j:fh OPT
+while getopts rc:t:s:p:i:d:j:l:h OPT
 do
     case $OPT in
         r)  LR="right"
@@ -96,7 +96,7 @@ do
             ;;
         j)  JUMP=$OPTARG
             ;;
-        f)  FOURIER="-DFOURIER"
+        l)  LOGINT=$OPTARG
             ;;
         h)  usage_exit
             ;;
@@ -108,7 +108,7 @@ done
 shift $((OPTIND - 1))
 
 # check the validitity of argument
-for ARG in $COUNT $MAXTIME $SPEED; do
+for ARG in $COUNT $MAXTIME $SPEED $LOGINT; do
     if echo "$ARG" | grep -q "^[0-9]\+$"; then
         continue
     else
@@ -142,7 +142,7 @@ for N in `seq ${COUNT}`; do
     BASE=${MAKELOG}_${SEQ}
 
     echo P=${P} I=${I} D=${D} Speed=${SPEED} > ${DSTDIR}/${COND}_${SEQ}.${EXT}
-    export USER_COPTS="-DP_CONST=${P}D -DI_CONST=${I}D -DD_CONST=${D}D -DSPEED_NORM=${SPEED} -DJUMP=${JUMP} ${FOURIER}"
+    export USER_COPTS="-DP_CONST=${P}D -DI_CONST=${I}D -DD_CONST=${D}D -DSPEED_NORM=${SPEED} -DJUMP=${JUMP} -DLOG_INTERVAL=${LOGINT}"
     btcat $LR > ${DSTDIR}/${BTLOG}_${SEQ}.${EXT} &
     timeout $MAXTIME make $LR app=ms2021 sim up 2>&1 | tee ${DSTDIR}/${MAKELOG}_${SEQ}.${EXT}
 done
