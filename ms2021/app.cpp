@@ -392,7 +392,7 @@ void main_task(intptr_t unused) {
     tailMotor   = new Motor(PORT_D);
     armMotor    = new Motor(PORT_A);
     plotter     = new Plotter(leftMotor, rightMotor, gyroSensor);
-    logger      = new Logger(plotter,leftMotor, rightMotor, gyroSensor,colorSensor,sonarSensor,clock);
+    logger      = new Logger();
 
     /* FIR parameters for a low-pass filter with normalized cut-off frequency of 0.2
         using a function of the Hamming Window */
@@ -850,6 +850,5 @@ void update_task(intptr_t unused) {
     rightMotor->drive();
     leftMotor->drive();
 
-    //Log output
-    //logger->outputLog(false,false,false,1,state);
+    logger->outputLog(LOG_INTERVAL);
 }
