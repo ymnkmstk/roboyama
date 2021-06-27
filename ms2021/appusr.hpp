@@ -45,7 +45,6 @@ extern FilteredMotor*       rightMotor;
 extern Motor*       tailMotor;
 extern Motor*       armMotor;
 extern Plotter*     plotter;
-extern Logger*      logger;
 
 #define DEBUG
 
@@ -123,8 +122,10 @@ extern Logger*      logger;
 #ifndef JUMP
 #define JUMP                  0
 #endif
+#ifndef LOG_INTERVAL
+#define LOG_INTERVAL          0
+#endif
 
-#define PERIOD_TRACE_MSG     20 * 1000 /* Trace message in every 20 ms      */
 #define GS_TARGET            47  /* was 47 for 2020 program                 */
 #define GS_TARGET_SLOW       25
 #define SONAR_ALERT_DISTANCE 10  /* in centimeters                          */
