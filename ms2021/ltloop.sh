@@ -55,7 +55,7 @@ else
 fi
 
 # 最初に1回だけmake
-#make app=ms2021 sim 2>&1 | tee ${DSTDIR}/${MAKELOG}_${DT}.${LOGEXT}
+make app=ms2021 sim 2>&1 | tee ${DSTDIR}/${MAKELOG}_${DT}.${LOGEXT}
 
 # 処理ループ
 for ((ll = 0; ll <= 3; ll++)) {
