@@ -246,12 +246,28 @@ public:
     Status update() override {
         srlf_l->setRate(srewRate);
         srlf_r->setRate(srewRate);
-        leftMotor->setPWM(pwmL);
-        rightMotor->setPWM(pwmR);
+        
+        switch (_COURSE) {
+        case 1:
+            leftMotor->setPWM(pwmL);
+            rightMotor->setPWM(pwmR);
+            break;
+        case -1:
+            pwm = pwmL;
+            pwmL = pwmR;
+            pwmR = pwm;
+            leftMotor->setPWM(pwmL);
+            rightMotor->setPWM(pwmR);
+            break;
+        default:
+            leftMotor->setPWM(pwmL);
+            rightMotor->setPWM(pwmR);
+            break;
+        }
         return Status::Running;
     }
 protected:
-    int pwmL, pwmR;
+    int pwmL, pwmR,pwm;
     double srewRate;
 };
 
@@ -308,15 +324,15 @@ public:
         if (clockwise * deltaDegree < clockwise * deltaDegreeTarget) {
             srlf_l->setRate(srewRate);
             srlf_r->setRate(srewRate);
-            if(clockwise * speed <= leftMotor->getPWM() && clockwise * deltaDegree < floor(clockwise * deltaDegreeTarget * 0.5) && deltaDegreeTrpzMtrCtrl == 0){
+            if(clockwise * speed <= leftMotor->getPWM() * _COURSE && clockwise * deltaDegree < floor(clockwise * deltaDegreeTarget * 0.5) && deltaDegreeTrpzMtrCtrl == 0){
                 deltaDegreeTrpzMtrCtrl = deltaDegree; 
-            }else if(clockwise * speed > leftMotor->getPWM() && clockwise * deltaDegree >= floor(clockwise * deltaDegreeTarget * 0.5) && deltaDegreeTrpzMtrCtrl == 0){
+            }else if(clockwise * speed > leftMotor->getPWM() * _COURSE && clockwise * deltaDegree >= floor(clockwise * deltaDegreeTarget * 0.5) && deltaDegreeTrpzMtrCtrl == 0){
                 deltaDegreeTrpzMtrCtrl = deltaDegreeTarget;
             }
 
             if(clockwise * deltaDegree < clockwise * deltaDegreeTarget - deltaDegreeTrpzMtrCtrl ){
-                leftMotor->setPWM(clockwise * speed);
-                rightMotor->setPWM((-clockwise) * speed);
+                leftMotor->setPWM(clockwise * speed * _COURSE);
+                rightMotor->setPWM((-clockwise) * speed * _COURSE);
             }else{
                 leftMotor->setPWM(clockwise * 3);
                 rightMotor->setPWM((-clockwise) * 3);
@@ -532,38 +548,31 @@ void main_task(intptr_t unused) {
                 .leaf<RunAsInstructed>(8,10, 0.0)
             .end()
             .composite<BrainTree::ParallelSequence>(1,2)
-                .leaf<IsTimeEarned>(1150)
+                .leaf<IsTimeEarned>(1160)
                 .leaf<TraceLine>(SPEED_SLOW, GS_TARGET_SLOW, P_CONST_SLOW, I_CONST_SLOW, D_CONST_SLOW, 0.0)
             .end()
             .composite<BrainTree::ParallelSequence>(1,2)
-                .leaf<IsTimeEarned>(400)
-                .leaf<ShiftArmPosition>(10)
-                .leaf<RunAsInstructed>(10,5, 0.5)
-            .end()
-            .composite<BrainTree::ParallelSequence>(1,2)
-                .leaf<IsTimeEarned>(330)
-                .leaf<ShiftArmPosition>(10)
+                .leaf<IsTimeEarned>(800)
                 .leaf<RunAsInstructed>(10,4, 0.5)
             .end()
             .composite<BrainTree::ParallelSequence>(1,2)
-                .leaf<IsTimeEarned>(580)
+                .leaf<IsTimeEarned>(595)
                 .leaf<RunAsInstructed>(10,2, 0.5)
             .end()
             .composite<BrainTree::ParallelSequence>(1,2)
-                .leaf<IsTimeEarned>(250)
+                .leaf<IsTimeEarned>(285)
                 .leaf<RunAsInstructed>(10,3, 0.5)
             .end()
             .composite<BrainTree::ParallelSequence>(1,2)
-                .leaf<IsTimeEarned>(260)
+                .leaf<IsTimeEarned>(285)
                 .leaf<RunAsInstructed>(3,10, 0.5)
             .end()
             .composite<BrainTree::ParallelSequence>(1,2)
-                .leaf<IsTimeEarned>(250)
+                .leaf<IsTimeEarned>(305)
                 .leaf<RunAsInstructed>(2,10, 0.5)
             .end()
             .composite<BrainTree::ParallelSequence>(1,2)
-                .leaf<IsTimeEarned>(340)
-                .leaf<ShiftArmPosition>(-100)
+                .leaf<IsTimeEarned>(350)
                 .leaf<RunAsInstructed>(10,10, 0.5)
             .end()
             .composite<BrainTree::ParallelSequence>(1,2)
