@@ -242,28 +242,18 @@ protected:
 */
 class RunAsInstructed : public BrainTree::Node {
 public:
-    RunAsInstructed(int pwm_l, int pwm_r, double srew_rate) : pwmL(pwm_l),pwmR(pwm_r),srewRate(srew_rate) {}
+    RunAsInstructed(int pwm_l, int pwm_r, double srew_rate) : pwmL(pwm_l),pwmR(pwm_r),srewRate(srew_rate) {
+        if (_COURSE == -1){
+            pwm = pwmL;
+            pwmL = pwmR;
+            pwmR = pwm;            
+        }     
+    }
     Status update() override {
         srlf_l->setRate(srewRate);
         srlf_r->setRate(srewRate);
-        
-        switch (_COURSE) {
-        case 1:
-            leftMotor->setPWM(pwmL);
-            rightMotor->setPWM(pwmR);
-            break;
-        case -1:
-            pwm = pwmL;
-            pwmL = pwmR;
-            pwmR = pwm;
-            leftMotor->setPWM(pwmL);
-            rightMotor->setPWM(pwmR);
-            break;
-        default:
-            leftMotor->setPWM(pwmL);
-            rightMotor->setPWM(pwmR);
-            break;
-        }
+        leftMotor->setPWM(pwmL);
+        rightMotor->setPWM(pwmR);
         return Status::Running;
     }
 protected:
@@ -320,6 +310,7 @@ public:
         } else if (deltaDegree < -180) {
             deltaDegree += 360;
         }
+        deltaDegree = deltaDegree * _COURSE;
 
         if (clockwise * deltaDegree < clockwise * deltaDegreeTarget) {
             srlf_l->setRate(srewRate);
