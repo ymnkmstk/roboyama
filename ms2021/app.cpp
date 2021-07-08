@@ -368,42 +368,6 @@ protected:
 };
 
 
-// class ClimbBoard : public BrainTree::Node { 
-// public:
-//     ClimbBoard(int direction, int count) : dir(direction), cnt(count) {}
-//     Status update() override {
-//         curAngle = gyroSensor->getAngle();
-//             if(cnt >= 1){
-//                 leftMotor->setPWM(0);
-//                 rightMotor->setPWM(0);
-//                 armMotor->setPWM(-50);
-//                 cnt++;
-//                 if(cnt >= 150){
-//                     return Status::Success;
-//                 }
-//                 return Status::Running;
-//             }else{
-//                 armMotor->setPWM(80);
-//                 leftMotor->setPWM(23);
-//                 rightMotor->setPWM(23);
-                
-//                 if(curAngle < -9){
-//                     prevAngle = curAngle;
-//                 }
-//                 if (prevAngle < -9 && curAngle >= 0){
-//                     ++cnt;
-//                     _log("ON BOARD");
-//                 }
-//                 return Status::Running;
-//             }
-//     }
-// private:
-//     int8_t dir;
-//     int cnt;
-//     int32_t curAngle;
-//     int32_t prevAngle;
-// };
-
 /* a cyclic handler to activate a task */
 void task_activator(intptr_t tskid) {
     ER ercd = act_tsk(tskid);
@@ -558,7 +522,6 @@ void main_task(intptr_t unused) {
                 .leaf<IsDistanceEarned>(170)
                     .leaf<TraceLine>(SPEED_NORM, GS_TARGET, P_CONST, I_CONST, D_CONST, 0.0)
             .end()
-            //.leaf<ClimbBoard>(_COURSE, 0)
             .composite<BrainTree::ParallelSequence>(1,2)
                 .leaf<IsTargetAngleEarned>(-10,0)
                 .leaf<RunAsInstructed>(23,23, 0.0)
@@ -626,6 +589,10 @@ void main_task(intptr_t unused) {
             .composite<BrainTree::ParallelSequence>(1,2)
                 .leaf<IsTimeEarned>(50)
                 .leaf<ShiftArmPosition>(0)
+            .end()
+            .composite<BrainTree::ParallelSequence>(1,2)
+                .leaf<IsTimeEarned>(500)
+                .leaf<RunAsInstructed>(0,0, 0)
             .end()
         .end()
         .build();
@@ -745,16 +712,11 @@ tr_garage = (BrainTree::BehaviorTree*) BrainTree::Builder()
                 .leaf<IsTimeEarned>(150)
                 .leaf<RunAsInstructed>(30,30, 0.0)
             .end()
-            // //左にXX度回転 10の速さ　台形駆動無
-            // .leaf<RotateEV3>(-83,10,false)
-            // 左に曲がる
-            .composite<BrainTree::ParallelSequence>(1,2)
-                .leaf<IsTimeEarned>(90)
-                .leaf<RunAsInstructed>(-20,30, 0.0)
-            .end()
+            //左にXX度回転 10の速さ　台形駆動無
+            .leaf<RotateEV3>(-83,10,false)
              //指定距離走行
             .composite<BrainTree::ParallelSequence>(1,2)
-                .leaf<IsTimeEarned>(60)
+                .leaf<IsTimeEarned>(100)
                 .leaf<RunAsInstructed>(30,30, 0.0)
             .end()
             //黒色検知
@@ -767,11 +729,8 @@ tr_garage = (BrainTree::BehaviorTree*) BrainTree::Builder()
                 .leaf<IsTimeEarned>(10)
                 .leaf<RunAsInstructed>(30,30, 0.0)
             .end()
-            // 左に曲がる
-            .composite<BrainTree::ParallelSequence>(1,2)
-                .leaf<IsTimeEarned>(95)
-                .leaf<RunAsInstructed>(-20,30, 0.0)
-            .end()
+            //左にXX度回転 10の速さ　台形駆動無
+            .leaf<RotateEV3>(-80,10, 0.0)
             //指定時間走行
             .composite<BrainTree::ParallelSequence>(1,2)
                 .leaf<IsTimeEarned>(5)
@@ -779,7 +738,7 @@ tr_garage = (BrainTree::BehaviorTree*) BrainTree::Builder()
             .end()
             //ライントレース
             .composite<BrainTree::ParallelSequence>(1,2)
-                .leaf<IsTimeEarned>(50)
+                .leaf<IsTimeEarned>(30)
                 .leaf<TraceLine>(SPEED_SLOW, GS_TARGET_SLOW, P_CONST_SLOW, I_CONST_SLOW, D_CONST_SLOW, 0.0)
             .end()
             // //赤色検知
@@ -790,48 +749,46 @@ tr_garage = (BrainTree::BehaviorTree*) BrainTree::Builder()
             //指定時間走行
             .composite<BrainTree::ParallelSequence>(1,2)
                 .leaf<ShiftArmPosition>(-3)
-                .leaf<IsTimeEarned>(100)
+                .leaf<IsTimeEarned>(60)
                 .leaf<RunAsInstructed>(30,30, 0.0)
             .end()
             //やや左に指定時間走行
             .composite<BrainTree::ParallelSequence>(1,2)
-                .leaf<IsTimeEarned>(260)
-                .leaf<RunAsInstructed>(17.5,30, 0.0)
+                .leaf<IsTimeEarned>(135)
+                .leaf<RunAsInstructed>(28,50, 0.0)
             .end()
-            //やや右に指定時間走行
+            //やや左に指定時間走行
             .composite<BrainTree::ParallelSequence>(1,2)
-                .leaf<IsTimeEarned>(390)
-                .leaf<RunAsInstructed>(30,22.5, 0.0)
+                .leaf<IsTimeEarned>(300)
+                .leaf<RunAsInstructed>(50,39, 0.0)
             .end()
-            //青か黒色検知するまでやや右に低速走行
+            //青か黒色検知
             .composite<BrainTree::ParallelSequence>(1,2)
                 .leaf<IsTargetColorDetected>(Blue)
                 .leaf<IsTargetColorDetected>(Black)
-                .leaf<RunAsInstructed>(30,22.5, 0.0)
+                .leaf<RunAsInstructed>(20,15, 0.0)
             .end()
+            //右回転（Roteteだとブロックを落とすのでRunAs）
             .composite<BrainTree::ParallelSequence>(1,2)
-                .leaf<IsTimeEarned>(140)
-                .leaf<RunAsInstructed>(18,-11, 0.0)
+                .leaf<IsTimeEarned>(210)
+                .leaf<RunAsInstructed>(10,0, 0.0)
             .end()
             //ライントレース
             .composite<BrainTree::ParallelSequence>(1,2)
-                 .leaf<IsTimeEarned>(100)
-               .leaf<TraceLine>(8, GS_TARGET_SLOW, P_CONST_SLOW, I_CONST_SLOW, D_CONST_SLOW, 0.0)
-            .end() 
-            //ライントレース
-            // .composite<BrainTree::ParallelSequence>(1,2)
-            //      .leaf<IsTimeEarned>(100)
-            //    .leaf<TraceLine>(5, GS_TARGET_SLOW, P_CONST_SLOW, I_CONST_SLOW, D_CONST_SLOW, 0.0)
-            // .end() 
+                 .leaf<IsTimeEarned>(200)
+                //.leaf<IsTargetColorDetected>(Black)
+               .leaf<TraceLine>(SPEED_SLOW, GS_TARGET_SLOW, P_CONST_SLOW, I_CONST_SLOW, D_CONST_SLOW, 0.0)
+            .end()
             //まっすぐ距離調整用
             .composite<BrainTree::ParallelSequence>(1,2)
                 //.leaf<IsTimeEarned>(200)
-                .leaf<IsSonarOn>(4)
-                .leaf<RunAsInstructed>(20,20, 0.0)
+                .leaf<IsSonarOn>(10)
+                .leaf<RunAsInstructed>(25,25, 0.0)
             .end()
             .composite<BrainTree::ParallelSequence>(1,2)
-                .leaf<IsTimeEarned>(400)
-                .leaf<RunAsInstructed>(0,0, 0.0)
+                //.leaf<IsTimeEarned>(200)
+                .leaf<IsSonarOn>(3)
+                .leaf<RunAsInstructed>(10,10, 0.0)
             .end()
         .end()
         .build();
