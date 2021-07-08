@@ -342,17 +342,17 @@ private:
 
 class IsTargetAngleEarned : public BrainTree::Node {
 public:
-    IsTargetAngleEarned(int angle, int mode) : targetAngle(angle),calcMode(mode),prevAngle(0) {}
+    IsTargetAngleEarned(int angle, CalcMode mode) : targetAngle(angle),calcMode(mode),prevAngle(0) {}
     Status update() override {
         curAngle = gyroSensor->getAngle(); 
 
         switch (calcMode) {
-        case 0:
+        case Less:
             if(curAngle <= targetAngle){
                 return Status::Success;
             }
             break;    
-        case 1:
+        case More:
             if(curAngle >= targetAngle){
                 return Status::Success;
             }
@@ -363,8 +363,10 @@ public:
         return Status::Running;
     }
 protected:
-    int targetAngle, calcMode;
+    CalcMode calcMode;
+    int targetAngle;
     int32_t curAngle,prevAngle;
+    
 };
 
 
@@ -523,12 +525,12 @@ void main_task(intptr_t unused) {
                     .leaf<TraceLine>(SPEED_NORM, GS_TARGET, P_CONST, I_CONST, D_CONST, 0.0)
             .end()
             .composite<BrainTree::ParallelSequence>(1,2)
-                .leaf<IsTargetAngleEarned>(-10,0)
+                .leaf<IsTargetAngleEarned>(-10,Less)
                 .leaf<RunAsInstructed>(23,23, 0.0)
                 .leaf<ShiftArmPosition>(80)                
             .end()
             .composite<BrainTree::ParallelSequence>(1,2)
-                .leaf<IsTargetAngleEarned>(0,1)
+                .leaf<IsTargetAngleEarned>(0,More)
                 .leaf<RunAsInstructed>(23,23, 0.0)
                 .leaf<ShiftArmPosition>(80)                
             .end()
@@ -589,10 +591,6 @@ void main_task(intptr_t unused) {
             .composite<BrainTree::ParallelSequence>(1,2)
                 .leaf<IsTimeEarned>(50)
                 .leaf<ShiftArmPosition>(0)
-            .end()
-            .composite<BrainTree::ParallelSequence>(1,2)
-                .leaf<IsTimeEarned>(500)
-                .leaf<RunAsInstructed>(0,0, 0)
             .end()
         .end()
         .build();
@@ -789,6 +787,10 @@ tr_garage = (BrainTree::BehaviorTree*) BrainTree::Builder()
                 //.leaf<IsTimeEarned>(200)
                 .leaf<IsSonarOn>(3)
                 .leaf<RunAsInstructed>(10,10, 0.0)
+            .end()
+            .composite<BrainTree::ParallelSequence>(1,2)
+                .leaf<IsTimeEarned>(500)
+                .leaf<RunAsInstructed>(0,0, 0)
             .end()
         .end()
         .build();

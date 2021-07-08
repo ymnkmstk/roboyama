@@ -141,6 +141,12 @@ enum Color {
     White,
 };
 
+enum CalcMode {
+    More,
+    Less
+};
+
+
 #define ARM_INITIAL_ANGLE     -58
 
 enum BoardItem {
