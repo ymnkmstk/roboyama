@@ -242,7 +242,13 @@ protected:
 */
 class RunAsInstructed : public BrainTree::Node {
 public:
-    RunAsInstructed(int pwm_l, int pwm_r, double srew_rate) : pwmL(pwm_l),pwmR(pwm_r),srewRate(srew_rate) {}
+    RunAsInstructed(int pwm_l, int pwm_r, double srew_rate) : pwmL(pwm_l),pwmR(pwm_r),srewRate(srew_rate) {
+        if (_COURSE == -1){
+            pwm = pwmL;
+            pwmL = pwmR;
+            pwmR = pwm;            
+        }     
+    }
     Status update() override {
         srlf_l->setRate(srewRate);
         srlf_r->setRate(srewRate);
@@ -251,7 +257,7 @@ public:
         return Status::Running;
     }
 protected:
-    int pwmL, pwmR;
+    int pwmL, pwmR,pwm;
     double srewRate;
 };
 
@@ -304,19 +310,20 @@ public:
         } else if (deltaDegree < -180) {
             deltaDegree += 360;
         }
+        deltaDegree = deltaDegree * _COURSE;
 
         if (clockwise * deltaDegree < clockwise * deltaDegreeTarget) {
             srlf_l->setRate(srewRate);
             srlf_r->setRate(srewRate);
-            if(clockwise * speed <= leftMotor->getPWM() && clockwise * deltaDegree < floor(clockwise * deltaDegreeTarget * 0.5) && deltaDegreeTrpzMtrCtrl == 0){
+            if(clockwise * speed <= leftMotor->getPWM() * _COURSE && clockwise * deltaDegree < floor(clockwise * deltaDegreeTarget * 0.5) && deltaDegreeTrpzMtrCtrl == 0){
                 deltaDegreeTrpzMtrCtrl = deltaDegree; 
-            }else if(clockwise * speed > leftMotor->getPWM() && clockwise * deltaDegree >= floor(clockwise * deltaDegreeTarget * 0.5) && deltaDegreeTrpzMtrCtrl == 0){
+            }else if(clockwise * speed > leftMotor->getPWM() * _COURSE && clockwise * deltaDegree >= floor(clockwise * deltaDegreeTarget * 0.5) && deltaDegreeTrpzMtrCtrl == 0){
                 deltaDegreeTrpzMtrCtrl = deltaDegreeTarget;
             }
 
             if(clockwise * deltaDegree < clockwise * deltaDegreeTarget - deltaDegreeTrpzMtrCtrl ){
-                leftMotor->setPWM(clockwise * speed);
-                rightMotor->setPWM((-clockwise) * speed);
+                leftMotor->setPWM(clockwise * speed * _COURSE);
+                rightMotor->setPWM((-clockwise) * speed * _COURSE);
             }else{
                 leftMotor->setPWM(clockwise * 3);
                 rightMotor->setPWM((-clockwise) * 3);
@@ -333,41 +340,35 @@ private:
     double srewRate;
 };
 
-class ClimbBoard : public BrainTree::Node { 
+class IsTargetAngleEarned : public BrainTree::Node {
 public:
-    ClimbBoard(int direction, int count) : dir(direction), cnt(count) {}
+    IsTargetAngleEarned(int angle, CalcMode mode) : targetAngle(angle),calcMode(mode),prevAngle(0) {}
     Status update() override {
-        curAngle = gyroSensor->getAngle();
-            if(cnt >= 1){
-                leftMotor->setPWM(0);
-                rightMotor->setPWM(0);
-                armMotor->setPWM(-50);
-                cnt++;
-                if(cnt >= 150){
-                    return Status::Success;
-                }
-                return Status::Running;
-            }else{
-                armMotor->setPWM(80);
-                leftMotor->setPWM(23);
-                rightMotor->setPWM(23);
-                
-                if(curAngle < -9){
-                    prevAngle = curAngle;
-                }
-                if (prevAngle < -9 && curAngle >= 0){
-                    ++cnt;
-                    _log("ON BOARD");
-                }
-                return Status::Running;
+        curAngle = gyroSensor->getAngle(); 
+
+        switch (calcMode) {
+        case Less:
+            if(curAngle <= targetAngle){
+                return Status::Success;
             }
+            break;    
+        case More:
+            if(curAngle >= targetAngle){
+                return Status::Success;
+            }
+            break;    
+        default:
+            break;
+        }
+        return Status::Running;
     }
-private:
-    int8_t dir;
-    int cnt;
-    int32_t curAngle;
-    int32_t prevAngle;
+protected:
+    CalcMode calcMode;
+    int targetAngle;
+    int32_t curAngle,prevAngle;
+    
 };
+
 
 /* a cyclic handler to activate a task */
 void task_activator(intptr_t tskid) {
@@ -457,7 +458,7 @@ void main_task(intptr_t unused) {
                     .leaf<RunAsInstructed>(35,85, 0.5)
                 .end()
                 .composite<BrainTree::ParallelSequence>(1,2)
-                    .leaf<IsTimeEarned>(129)
+                    .leaf<IsTimeEarned>(133)
                     .leaf<RunAsInstructed>(85,85, 0.5)
                 .end()
                 .composite<BrainTree::ParallelSequence>(1,2)
@@ -516,13 +517,28 @@ void main_task(intptr_t unused) {
         .end()
         .build();
 
+//本番用
     tr_slalom = (BrainTree::BehaviorTree*) BrainTree::Builder()
         .composite<BrainTree::MemSequence>()
             .composite<BrainTree::ParallelSequence>(1,2)
-                .leaf<IsDistanceEarned>(150)
-                .leaf<RunAsInstructed>(35,35, 2.0)
+                .leaf<IsDistanceEarned>(170)
+                    .leaf<TraceLine>(SPEED_NORM, GS_TARGET, P_CONST, I_CONST, D_CONST, 0.0)
             .end()
-            .leaf<ClimbBoard>(_COURSE, 0)
+            .composite<BrainTree::ParallelSequence>(1,2)
+                .leaf<IsTargetAngleEarned>(-10,Less)
+                .leaf<RunAsInstructed>(23,23, 0.0)
+                .leaf<ShiftArmPosition>(80)                
+            .end()
+            .composite<BrainTree::ParallelSequence>(1,2)
+                .leaf<IsTargetAngleEarned>(0,More)
+                .leaf<RunAsInstructed>(23,23, 0.0)
+                .leaf<ShiftArmPosition>(80)                
+            .end()
+            .composite<BrainTree::ParallelSequence>(1,2)
+                .leaf<IsTimeEarned>(150)
+                .leaf<RunAsInstructed>(0,0, 0.0)
+                .leaf<ShiftArmPosition>(-50)                
+            .end()
             .composite<BrainTree::ParallelSequence>(1,2)
                 .leaf<IsTimeEarned>(500)
                 .leaf<TraceLine>(SPEED_SLOW, GS_TARGET_SLOW, P_CONST_SLOW, I_CONST_SLOW, D_CONST_SLOW, 0.0)
@@ -578,6 +594,85 @@ void main_task(intptr_t unused) {
             .end()
         .end()
         .build();
+
+//試走会用
+    // tr_slalom = (BrainTree::BehaviorTree*) BrainTree::Builder()
+    //     .composite<BrainTree::MemSequence>()
+    //         .composite<BrainTree::ParallelSequence>(1,2)
+    //             .leaf<IsDistanceEarned>(170)
+    //                 .leaf<TraceLine>(SPEED_NORM, GS_TARGET, P_CONST, I_CONST, D_CONST, 0.0)
+    //         .end()
+    //         //.leaf<ClimbBoard>(_COURSE, 0)
+    //         .composite<BrainTree::ParallelSequence>(1,2)
+    //             .leaf<IsTargetAngleEarned>(-10,0)
+    //             .leaf<RunAsInstructed>(23,23, 0.0)
+    //             .leaf<ShiftArmPosition>(80)                
+    //         .end()
+    //         .composite<BrainTree::ParallelSequence>(1,2)
+    //             .leaf<IsTargetAngleEarned>(0,1)
+    //             .leaf<RunAsInstructed>(23,23, 0.0)
+    //             .leaf<ShiftArmPosition>(80)                
+    //         .end()
+    //         .composite<BrainTree::ParallelSequence>(1,2)
+    //             .leaf<IsTimeEarned>(150)
+    //             .leaf<RunAsInstructed>(0,0, 0.0)
+    //             .leaf<ShiftArmPosition>(-50)                
+    //         .end()
+    //         .composite<BrainTree::ParallelSequence>(1,2)
+    //             .leaf<IsTimeEarned>(250)
+    //             .leaf<TraceLine>(20, GS_TARGET_SLOW, P_CONST_SLOW, I_CONST_SLOW, D_CONST_SLOW, 0.0)
+    //         .end()
+    //         .composite<BrainTree::ParallelSequence>(1,2)
+    //             .leaf<IsTimeEarned>(300)
+    //             .leaf<RunAsInstructed>(8,10, 0.0)
+    //         .end()
+    //         .composite<BrainTree::ParallelSequence>(1,2)
+    //             .leaf<IsTimeEarned>(580)
+    //             .leaf<TraceLine>(20, GS_TARGET_SLOW, P_CONST_SLOW, I_CONST_SLOW, D_CONST_SLOW, 0.0)
+    //         .end()
+    //         .composite<BrainTree::ParallelSequence>(1,2)
+    //             .leaf<IsTimeEarned>(400)
+    //             .leaf<RunAsInstructed>(20,8, 1)
+    //         .end()
+    //         .composite<BrainTree::ParallelSequence>(1,2)
+    //             .leaf<IsTimeEarned>(298)
+    //             .leaf<RunAsInstructed>(20,4, 1)
+    //         .end()
+    //         .composite<BrainTree::ParallelSequence>(1,2)
+    //             .leaf<IsTimeEarned>(142)
+    //             .leaf<RunAsInstructed>(20,6, 1)
+    //         .end()
+    //         .composite<BrainTree::ParallelSequence>(1,2)
+    //             .leaf<IsTimeEarned>(143)
+    //             .leaf<RunAsInstructed>(6,20, 1)
+    //         .end()
+    //         .composite<BrainTree::ParallelSequence>(1,2)
+    //             .leaf<IsTimeEarned>(152)
+    //             .leaf<RunAsInstructed>(4,20, 1)
+    //         .end()
+    //         .composite<BrainTree::ParallelSequence>(1,2)
+    //             .leaf<IsTimeEarned>(350)
+    //             .leaf<RunAsInstructed>(10,10, 1)
+    //         .end()
+    //         .composite<BrainTree::ParallelSequence>(1,2)
+    //             .leaf<IsTimeEarned>(400)
+    //             .leaf<ShiftArmPosition>(30)
+    //         .end()
+    //         .composite<BrainTree::ParallelSequence>(1,2)
+    //             .leaf<IsTimeEarned>(100)
+    //             .leaf<ShiftArmPosition>(-100)
+    //             .leaf<RunAsInstructed>(0, 0, 0.0)
+    //         .end()
+    //         .composite<BrainTree::ParallelSequence>(1,2)
+    //             .leaf<IsArmRepositioned>()
+    //             .leaf<ShiftArmPosition>(10)
+    //         .end()
+    //         .composite<BrainTree::ParallelSequence>(1,2)
+    //             .leaf<IsTimeEarned>(50)
+    //             .leaf<ShiftArmPosition>(0)
+    //         .end()
+    //     .end()
+    //     .build();
 
 tr_garage = (BrainTree::BehaviorTree*) BrainTree::Builder()
         .composite<BrainTree::MemSequence>()
@@ -681,12 +776,21 @@ tr_garage = (BrainTree::BehaviorTree*) BrainTree::Builder()
                  .leaf<IsTimeEarned>(200)
                 //.leaf<IsTargetColorDetected>(Black)
                .leaf<TraceLine>(SPEED_SLOW, GS_TARGET_SLOW, P_CONST_SLOW, I_CONST_SLOW, D_CONST_SLOW, 0.0)
-            .end() 
+            .end()
             //まっすぐ距離調整用
             .composite<BrainTree::ParallelSequence>(1,2)
                 //.leaf<IsTimeEarned>(200)
-                .leaf<IsSonarOn>(7)
-                .leaf<RunAsInstructed>(30,30, 0.0)
+                .leaf<IsSonarOn>(10)
+                .leaf<RunAsInstructed>(25,25, 0.0)
+            .end()
+            .composite<BrainTree::ParallelSequence>(1,2)
+                //.leaf<IsTimeEarned>(200)
+                .leaf<IsSonarOn>(3)
+                .leaf<RunAsInstructed>(10,10, 0.0)
+            .end()
+            .composite<BrainTree::ParallelSequence>(1,2)
+                .leaf<IsTimeEarned>(500)
+                .leaf<RunAsInstructed>(0,0, 0)
             .end()
         .end()
         .build();
