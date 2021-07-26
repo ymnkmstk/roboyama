@@ -28,9 +28,9 @@ while ls $DSTDIR | grep -w $BASE >/dev/null; do
   CONDFILE=${DSTDIR}/${COND}_${SEQ}.${EXT}
   DATAFILE=${DSTDIR}/${DATA}_${SEQ}.${EXT}
   gcc ${SRC} -o ${OBJ} -lfftw3
-  # Use data for ten seconds as if it were for one second - do NOT forget to divide output frequency by ten!!! 
-  cat $LOGFILE | grep "TraceLine::update()" | awk '{print $7}' | head -n 1000 | sed s:,::g | ${OBJ} > $DATAFILE
-  gcc ${SRC} -o ${OBJ} -lfftw3
+  # Use data for ten seconds as if it were for one second - do NOT forget to divide output frequency by ten!!!
+  # $6:pwdL $45:deltaAngDiff
+  cat $LOGFILE | grep "Logger::outputLog" | grep -v "^000000" | awk '{print $6}' | head -n 1000 | sed s:\;::g | ${OBJ} > $DATAFILE
   for TYPE in fourier; do
     PNGFILE=${DSTDIR}/${GRAPH}_${SEQ}_${TYPE}.png
     CMDFILE=${DSTDIR}/${CMD}_${SEQ}_${TYPE}.gp
