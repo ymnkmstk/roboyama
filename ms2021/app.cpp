@@ -428,7 +428,7 @@ void main_task(intptr_t unused) {
 
         //Left Course
         tr_run = (BrainTree::BehaviorTree*) BrainTree::Builder()
-            .composite<BrainTree::ParallelSequence>(1,4)
+            .composite<BrainTree::ParallelSequence>(1,2)
                 //.leaf<IsSonarOn>(SONAR_ALERT_DISTANCE)
                 .leaf<IsBackOn>()
                 .composite<BrainTree::ParallelSequence>(2,2)
@@ -497,7 +497,10 @@ void main_task(intptr_t unused) {
                         .leaf<IsTimeEarned>(138)
                         .leaf<RunAsInstructed>(85,24, 0.5)
                     .end()
-                    .composite<BrainTree::ParallelSequence>(1,2)
+                    .composite<BrainTree::ParallelSequence>(2,1)
+                        .decorator<BrainTree::Inverter>()
+                            .leaf<IsTimeEarned>(500)
+                        .end()                       
                         .leaf<IsTargetColorDetected>(Black)
                         .leaf<RunAsInstructed>(83,85, 1.0)
                     .end()
