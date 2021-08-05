@@ -34,6 +34,16 @@ LOGEXT="txt"
 CSVEXT="csv"
 DT=`date "+%y%m%d%H%M%S"`
 
+
+# default values for arguments able to set by command line
+LR=""
+SPEED=55
+P=0.75
+I=0.39
+D=0.08
+JUMP=0
+FOURIER=""
+
 #実行ディレクトリはETROBOのroot
 cd $ETROBO_ROOT
 
@@ -48,22 +58,24 @@ fi
 make app=ms2021 sim 2>&1 | tee ${DSTDIR}/${MAKELOG}_${DT}.${LOGEXT}
 
 # 処理ループ
-for ((ll = 0; ll <= 3; ll++)) {
-    for ((rot = 0; rot <= 3; rot++)) {
-        for ((lsp = 0; lsp <= 3; lsp++)) {
+for ((i = 1; i <=15 ; i++)) {
+    echo $i
+    for ((ll = 0; ll <= 3; ll++)) {
+        for ((rot = 0; rot <= 3; rot++)) {
+            for ((lsp = 0; lsp <= 3; lsp++)) {
 # シミュレータ起動と初期位置設定
             sim ctl pos 3 0 -16.35 90
-            sleep 5
+            sleep 2
 # 光源値設定
             curl -X POST -H "Content-Type: application/json" -d "{\"EnvLightIntensityLevel\":$ll,\"EnvLightRotation\":$rot,\"LSpotLight\":$lsp,\"RSpotLight\":"0"}" http://localhost:54000
 #            curl -X POST -H "Content-Type: application/json" -d "{\"EnvLightIntensityLevel\":"0",\"EnvLightRotation\":"0",\"LSpotLight\":"0",\"RSpotLight\":"0"}" http://localhost:54000
-            sleep 3
+            sleep 2
 # アプリを実行しプロセスIDを記録
             asp ms2021 &
             PID=`asp check l`
 # シミュレータ PREPAREモード
             sim ctl prepare
-            sleep 3
+            sleep 2
 # シミュレータ GOモード
             sim ctl go &
 # 処理打ち切り時間を越えたらアプリプロセスの動作確認、プロセスが居たら殺す
@@ -76,9 +88,10 @@ for ((ll = 0; ll <= 3; ll++)) {
             wait $PID
 # 終了処理
             echo "stop"
-            sleep 2
-            sim ctl end 2>&1 | tee ${DSTDIR}/lp_${ll}${rot}${lsp}0.${CSVEXT}
+            sleep 1
+            sim ctl end 2>&1 | tee ${DSTDIR}/lp_$i-${ll}${rot}${lsp}0.${CSVEXT}
             asp stop
-         }
-     }
+            }
+        }
+    }
 }
