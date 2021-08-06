@@ -27,14 +27,14 @@ BEGIN {
         printf "%s","0,"
     }
     else {
-        printf "%s%c%s%c",substr(Set["MEASUREMENT_TIME"],1,2),".",substr(Set["MEASUREMENT_TIME"],3,3),","
+         printf "%s%c%s%c",substr(Set["MEASUREMENT_TIME"],1,2),".",substr(Set["MEASUREMENT_TIME"],3,3),","
     }
 ##走行値
     if (Set["RUN_TIME"] == 0) {
         printf "%s","0,"
     }
     else {
-        printf "%s%c%s%c",substr(Set["RUN_TIME"],1,2),".",substr(Set["RUN_TIME"],3,3),","
+         printf "%s%c%s%c",substr(Set["RUN_TIME"],1,2),".",substr(Set["RUN_TIME"],3,3),","
     }
 ##ゲート1通過
     printf "%s%c",Set["GATE1"],","
