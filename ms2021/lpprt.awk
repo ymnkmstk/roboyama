@@ -2,6 +2,7 @@ BEGIN {
     FS = ","
 }
 {
+#左コース用
 #ファイル名から光源設定値を抽出
     FNAME = substr(FILENAME,index(FILENAME,".csv")-4,4)
     printf "%s%c",FNAME,","
