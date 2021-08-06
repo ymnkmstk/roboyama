@@ -2,6 +2,7 @@ BEGIN {
     FS = ","
 }
 {
+#左コース用
 #ファイル名から光源設定値を抽出
     FNAME = substr(FILENAME,index(FILENAME,".csv")-4,4)
     printf "%s%c",FNAME,","
@@ -26,14 +27,14 @@ BEGIN {
         printf "%s","0,"
     }
     else {
-        printf "%s%c%s%c",substr(Set["MEASUREMENT_TIME"],1,2),".",substr(Set["MEASUREMENT_TIME"],3,3),","
+         printf "%s%c%s%c",substr(Set["MEASUREMENT_TIME"],1,2),".",substr(Set["MEASUREMENT_TIME"],3,3),","
     }
 ##走行値
     if (Set["RUN_TIME"] == 0) {
         printf "%s","0,"
     }
     else {
-        printf "%s%c%s%c",substr(Set["RUN_TIME"],1,2),".",substr(Set["RUN_TIME"],3,3),","
+         printf "%s%c%s%c",substr(Set["RUN_TIME"],1,2),".",substr(Set["RUN_TIME"],3,3),","
     }
 ##ゲート1通過
     printf "%s%c",Set["GATE1"],","
@@ -52,7 +53,7 @@ BEGIN {
         printf "%s","0,"
     }
     else {
-        printf "%s%c%s%c",substr(Set["GARAGE_TIME"],1,2),".",substr(Set["GARAGE_TIME"],3,3),","
+        printf "%s%c%s%c",substr(Set["GARAGE_TIME"],1,1),".",substr(Set["GARAGE_TIME"],2,3),","
     } 
 ##ブロック搬入 
     print Set["BLOCK_IN_GARAGE"] 
