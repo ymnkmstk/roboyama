@@ -34,16 +34,6 @@ LOGEXT="txt"
 CSVEXT="csv"
 DT=`date "+%y%m%d%H%M%S"`
 
-
-# default values for arguments able to set by command line
-LR=""
-SPEED=55
-P=0.75
-I=0.39
-D=0.08
-JUMP=0
-FOURIER=""
-
 #実行ディレクトリはETROBOのroot
 cd $ETROBO_ROOT
 
@@ -58,7 +48,8 @@ fi
 make app=ms2021 sim 2>&1 | tee ${DSTDIR}/${MAKELOG}_${DT}.${LOGEXT}
 
 # 処理ループ
-for ((i = 1; i <=15 ; i++)) {
+# テストの際は以下の"i <=10 "の数値を変更してください
+for ((i = 1; i <=10 ; i++)) {
     echo $i
     for ((ll = 0; ll <= 3; ll++)) {
         for ((rot = 0; rot <= 3; rot++)) {

@@ -26,7 +26,7 @@ BEGIN {
         printf "%s","0,"
     }
     else {
-        printf "%s%c%s%c",substr(Set["MEASUREMENT_TIME"],1,1),".",substr(Set["MEASUREMENT_TIME"],2,3),","
+        printf "%s%c%s%c",substr(Set["MEASUREMENT_TIME"],1,2),".",substr(Set["MEASUREMENT_TIME"],3,3),","
     }
 ##走行値
     if (Set["RUN_TIME"] == 0) {
