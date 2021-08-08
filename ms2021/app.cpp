@@ -813,6 +813,7 @@ void main_task(intptr_t unused) {
             .build();
     }else{
     //Right Course
+   /Right Course
         tr_run = (BrainTree::BehaviorTree*) BrainTree::Builder()
             .composite<BrainTree::ParallelSequence>(1,4)
                 //.leaf<IsSonarOn>(SONAR_ALERT_DISTANCE)
@@ -845,43 +846,43 @@ void main_task(intptr_t unused) {
                     .end()
                     .composite<BrainTree::ParallelSequence>(1,2)
                         .leaf<IsTimeEarned>(135)
-                        .leaf<RunAsInstructed>(35,85, 0.5)
+                        .leaf<RunAsInstructed>(35,85, 0.5) 
                     .end()
                     .composite<BrainTree::ParallelSequence>(1,2)
-                        .leaf<IsTimeEarned>(133)
+                        .leaf<IsTimeEarned>(160) //133
                         .leaf<RunAsInstructed>(85,85, 0.5)
                     .end()
                     .composite<BrainTree::ParallelSequence>(1,2)
                         .leaf<IsTimeEarned>(88)
-                        .leaf<RunAsInstructed>(85,42, 1.0)
+                        .leaf<RunAsInstructed>(85,42, 1.0) 
                     .end()
                     .composite<BrainTree::ParallelSequence>(1,2)
-                        .leaf<IsTimeEarned>(50)
+                        .leaf<IsTimeEarned>(50) 
                         .leaf<RunAsInstructed>(85,85, 1.0)
                     .end()
                     .composite<BrainTree::ParallelSequence>(1,2)
                         .leaf<IsTimeEarned>(100)
-                        .leaf<RunAsInstructed>(85,58, 1.0)
+                        .leaf<RunAsInstructed>(85,55, 1.0) //85,58
                     .end()
                     .composite<BrainTree::ParallelSequence>(1,2)
-                        .leaf<IsTimeEarned>(70)
+                        .leaf<IsTimeEarned>(71) //70
                         .leaf<RunAsInstructed>(85,85, 1.0)
                     .end()
                     .composite<BrainTree::ParallelSequence>(1,2)
-                        .leaf<IsTimeEarned>(70)
-                        .leaf<RunAsInstructed>(68,85, 1.0)
+                        .leaf<IsTimeEarned>(70)//70
+                        .leaf<RunAsInstructed>(69,85, 1.0)//68,85
                     .end()
                     .composite<BrainTree::ParallelSequence>(1,2)
-                        .leaf<IsTimeEarned>(95)
-                        .leaf<RunAsInstructed>(40,85, 1.0)
+                        .leaf<IsTimeEarned>(96) //95
+                        .leaf<RunAsInstructed>(37,85, 1.0) //40,85
                     .end()
                     .composite<BrainTree::ParallelSequence>(1,2)
-                        .leaf<IsTimeEarned>(60)
+                        .leaf<IsTimeEarned>(66) //60
                         .leaf<RunAsInstructed>(85,83, 1.0)
                     .end()
                     .composite<BrainTree::ParallelSequence>(1,2)
                         .leaf<IsTimeEarned>(138)
-                        .leaf<RunAsInstructed>(85,24, 0.5)
+                        .leaf<RunAsInstructed>(85,25, 0.5) //85,24
                     .end()
                     .composite<BrainTree::ParallelSequence>(1,2)
                         .leaf<IsTargetColorDetected>(Black)
