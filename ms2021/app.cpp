@@ -174,7 +174,6 @@ public:
         if (deltaTime >= deltaTimeTarget ) {
             if (!earned) {
                  _log("Delta %d getnow= %d", deltaTime,clock->now());
- //                printf("Delta %d getnow= %d\n", deltaTime,clock->now());
                 earned = true;
             }
             return Status::Success;
@@ -869,7 +868,6 @@ tr_garage = (BrainTree::BehaviorTree*) BrainTree::Builder()
         .end()
         .build();
     }else{
-    //Right Course
     //Right Course
         tr_run = (BrainTree::BehaviorTree*) BrainTree::Builder()
             .composite<BrainTree::ParallelSequence>(1,4)
