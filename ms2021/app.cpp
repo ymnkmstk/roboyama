@@ -231,6 +231,39 @@ protected:
     double srewRate;
 };
 
+class TraceLineOpposite : public BrainTree::Node {
+public:
+    TraceLineOpposite(int s, int t, double p, double i, double d, double srew_rate) : speed(s),target(t),srewRate(srew_rate) {
+        ltPid = new PIDcalculator(p, i, d, PERIOD_UPD_TSK, -speed, speed);
+    }
+    ~TraceLineOpposite() {
+        delete ltPid;
+    }
+    Status update() override {
+        int16_t sensor;
+        int8_t forward, turn, pwm_L, pwm_R;
+        rgb_raw_t cur_rgb;
+
+        colorSensor->getRawColor(cur_rgb);
+        sensor = cur_rgb.r;
+        /* compute necessary amount of steering by PID control */
+        turn = _COURSE * ltPid->compute(sensor, (int16_t)target);
+        forward = speed;
+        /* steer EV3 by setting different speed to the motors */
+        pwm_L = forward - turn;
+        pwm_R = forward + turn;
+        srlf_l->setRate(srewRate);
+        leftMotor->setPWM(pwm_L);
+        srlf_r->setRate(srewRate);
+        rightMotor->setPWM(pwm_R);
+        return Status::Running;
+    }
+protected:
+    int speed, target;
+    PIDcalculator* ltPid;
+    double srewRate;
+};
+
 
 /*
     usage:
