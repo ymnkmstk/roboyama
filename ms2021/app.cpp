@@ -1239,7 +1239,7 @@ tr_garage = (BrainTree::BehaviorTree*) BrainTree::Builder()
         //     .build();
 
     //Right Course
-    // Right 20210801
+    // Right 20210829
 tr_garage = (BrainTree::BehaviorTree*) BrainTree::Builder()
         .composite<BrainTree::MemSequence>()
 // // 単体テストでのアーム位置調整ここから
@@ -1263,13 +1263,14 @@ tr_garage = (BrainTree::BehaviorTree*) BrainTree::Builder()
 // // 単体テストでのアーム位置調整ここまで
              //ブロック方面に曲がりながら指定距離走行
             .composite<BrainTree::ParallelSequence>(1,2)
-                .leaf<IsTimeEarned>(155)
-                .leaf<RunAsInstructed>(30,5, 0.0)
+                .leaf<IsTimeEarned>(65)
+                .leaf<RunAsInstructed>(30,10, 0.0)
             .end()
+
              //ブロック方面に曲がりながら指定距離走行
             .composite<BrainTree::ParallelSequence>(1,2)
-                .leaf<IsTimeEarned>(55)
-                .leaf<RunAsInstructed>(30,10, 0.0)
+                .leaf<IsTimeEarned>(145)
+                .leaf<RunAsInstructed>(30,6, 0.0)
             .end()
              //指定距離走行
             .composite<BrainTree::ParallelSequence>(1,2)
@@ -1279,7 +1280,7 @@ tr_garage = (BrainTree::BehaviorTree*) BrainTree::Builder()
             //黒色検知
             .composite<BrainTree::ParallelSequence>(1,2)
                 .leaf<IsTargetColorDetected>(Black)
-                .leaf<RunAsInstructed>(50,50, 1.0)
+                .leaf<RunAsInstructed>(60,60, 1.0)
             .end()
              //指定距離走行
             .composite<BrainTree::ParallelSequence>(1,2)
@@ -1374,8 +1375,6 @@ tr_garage = (BrainTree::BehaviorTree*) BrainTree::Builder()
                 .leaf<RunAsInstructed>(30,22, 0.0)
             .end()
 
-
-
             // 回転
             .composite<BrainTree::ParallelSequence>(1,2)
                 .leaf<IsTimeEarned>(89)
@@ -1395,7 +1394,7 @@ tr_garage = (BrainTree::BehaviorTree*) BrainTree::Builder()
             //ライントレース＆ソナー
             .composite<BrainTree::ParallelSequence>(1,2)
                 .leaf<IsSonarOn>(29)
-                .leaf<TraceLine>(15, GS_TARGET_SLOW, P_CONST_SLOW, I_CONST_SLOW, D_CONST_SLOW, 0.0)
+                .leaf<TraceLine>(19, GS_TARGET_SLOW, P_CONST_SLOW, I_CONST_SLOW, D_CONST_SLOW, 0.0)
             .end()
 
 
