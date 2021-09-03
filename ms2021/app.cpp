@@ -662,14 +662,15 @@ void main_task(intptr_t unused) {
                         .leaf<RunAsInstructed>(10,10, 0.5)
                     .end()
                     .composite<BrainTree::ParallelSequence>(1,2)
-                        .leaf<IsTimeEarned>(350)
+                        .leaf<IsTimeEarned>(180)
                         .leaf<ShiftArmPosition>(30)
                     .end()
                     .composite<BrainTree::ParallelSequence>(1,2)
-                        .leaf<IsTimeEarned>(100)
+                        .leaf<IsTimeEarned>(65)
                         .leaf<ShiftArmPosition>(-100)
                         .leaf<RunAsInstructed>(0, 0, 0.0)
                     .end()
+
                     .composite<BrainTree::ParallelSequence>(1,2)
                         .leaf<IsArmRepositioned>()
                         .leaf<ShiftArmPosition>(10)
@@ -681,47 +682,52 @@ void main_task(intptr_t unused) {
                 .end()
                 .build();
 
-    // 20210727
-tr_garage = (BrainTree::BehaviorTree*) BrainTree::Builder()
+        //Left Course
+        // 20210830
+        tr_garage = (BrainTree::BehaviorTree*) BrainTree::Builder()
         .composite<BrainTree::MemSequence>()
-// // 単体テストでのアーム位置調整ここから
-//             .composite<BrainTree::ParallelSequence>(1,2)
-//                 .leaf<IsTimeEarned>(400)
-//                 .leaf<ShiftArmPosition>(30)
-//             .end()
-//             .composite<BrainTree::ParallelSequence>(1,2)
-//                 .leaf<IsTimeEarned>(100)
-//                 .leaf<ShiftArmPosition>(-100)
-//                 .leaf<RunAsInstructed>(0, 0, 0.0)
-//             .end()
-//             .composite<BrainTree::ParallelSequence>(1,2)
-//                 .leaf<IsArmRepositioned>()
-//                 .leaf<ShiftArmPosition>(10)
-//             .end()
-//             .composite<BrainTree::ParallelSequence>(1,2)
-//                 .leaf<IsTimeEarned>(50)
-//                 .leaf<ShiftArmPosition>(0)
-//             .end()
-// // 単体テストでのアーム位置調整ここまで
+// // // 単体テストでのアーム位置調整ここから
+//                     .composite<BrainTree::ParallelSequence>(1,2)
+//                         .leaf<IsTimeEarned>(180)
+//                         .leaf<ShiftArmPosition>(30)
+//                     .end()
+//                     .composite<BrainTree::ParallelSequence>(1,2)
+//                         .leaf<IsTimeEarned>(65)
+//                         .leaf<ShiftArmPosition>(-100)
+//                         .leaf<RunAsInstructed>(0, 0, 0.0)
+//                     .end()
+//                     .composite<BrainTree::ParallelSequence>(1,2)
+//                         .leaf<IsArmRepositioned>()
+//                         .leaf<ShiftArmPosition>(10)
+//                     .end()
+//                     .composite<BrainTree::ParallelSequence>(1,2)
+//                         .leaf<IsTimeEarned>(20)
+//                         .leaf<ShiftArmPosition>(0)
+//                     .end()
+// // // 単体テストでのアーム位置調整ここまで
+
              //ブロック方面に曲がりながら指定距離走行
             .composite<BrainTree::ParallelSequence>(1,2)
-                .leaf<IsTimeEarned>(155)
-                .leaf<RunAsInstructed>(30,5, 0.0)
-            .end()
-             //ブロック方面に曲がりながら指定距離走行
-            .composite<BrainTree::ParallelSequence>(1,2)
-                .leaf<IsTimeEarned>(55)
+                .leaf<IsTimeEarned>(65)
                 .leaf<RunAsInstructed>(30,10, 0.0)
             .end()
+
+             //ブロック方面に曲がりながら指定距離走行
+            .composite<BrainTree::ParallelSequence>(1,2)
+                .leaf<IsTimeEarned>(145)
+                .leaf<RunAsInstructed>(30,6, 0.0)
+            .end()
+
              //指定距離走行
             .composite<BrainTree::ParallelSequence>(1,2)
-                .leaf<IsTimeEarned>(80)
+                .leaf<IsTimeEarned>(90)
                 .leaf<RunAsInstructed>(30,30, 0.0)
             .end()
+
             //黒色検知
             .composite<BrainTree::ParallelSequence>(1,2)
                 .leaf<IsTargetColorDetected>(Black)
-                .leaf<RunAsInstructed>(50,50, 1.0)
+                .leaf<RunAsInstructed>(60,60, 1.0)
             .end()
              //指定距離走行
             .composite<BrainTree::ParallelSequence>(1,2)
@@ -796,15 +802,15 @@ tr_garage = (BrainTree::BehaviorTree*) BrainTree::Builder()
                 .leaf<RunAsInstructed>(18,30, 0.0)
             .end()
 
-
             //やや右に指定時間走行
             .composite<BrainTree::ParallelSequence>(1,2)
                 .leaf<IsTimeEarned>(80)
                 .leaf<RunAsInstructed>(30,25, 0.0)
             .end()
+
             //やや右に指定時間走行（別コースの黒色をかわす距離まで）
             .composite<BrainTree::ParallelSequence>(1,2)
-                .leaf<IsTimeEarned>(100)
+                .leaf<IsTimeEarned>(150)
                 .leaf<RunAsInstructed>(30,22.5, 0.0)
             .end()
 
@@ -814,8 +820,6 @@ tr_garage = (BrainTree::BehaviorTree*) BrainTree::Builder()
                 .leaf<IsTargetColorDetected>(Black)
                 .leaf<RunAsInstructed>(30,22.5, 0.0)
             .end()
-
-
 
             // 回転
             .composite<BrainTree::ParallelSequence>(1,2)
@@ -836,15 +840,8 @@ tr_garage = (BrainTree::BehaviorTree*) BrainTree::Builder()
             //ライントレース＆ソナー
             .composite<BrainTree::ParallelSequence>(1,2)
                 .leaf<IsSonarOn>(29)
-                .leaf<TraceLine>(15, GS_TARGET_SLOW, P_CONST_SLOW, I_CONST_SLOW, D_CONST_SLOW, 0.0)
+                .leaf<TraceLine>(19, GS_TARGET_SLOW, P_CONST_SLOW, I_CONST_SLOW, D_CONST_SLOW, 0.0)
             .end()
-
-
-            // //ライントレース速め
-            // .composite<BrainTree::ParallelSequence>(1,2)
-            //      .leaf<IsTimeEarned>(85)
-            //    .leaf<TraceLine>(15, GS_TARGET_SLOW, P_CONST_SLOW, I_CONST_SLOW, D_CONST_SLOW, 0.0)
-            // .end() 
 
             //まっすぐ距離調整用 sonarが指定距離前に目標物を検知するまで
             .composite<BrainTree::ParallelSequence>(1,2)
@@ -858,6 +855,8 @@ tr_garage = (BrainTree::BehaviorTree*) BrainTree::Builder()
             .end()
         .end()
         .build();
+
+
     }else{
 
     //Right Course
@@ -1128,96 +1127,19 @@ tr_garage = (BrainTree::BehaviorTree*) BrainTree::Builder()
 
                 .end()
                 .build();
-                
-    //Right Course 試走会用 
-        // tr_slalom = (BrainTree::BehaviorTree*) BrainTree::Builder()
-        //     .composite<BrainTree::MemSequence>()
-        //         .composite<BrainTree::ParallelSequence>(1,2)
-        //             .leaf<IsDistanceEarned>(170)
-        //                 .leaf<TraceLine>(SPEED_NORM, GS_TARGET, P_CONST, I_CONST, D_CONST, 0.0)
-        //         .end()
-        //         .composite<BrainTree::ParallelSequence>(1,2)
-        //             .leaf<IsTargetAngleEarned>(-10,Less)
-        //             .leaf<RunAsInstructed>(23,23, 0.0)
-        //             .leaf<ShiftArmPosition>(80)                
-        //         .end()
-        //         .composite<BrainTree::ParallelSequence>(1,2)
-        //             .leaf<IsTargetAngleEarned>(0,More)
-        //             .leaf<RunAsInstructed>(23,23, 0.0)
-        //             .leaf<ShiftArmPosition>(80)                
-        //         .end()
-        //         .composite<BrainTree::ParallelSequence>(1,2)
-        //             .leaf<IsTimeEarned>(150)
-        //             .leaf<RunAsInstructed>(0,0, 0.0)
-        //             .leaf<ShiftArmPosition>(-50)                
-        //         .end()
-        //         .composite<BrainTree::ParallelSequence>(1,2)
-        //             .leaf<IsTimeEarned>(250)
-        //             .leaf<TraceLine>(20, GS_TARGET_SLOW, P_CONST_SLOW, I_CONST_SLOW, D_CONST_SLOW, 0.0)
-        //         .end()
-        //         .composite<BrainTree::ParallelSequence>(1,2)
-        //             .leaf<IsTimeEarned>(300)
-        //             .leaf<RunAsInstructed>(8,10, 0.0)
-        //         .end()
-        //         .composite<BrainTree::ParallelSequence>(1,2)
-        //             .leaf<IsTimeEarned>(580)
-        //             .leaf<TraceLine>(20, GS_TARGET_SLOW, P_CONST_SLOW, I_CONST_SLOW, D_CONST_SLOW, 0.0)
-        //         .end()
-        //         .composite<BrainTree::ParallelSequence>(1,2)
-        //             .leaf<IsTimeEarned>(400)
-        //             .leaf<RunAsInstructed>(20,8, 0.5)
-        //         .end()
-        //         .composite<BrainTree::ParallelSequence>(1,2)
-        //             .leaf<IsTimeEarned>(298)
-        //             .leaf<RunAsInstructed>(20,4, 0.5)
-        //         .end()
-        //         .composite<BrainTree::ParallelSequence>(1,2)
-        //             .leaf<IsTimeEarned>(142)
-        //             .leaf<RunAsInstructed>(20,6, 0.5)
-        //         .end()
-        //         .composite<BrainTree::ParallelSequence>(1,2)
-        //             .leaf<IsTimeEarned>(143)
-        //             .leaf<RunAsInstructed>(6,20, 0.5)
-        //         .end()
-        //         .composite<BrainTree::ParallelSequence>(1,2)
-        //             .leaf<IsTimeEarned>(190)
-        //             .leaf<RunAsInstructed>(2,12, 0.5)
-        //         .end()
-        //         .composite<BrainTree::ParallelSequence>(1,2)
-        //             .leaf<IsTimeEarned>(350)
-        //             .leaf<RunAsInstructed>(10,10, 0.5)
-        //         .end()
-        //         .composite<BrainTree::ParallelSequence>(1,2)
-        //             .leaf<IsTimeEarned>(400)
-        //             .leaf<ShiftArmPosition>(30)
-        //         .end()
-        //         .composite<BrainTree::ParallelSequence>(1,2)
-        //             .leaf<IsTimeEarned>(100)
-        //             .leaf<ShiftArmPosition>(-100)
-        //             .leaf<RunAsInstructed>(0, 0, 0.0)
-        //         .end()
-        //         .composite<BrainTree::ParallelSequence>(1,2)
-        //             .leaf<IsArmRepositioned>()
-        //             .leaf<ShiftArmPosition>(10)
-        //         .end()
-        //         .composite<BrainTree::ParallelSequence>(1,2)
-        //             .leaf<IsTimeEarned>(20)
-        //             .leaf<ShiftArmPosition>(0)
-        //         .end()
-        //     .end()
-        //     .build();
 
-    //Right Course
-    // Right 20210829
-tr_garage = (BrainTree::BehaviorTree*) BrainTree::Builder()
+
+        //Right Course
+        //Right 20210829
+        tr_garage = (BrainTree::BehaviorTree*) BrainTree::Builder()
         .composite<BrainTree::MemSequence>()
 // // 単体テストでのアーム位置調整ここから
 //            .composite<BrainTree::ParallelSequence>(1,2)
-//                .leaf<IsTimeEarned>(400)
+//                .leaf<IsTimeEarned>(180)
 //                .leaf<ShiftArmPosition>(30)
 //            .end()
 //            .composite<BrainTree::ParallelSequence>(1,2)
-//                .leaf<IsTimeEarned>(100)
+//                .leaf<IsTimeEarned>(65)
 //                .leaf<ShiftArmPosition>(-100)
 //                .leaf<RunAsInstructed>(0, 0, 0.0)
 //            .end()
@@ -1226,7 +1148,7 @@ tr_garage = (BrainTree::BehaviorTree*) BrainTree::Builder()
 //                .leaf<ShiftArmPosition>(10)
 //            .end()
 //            .composite<BrainTree::ParallelSequence>(1,2)
-//                .leaf<IsTimeEarned>(50)
+//                .leaf<IsTimeEarned>(20)
 //                .leaf<ShiftArmPosition>(0)
 //            .end()
 // // 単体テストでのアーム位置調整ここまで
@@ -1313,7 +1235,6 @@ tr_garage = (BrainTree::BehaviorTree*) BrainTree::Builder()
                 .leaf<RunAsInstructed>(24,30, 0.0)
             .end()
 
-
             //指定時間走行
             .composite<BrainTree::ParallelSequence>(1,2)
                 .leaf<IsTimeEarned>(120)
@@ -1324,7 +1245,6 @@ tr_garage = (BrainTree::BehaviorTree*) BrainTree::Builder()
                 .leaf<IsTimeEarned>(160)
                 .leaf<RunAsInstructed>(20,30, 0.0)
             .end()
-
 
             //角度調整走行
             .composite<BrainTree::ParallelSequence>(1,2)
@@ -1366,7 +1286,6 @@ tr_garage = (BrainTree::BehaviorTree*) BrainTree::Builder()
                 .leaf<TraceLine>(19, GS_TARGET_SLOW, P_CONST_SLOW, I_CONST_SLOW, D_CONST_SLOW, 0.0)
             .end()
 
-
             //まっすぐ距離調整用 sonarが指定距離前に目標物を検知するまで
             .composite<BrainTree::ParallelSequence>(1,2)
                 .leaf<IsSonarOn>(3)
@@ -1379,7 +1298,6 @@ tr_garage = (BrainTree::BehaviorTree*) BrainTree::Builder()
             .end()
         .end()
         .build();
-
     }
 
     /* register cyclic handler to EV3RT */
