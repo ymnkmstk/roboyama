@@ -186,6 +186,49 @@ protected:
     bool updated, earned;
 };
 
+class IsCurveEarned : public BrainTree::Node {
+public:
+    IsCurveEarned(int32_t d,int32_t t,int32_t it ,CalcMode mode) : deltaDegreeTarget(d),interval(t),invalidTime(it),cnt(0),calcMode(mode),earned(false) {}
+    Status update() override {
+        if (cnt >= invalidTime/10 && cnt >= interval) {
+
+            startDegree = plotter->getDegree();
+            if(startDegree > 180){
+                startDegree = startDegree - 360;
+            }
+            deltaDegree.insert(deltaDegree.begin(), startDegree);
+
+            if (deltaDegree.size() >= interval){
+                int32_t degree = startDegree - deltaDegree.back();
+                switch (calcMode) {
+                case Less:
+                    if(startDegree - deltaDegree.back() <= deltaDegreeTarget){
+                        _log("Delta %d getnow= %d", startDegree,clock->now());
+                        return Status::Success;
+                    }
+                    break;    
+                case More:
+                    if(startDegree - deltaDegree.back() >= deltaDegreeTarget){
+                        _log("Delta %d getnow= %d", startDegree,clock->now());
+                        return Status::Success;
+                    }
+                    break;
+                default:
+                    break;
+                }
+                deltaDegree.pop_back();
+            }
+        }
+        cnt ++ ;
+        return Status::Failure;
+    }
+protected:
+    int32_t deltaDegreeTarget, interval,invalidTime, cnt,startDegree;
+    bool earned;
+    CalcMode calcMode;
+    std::vector<int32_t> deltaDegree;
+};
+
 
 class IsArmRepositioned : public BrainTree::Node {
 public:
@@ -1073,15 +1116,15 @@ tr_garage = (BrainTree::BehaviorTree*) BrainTree::Builder()
                         .leaf<RunAsInstructed>(15,3, 0.5)
                     .end()
                     .composite<BrainTree::ParallelSequence>(1,2)
-                        .leaf<IsTimeEarned>(335)
+                        .leaf<IsTimeEarned>(385)//335
                         .leaf<RunAsInstructed>(13,3, 0.5)
                     .end()
                     .composite<BrainTree::ParallelSequence>(1,2)
-                        .leaf<IsTimeEarned>(25)
+                        .leaf<IsTimeEarned>(55)//25
                         .leaf<RunAsInstructed>(10,10, 1)
                     .end()
                     .composite<BrainTree::ParallelSequence>(1,2)
-                        .leaf<IsTimeEarned>(304)
+                        .leaf<IsTimeEarned>(350)//304
                         .leaf<RunAsInstructed>(2,10, 0.5)
                     .end()
                     .composite<BrainTree::ParallelSequence>(1,2)
