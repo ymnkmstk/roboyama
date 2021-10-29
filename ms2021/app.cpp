@@ -274,6 +274,55 @@ protected:
     double srewRate;
 };
 
+class ShiftTailPosition : public BrainTree::Node {
+public:
+    ShiftTailPosition(int tailpwm) : tailPwm(tailpwm),traceCnt(0) {}
+    Status update() override {
+        tailMotor->setPWM(tailPwm);
+        return Status::Running;
+    }
+protected:
+    int tailPwm;
+private:
+    int traceCnt;
+};
+
+class IsAngleEarned : public BrainTree::Node {
+public:
+    IsAngleEarned(int32_t d,CalcMode mode) : deltaDegreeTarget(d),cnt(0),calcMode(mode),earned(false) {}
+    Status update() override {
+        if(cnt==0){
+            startDegree = plotter->getDegree();
+            if(startDegree > 180){
+                startDegree = startDegree - 360;
+            }
+        }
+        switch (calcMode) {
+        case Less:
+            if(plotter->getDegree() - startDegree <= deltaDegreeTarget){
+                _log("Delta %d getnow= %d", startDegree,clock->now());
+                return Status::Success;
+            }
+            break;    
+        case More:
+            if(plotter->getDegree() -startDegree >= deltaDegreeTarget){
+                _log("Delta %d getnow= %d", startDegree,clock->now());
+                return Status::Success;
+            }
+            break;
+        default:
+            break;
+        }
+        cnt ++ ;
+        return Status::Running;
+    }
+protected:
+    int32_t deltaDegreeTarget,cnt,startDegree;
+    bool earned;
+    CalcMode calcMode;
+};
+
+
 class TraceLineOpposite : public BrainTree::Node {
 public:
     TraceLineOpposite(int s, int t, double p, double i, double d, double srew_rate) : speed(s),target(t),srewRate(srew_rate) {
