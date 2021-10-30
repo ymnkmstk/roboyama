@@ -138,6 +138,7 @@ enum Color {
     Red,
     Yellow,
     Green,
+    Gray,
     White,
 };
 
