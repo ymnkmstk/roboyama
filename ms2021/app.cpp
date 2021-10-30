@@ -690,7 +690,7 @@ void main_task(intptr_t unused) {
                     .end()
                     .composite<BrainTree::ParallelSequence>(1,2)
                         .leaf<IsDistanceEarned>(3000)
-                        .leaf<TraceLine>(65, GS_TARGET, 0.75, 1.0, D_CONST, 0.0)
+                        .leaf<TraceLine>(55, GS_TARGET, 0.75, 1.0, D_CONST, 0.0)
                     .end()
                 .end()
             .end()
