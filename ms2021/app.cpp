@@ -101,7 +101,7 @@ public:
                 }
                 break;
             case Green:
-                if (cur_rgb.r <= 13 && cur_rgb.b <= 50 && cur_rgb.g > 60) {
+                if (cur_rgb.r <= 13 && cur_rgb.b <= 50 && cur_rgb.g > 40) {
                     _log("found Green.");
                     return Status::Success;
                 }
@@ -1132,13 +1132,17 @@ tr_garage = (BrainTree::BehaviorTree*) BrainTree::Builder()
                         .leaf<RunAsInstructed>(100,19, 4)
                     .end()
                     .composite<BrainTree::ParallelSequence>(1,2)
-                        .leaf<IsTimeEarned>(62)
+                        .leaf<IsTargetColorDetected>(Green)
+                        .leaf<RunAsInstructed>(84,100, 1.0)
+                    .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTimeEarned>(20)
                         .leaf<RunAsInstructed>(84,100, 1.0)
                     .end()
 
                     //ショートカットパス後の左回り
                     .composite<BrainTree::ParallelSequence>(1,2)
-                        .leaf<IsTimeEarned>(49)
+                        .leaf<IsTimeEarned>(52)
                         .leaf<RunAsInstructed>(25,100, 4)
                     .end()
                     .composite<BrainTree::ParallelSequence>(1,2)
@@ -1147,15 +1151,15 @@ tr_garage = (BrainTree::BehaviorTree*) BrainTree::Builder()
                     .end()
                     //最後のストレートへの右回り
                     .composite<BrainTree::ParallelSequence>(1,2)
-                        .leaf<IsTimeEarned>(20)
+                        .leaf<IsTimeEarned>(23)
                         .leaf<RunAsInstructed>(100,25, 3)
                     .end()
                     .composite<BrainTree::ParallelSequence>(1,2)
-                        .leaf<IsTimeEarned>(23)
+                        .leaf<IsTimeEarned>(32)
                         .leaf<RunAsInstructed>(100,100, 2.0)
                     .end()
                     .composite<BrainTree::ParallelSequence>(1,2)
-                        .leaf<IsTimeEarned>(35)
+                        .leaf<IsTimeEarned>(36)
                         .leaf<RunAsInstructed>(100,25, 3)
                     .end()
                     .composite<BrainTree::ParallelSequence>(1,2)
