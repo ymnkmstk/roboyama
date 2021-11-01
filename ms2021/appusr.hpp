@@ -129,7 +129,7 @@ extern Plotter*     plotter;
 #define GS_TARGET            47  /* was 47 for 2020 program                 */
 #define GS_TARGET_SLOW       25
 #define SONAR_ALERT_DISTANCE 10  /* in centimeters                          */
-#define BLUE_DISTANCE     8700  /* 2nd blue part should be further than this   */ 
+#define BLUE_DISTANCE     8040  /* 2nd blue part should be further than this   */ 
 
 enum Color {
     Black,
@@ -138,6 +138,7 @@ enum Color {
     Red,
     Yellow,
     Green,
+    Green_2,
     Gray,
     White,
 };

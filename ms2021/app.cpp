@@ -68,7 +68,6 @@ public:
     Status update() override {
         rgb_raw_t cur_rgb;
         colorSensor->getRawColor(cur_rgb);
-        //printf("r=%d g=%d b=%d goukei=%d\n",cur_rgb.r,cur_rgb.g,cur_rgb.b,cur_rgb.r+cur_rgb.g+cur_rgb.b);
         switch(color){
             case Black:
                 if (cur_rgb.r <=50 && cur_rgb.g <=45 && cur_rgb.b <=60) {
@@ -102,6 +101,12 @@ public:
                 break;
             case Green:
                 if (cur_rgb.r <= 13 && cur_rgb.b <= 50 && cur_rgb.g > 40) {
+                    _log("found Green.");
+                    return Status::Success;
+                }
+                break;
+            case Green_2:
+                if (cur_rgb.r <= 13 && cur_rgb.b <= 50 && cur_rgb.g >= 48) {
                     _log("found Green.");
                     return Status::Success;
                 }
@@ -153,6 +158,33 @@ public:
         }
         int32_t deltaDist = plotter->getDistance() - originalDist;
         
+        if(deltaDist< 0){deltaDist= deltaDist* (-1);}
+
+        if (deltaDist >= deltaDistTarget) {
+            if (!earned) {
+                _log("Delta %d is earned at absolute distance %d.", deltaDistTarget, plotter->getDistance());
+                earned = true;
+            }
+            return Status::Success;
+        } else {
+            return Status::Failure;
+        }
+    }
+protected:
+    int32_t deltaDistTarget, originalDist;
+    bool updated, earned;
+};
+
+class IsDistanceEarned2 : public BrainTree::Node {
+public:
+    IsDistanceEarned2(int32_t d) : deltaDistTarget(d),updated(false),earned(false) {}
+    Status update() override {
+        if (!updated) {
+            originalDist = plotter->getDistance();
+            updated = true;
+        }
+        int32_t deltaDist = plotter->getDistance() - originalDist;
+        printf("d=%d\n",plotter->getDistance());
         if(deltaDist< 0){deltaDist= deltaDist* (-1);}
 
         if (deltaDist >= deltaDistTarget) {
@@ -1041,7 +1073,7 @@ tr_garage = (BrainTree::BehaviorTree*) BrainTree::Builder()
                 .composite<BrainTree::ParallelSequence>(2,2)
                     .leaf<IsDistanceEarned>(BLUE_DISTANCE)
                     .composite<BrainTree::MemSequence>()
-                        .leaf<IsTargetColorDetected>(Blue)
+                        //.leaf<IsTargetColorDetected>(Blue)
                         .leaf<IsTargetColorDetected>(Black)
                         .leaf<IsTargetColorDetected>(Blue)
                     .end()
@@ -1163,38 +1195,78 @@ tr_garage = (BrainTree::BehaviorTree*) BrainTree::Builder()
                         .leaf<RunAsInstructed>(100,25, 3)
                     .end()
                     .composite<BrainTree::ParallelSequence>(1,2)
-                        .leaf<IsTimeEarned>(2000)
+                        .leaf<IsTimeEarned>(280)
                         .leaf<RunAsInstructed>(100,100, 2.0)
                     .end()
 
                     .composite<BrainTree::ParallelSequence>(1,2)
-                        .leaf<IsTimeEarned>(900)
+                        .leaf<IsTimeEarned>(10)
                         .leaf<RunAsInstructed>(0,0, 0)
                     .end()
 
-
-
-
                     .composite<BrainTree::ParallelSequence>(1,2)
-                        .leaf<IsTimeEarned>(210)
-                        .leaf<RunAsInstructed>(0,0, 0)
-                    .end()
-
-
-
-                    .composite<BrainTree::ParallelSequence>(1,2)
-                        .leaf<IsDistanceEarned>(120)
-                        .leaf<TraceLine>(SPEED_NORM, GS_TARGET, P_CONST, I_CONST, D_CONST, 0.0)
+                        .leaf<IsTimeEarned>(80)
+                        .leaf<RunAsInstructed>(40,-40, 1.0)
                     .end()
                     .composite<BrainTree::ParallelSequence>(1,2)
-                        //.leaf<IsDistanceEarned>(1200)
-                        .leaf<IsTargetColorDetected>(Blue)
-                        .leaf<TraceLine>(SPEED_FAST, GS_TARGET, P_CONST_FAST, I_CONST_FAST, D_CONST_FAST, 0.0)
+                        .leaf<IsTimeEarned>(10)
+                        .leaf<RunAsInstructed>(0,0, 0.0)
                     .end()
                     .composite<BrainTree::ParallelSequence>(1,2)
-                        .leaf<IsDistanceEarned>(3000)
+                        .leaf<IsTargetColorDetected>(Green_2)
+                        .leaf<RunAsInstructed>(45,45, 0.0)
+                    .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTimeEarned>(10)
+                        .leaf<RunAsInstructed>(0,0, 0.0)
+                    .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTimeEarned>(65)
+                        .leaf<RunAsInstructed>(-40,40, 0.0)
+                    .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTimeEarned>(10)
+                        .leaf<RunAsInstructed>(0,0, 0.0)
+                    .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTargetColorDetected>(Black)
+                        .leaf<RunAsInstructed>(40,40, 0.0)
+                    .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTimeEarned>(10)
+                        .leaf<RunAsInstructed>(40,40, 0.0)
+                    .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTimeEarned>(10)
+                        .leaf<RunAsInstructed>(0,0, 0.0)
+                    .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTimeEarned>(65)
+                        .leaf<RunAsInstructed>(40,-40, 0.0)
+                    .end()
+
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsDistanceEarned>(150)
+                        .leaf<TraceLine>(30, GS_TARGET, 0.75, 1.0, D_CONST, 0.0)
+                    .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsDistanceEarned2>(3000)
                         .leaf<TraceLine>(65, GS_TARGET, 0.75, 1.0, D_CONST, 0.0)
                     .end()
+
+                    // .composite<BrainTree::ParallelSequence>(1,2)
+                    //     .leaf<IsDistanceEarned>(120)
+                    //     .leaf<TraceLine>(SPEED_NORM, GS_TARGET, P_CONST, I_CONST, D_CONST, 0.0)
+                    // .end()
+                    // .composite<BrainTree::ParallelSequence>(1,2)
+                    //     //.leaf<IsDistanceEarned>(1200)
+                    //     .leaf<IsTargetColorDetected>(Blue)
+                    //     .leaf<TraceLine>(SPEED_FAST, GS_TARGET, P_CONST_FAST, I_CONST_FAST, D_CONST_FAST, 0.0)
+                    // .end()
+                    // .composite<BrainTree::ParallelSequence>(1,2)
+                    //     .leaf<IsDistanceEarned>(3000)
+                    //     .leaf<TraceLine>(65, GS_TARGET, 0.75, 1.0, D_CONST, 0.0)
+                    // .end()
                 .end()
             .end()
             .build();
