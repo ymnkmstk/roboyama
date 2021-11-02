@@ -107,7 +107,8 @@ public:
                 }
                 break;
             case Green_2:
-                if (cur_rgb.r <= 13 && cur_rgb.b <= 50 && cur_rgb.g >= 48) {
+                printf("r=%d g=%d b=%d\n",cur_rgb.r, cur_rgb.g ,cur_rgb.b);
+                if (cur_rgb.r <= 13 && cur_rgb.b <= 40 && cur_rgb.g >= 45) {
                     _log("found Green_2.");
                     return Status::Success;
                 }
@@ -1127,7 +1128,7 @@ tr_garage = (BrainTree::BehaviorTree*) BrainTree::Builder()
                 .composite<BrainTree::ParallelSequence>(2,2)
                     .leaf<IsDistanceEarned>(BLUE_DISTANCE)
                     .composite<BrainTree::MemSequence>()
-                        .leaf<IsTargetColorDetected>(Blue)
+                        //.leaf<IsTargetColorDetected>(Blue)
                         .leaf<IsTargetColorDetected>(Black)
                         .leaf<IsTargetColorDetected>(Blue)
                     .end()
