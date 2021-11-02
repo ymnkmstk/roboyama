@@ -107,7 +107,7 @@ public:
                 }
                 break;
             case Green_2:
-                printf("r=%d g=%d b=%d\n",cur_rgb.r, cur_rgb.g ,cur_rgb.b);
+                //printf("r=%d g=%d b=%d\n",cur_rgb.r, cur_rgb.g ,cur_rgb.b);
                 if (cur_rgb.r <= 13 && cur_rgb.b <= 40 && cur_rgb.g >= 45) {
                     _log("found Green_2.");
                     return Status::Success;
