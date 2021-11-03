@@ -8,6 +8,8 @@
 #include <iostream>
 #include <list>
 #include <numeric>
+#include <math.h>
+
 
 /* this is to avoid linker error, undefined reference to `__sync_synchronize' */
 extern "C" void __sync_synchronize() {}
@@ -64,24 +66,38 @@ public:
 
 class IsTargetColorDetected : public BrainTree::Node {
 public:
-    IsTargetColorDetected(Color c) : color(c) {}
+    IsTargetColorDetected(Color c) : color(c),updated(false) {}
     Status update() override {
+        if (!updated) {
+            originalTime = round((int32_t)clock->now()/10000);
+            plotter->setDistanceRecord(0);
+            updated = true;
+        }
         rgb_raw_t cur_rgb;
         colorSensor->getRawColor(cur_rgb);
         switch(color){
             case Black:
+                //printf("r=%d b=%d g=%d\n",cur_rgb.r, cur_rgb.b ,cur_rgb.g);
                 if (cur_rgb.r <=50 && cur_rgb.g <=45 && cur_rgb.b <=60) {
+                    deltaTime = round((int32_t)clock->now() / 10000) - originalTime;
+                    plotter->setDistanceRecord(deltaTime);
+                    printf("Black deltaTime =%d\n",deltaTime);
                     _log("found black.");
                     return Status::Success;
                 }
                 break;
-            case Jetblack:
-                if (cur_rgb.r <=35 && cur_rgb.g <=35 && cur_rgb.b <=50) { 
+            case Black_2:
+                //printf("r=%d b=%d g=%d\n",cur_rgb.r, cur_rgb.b ,cur_rgb.g);
+                if (cur_rgb.r <=30 && cur_rgb.g <=30 && cur_rgb.b <=40) {
+                    deltaTime = round((int32_t)clock->now() / 10000) - originalTime;
+                    plotter->setDistanceRecord(deltaTime);
+                    printf("Black deltaTime =%d\n",deltaTime);
                     _log("found black.");
                     return Status::Success;
                 }
                 break;
             case Blue:
+                //printf("r=%d b=%d g=%d\n",cur_rgb.r, cur_rgb.b ,cur_rgb.g);
                 if (cur_rgb.b - cur_rgb.r > 45 && cur_rgb.b <= 255 && cur_rgb.r <= 255) {
                     _log("found blue.");
                     return Status::Success;
@@ -100,21 +116,57 @@ public:
                 }
                 break;
             case Green:
-                //printf("r=%d g=%d b=%d\n",cur_rgb.r, cur_rgb.b ,cur_rgb.g);
-                if (cur_rgb.r <= 13 && cur_rgb.b <= 50 && cur_rgb.g > 40) {
+                //printf("r=%d b=%d g=%d\n",cur_rgb.r, cur_rgb.b ,cur_rgb.g);
+                if (cur_rgb.r <= 10 && cur_rgb.b <= 35 && cur_rgb.g > 43) {
+                    deltaTime = round((int32_t)clock->now() / 10000) - originalTime;
+                    plotter->setDistanceRecord(deltaTime);
+                    printf("Green deltaTime =%d\n",deltaTime);
                     _log("found Green.");
                     return Status::Success;
                 }
                 break;
             case Green_2:
-                //printf("r=%d g=%d b=%d\n",cur_rgb.r, cur_rgb.g ,cur_rgb.b);
-                if (cur_rgb.r <= 13 && cur_rgb.b <= 40 && cur_rgb.g >= 45) {
+                //printf("r=%d b=%d g=%d\n",cur_rgb.r, cur_rgb.b ,cur_rgb.g);
+               if (cur_rgb.r <= 13 && cur_rgb.b <= 40 && cur_rgb.g >= 45){
+                    deltaTime = round((int32_t)clock->now() / 10000) - originalTime;
+                    plotter->setDistanceRecord(deltaTime);
+                    printf("Green_2 deltaTime =%d\n",deltaTime);
                     _log("found Green_2.");
                     return Status::Success;
                 }
                 break;
+            case White:
+                //printf("r=%d b=%d g=%d\n",cur_rgb.r, cur_rgb.b ,cur_rgb.g);
+                if (cur_rgb.r >= 78 && cur_rgb.b >= 110 && cur_rgb.g >= 75) {
+                    deltaTime = round((int32_t)clock->now() / 10000) - originalTime;
+                    plotter->setDistanceRecord(deltaTime);
+                    printf("White deltaTime =%d\n",deltaTime);
+                    _log("found White.");
+                    return Status::Success;
+                }
+                break;
+            case White_2:
+                //printf("r=%d b=%d g=%d\n",cur_rgb.r, cur_rgb.b ,cur_rgb.g);
+                if (cur_rgb.r >= 75 && cur_rgb.b >= 100 && cur_rgb.g >= 74) {
+                    deltaTime = round((int32_t)clock->now() / 10000) - originalTime;
+                    plotter->setDistanceRecord(deltaTime);
+                    printf("White_2 deltaTime =%d\n",deltaTime);
+                    _log("found White_2.");
+                    return Status::Success;
+                }
+                break;
+            case Jetblack:
+                if (cur_rgb.r <=35 && cur_rgb.g <=35 && cur_rgb.b <=50) { 
+                    _log("found black.");
+                    return Status::Success;
+                }
+                break;
             case Green_3:
-                if (cur_rgb.r <= 60 && cur_rgb.b <= 75 && cur_rgb.g <= 90) {
+                //printf("r=%d b=%d g=%d\n",cur_rgb.r, cur_rgb.b ,cur_rgb.g);
+                if (cur_rgb.r <= 70 && cur_rgb.b <= 100 && cur_rgb.g <= 70) {
+                    deltaTime = round((int32_t)clock->now() / 10000) - originalTime;
+                    plotter->setDistanceRecord(deltaTime);
+                    printf("Green_3 deltaTime =%d\n",deltaTime);
                     _log("found Green_3.");
                     return Status::Success;
                 }
@@ -125,12 +177,6 @@ public:
                     return Status::Success;
                 }
                 break;
-            case White:
-                if (cur_rgb.r > 100 && cur_rgb.b > 100 && cur_rgb.g > 100) {
-                    _log("found White.");
-                    return Status::Success;
-                }
-                break;
             default:
                 break;
         }
@@ -138,6 +184,8 @@ public:
     }
 protected:
     Color color;
+    bool updated;
+    int32_t  originalTime, deltaTime;
 };
 
 class IsSonarOn : public BrainTree::Node {
@@ -183,47 +231,6 @@ protected:
     bool updated, earned;
 };
 
-class HowMuchDistance : public BrainTree::Node {
-public:
-    HowMuchDistance() : updated(false),earned(false) {}
-    Status update() override {
-        if (!updated) {
-            originalDist = plotter->getDistance();
-            updated = true;
-        }
-        int32_t deltaDist = plotter->getDistance() - originalDist;        
-        if(deltaDist< 0){deltaDist= deltaDist* (-1);}
-        
-        plotter->setDistanceRecord(deltaDist);
-        //printf("distanceX = %d\n",plotter->getDistanceRecord());
-
-        return Status::Running;
-    }
-protected:
-    int32_t originalDist;
-    bool updated, earned;
-};
-
-class HowLongTime : public BrainTree::Node {
-public:
-    HowLongTime(int32_t n) : no(n),updated(false),earned(false) {}
-    Status update() override {
-        if (!updated) {
-            originalTime = round((int32_t)clock->now()/10000);
-            updated = true;
-        }
-        deltaTime = round((int32_t)clock->now() / 10000) - originalTime;
-        
-        plotter->setDistanceRecord(deltaTime);
-        //printf("no =%d,distanceX = %d\n",no,plotter->getDistanceRecord());
-
-        return Status::Running;
-    }
-protected:
-    int32_t  originalTime, deltaTime ,no;
-    bool updated, earned;
-};
-
 
 /* argument -> 100 = 1 sec */
 class IsTimeEarned : public BrainTree::Node {
@@ -235,6 +242,35 @@ public:
             updated = true;
         }
         deltaTime = round((int32_t)clock->now() / 10000) - originalTime;
+
+        if (deltaTime >= deltaTimeTarget ) {
+            if (!earned) {
+                 _log("Delta %d getnow= %d", deltaTime,clock->now());
+                earned = true;
+            }
+            return Status::Success;
+        } else {
+            return Status::Failure;
+        }
+    }
+protected:
+    int32_t deltaTimeTarget, originalTime, deltaTime;
+    bool updated, earned;
+};
+
+
+/* argument -> 100 = 1 sec */
+class IsTimeEarned2 : public BrainTree::Node {
+public:
+    IsTimeEarned2(int32_t t) : deltaTimeTarget(t),updated(false),earned(false) {}
+     Status update() override {
+        if (!updated) {
+            originalTime = round((int32_t)clock->now()/10000);
+            updated = true;
+        }
+        deltaTime = round((int32_t)clock->now() / 10000) - originalTime;
+        int32_t distance = sonarSensor->getDistance();
+        printf("sonner=%d\n",distance);
 
         if (deltaTime >= deltaTimeTarget ) {
             if (!earned) {
@@ -281,6 +317,35 @@ protected:
     bool updated, earned;
 };
 
+
+/* argument -> 100 = 1 sec */
+class IsVariableTimeEarned2 : public BrainTree::Node {
+public:
+    IsVariableTimeEarned2(double a1,double a2, double b) :coefficient1(a1),coefficient2(a2),intercept(b),deltaTimeTarget(0),deltaTime(0),updated(false),earned(false) {}
+     Status update() override {
+        if (!updated) {
+            originalTime = round((int32_t)clock->now()/10000);
+            updated = true;
+            deltaTimeTarget = (int32_t)round(coefficient1 * pow((double)plotter->getDistanceRecord(),2) + coefficient2 * (double)plotter->getDistanceRecord() + intercept);
+            printf("2jou deltaTimeTarget = %d distance=%d\n",deltaTimeTarget,plotter->getDistanceRecord());
+        }
+        deltaTime = round((int32_t)clock->now() / 10000) - originalTime;
+
+        if (deltaTime >= deltaTimeTarget ) {
+            if (!earned) {
+                 _log("Delta %d getnow= %d", deltaTime,clock->now());
+                earned = true;
+            }
+            return Status::Success;
+        } else {
+            return Status::Failure;
+        }
+    }
+protected:
+    int32_t deltaTimeTarget, originalTime, deltaTime;
+    double coefficient1,coefficient2,intercept;
+    bool updated, earned;
+};
 
 
 class IsCurveEarned : public BrainTree::Node {
@@ -1133,121 +1198,503 @@ tr_garage = (BrainTree::BehaviorTree*) BrainTree::Builder()
                         .leaf<IsTargetColorDetected>(Blue)
                     .end()
                 .end()
+                //.composite<BrainTree::MemSequence>()
+                    // .composite<BrainTree::ParallelSequence>(1,2)
+                    //     .leaf<IsTimeEarned>(70)
+                    //     .leaf<TraceLine>(65, GS_TARGET, 0.75, 1.0, D_CONST, 0.0)
+                    // .end()
+                    // .composite<BrainTree::ParallelSequence>(1,2)
+                    //     .leaf<IsTimeEarned>(320) //397
+                    //     .leaf<TraceLine>(SPEED_FAST, GS_TARGET, P_CONST_FAST, I_CONST_FAST, D_CONST_FAST, 0.0)
+                    // .end()
+                    // //コースの右上の角
+                    // // .composite<BrainTree::ParallelSequence>(1,2)
+                    // //     .leaf<IsCurveAveEarned>(5.0,10,0,More)
+                    // //     .leaf<TraceLine>(60, GS_TARGET, 0.75, 1.0, D_CONST, 0.0)
+                    // // .end()
+                    // .composite<BrainTree::ParallelSequence>(1,2)
+                    //     .leaf<IsTimeEarned>(115)
+                    //     .leaf<TraceLine>(65, GS_TARGET, 0.75, 1.0, D_CONST, 0.0)
+                    // .end()
+                    // .composite<BrainTree::ParallelSequence>(1,2)
+                    //     .leaf<IsTimeEarned>(24)
+                    //     .leaf<RunAsInstructed>(49,85, 1.0)
+                    // .end()
+                    // .composite<BrainTree::ParallelSequence>(1,2)
+                    //     .leaf<IsTimeEarned>(20)
+                    //     .leaf<RunAsInstructed>(31,85, 1.0)
+                    // .end()
+                    // .composite<BrainTree::ParallelSequence>(1,2)
+                    //     .leaf<IsTimeEarned>(37)
+                    //     .leaf<RunAsInstructed>(41,85, 1.0)
+                    // .end()
                 .composite<BrainTree::MemSequence>()
                     .composite<BrainTree::ParallelSequence>(1,2)
                         .leaf<IsTimeEarned>(80)
-                        .leaf<TraceLine>(65, GS_TARGET, 0.75, 1.0, D_CONST, 0.0)
+                        .leaf<TraceLine>(60, GS_TARGET, 0.75, 1.0, D_CONST, 0.0)
                     .end()
                     .composite<BrainTree::ParallelSequence>(1,2)
-                        .leaf<IsTimeEarned>(300) //397
+                        .leaf<IsTimeEarned>(63) //397
                         .leaf<TraceLine>(SPEED_FAST, GS_TARGET, P_CONST_FAST, I_CONST_FAST, D_CONST_FAST, 0.0)
                     .end()
-                    //コースの右上の角
+
                     .composite<BrainTree::ParallelSequence>(1,2)
-                        .leaf<IsCurveAveEarned>(5.0,10,0,More)
-                        .leaf<TraceLine>(65, GS_TARGET, 0.75, 1.0, D_CONST, 0.0)
+                        .leaf<IsTimeEarned>(120)
+                        .leaf<RunAsInstructed>(84,100, 0.0)
                     .end()
                     .composite<BrainTree::ParallelSequence>(1,2)
-                        .leaf<IsTimeEarned>(35)
-                        .leaf<RunAsInstructed>(40,85, 0.0)
+                        .leaf<IsTimeEarned>(193)
+                        .leaf<RunAsInstructed>(85,85, 1.0)
+                    .end()
+                    // .composite<BrainTree::ParallelSequence>(1,2)
+                    //     .leaf<IsTimeEarned>(300)
+                    //     .leaf<RunAsInstructed>(0,0, 0)
+                    // .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTimeEarned>(50)
+                        .leaf<RunAsInstructed>(35,85, 0.7)
                     .end()
                     .composite<BrainTree::ParallelSequence>(1,2)
-                        .leaf<IsTimeEarned>(65)
-                        .leaf<RunAsInstructed>(80,100, 1.5)
+                        .leaf<IsTimeEarned>(30)
+                        .leaf<RunAsInstructed>(54,85, 0.7)
                     .end()
                     .composite<BrainTree::ParallelSequence>(1,2)
-                        .leaf<IsTimeEarned>(31)
-                        .leaf<RunAsInstructed>(40,100, 1.0)
+                        .leaf<IsTimeEarned>(62)
+                        .leaf<RunAsInstructed>(57,85, 0.7)
                     .end()
                     .composite<BrainTree::ParallelSequence>(1,2)
-                        .leaf<IsTimeEarned>(135)
-                        .leaf<RunAsInstructed>(100,100, 1.0)
-                    .end()
-                    //コースの右下のヘアピン
-                    .composite<BrainTree::ParallelSequence>(1,2)
-                        .leaf<IsTimeEarned>(117)
-                        .leaf<RunAsInstructed>(35,85, 5)
+                        .leaf<IsTimeEarned>(100)
+                        .leaf<RunAsInstructed>(85,85, 0.7)
                     .end()
                     .composite<BrainTree::ParallelSequence>(1,2)
-                        .leaf<IsTimeEarned>(143)
-                        .leaf<RunAsInstructed>(100,100, 0.5)
-                    .end()
-                    //ヘアピン後のうねうねの始まりの角
-                    .composite<BrainTree::ParallelSequence>(1,2)
-                        .leaf<IsTimeEarned>(80)
-                        .leaf<RunAsInstructed>(100,45, 4.0)
-                    .end()
-                    .composite<BrainTree::ParallelSequence>(1,2)
-                        .leaf<IsTimeEarned>(37)
-                        .leaf<RunAsInstructed>(100,100, 1)
+                        .leaf<IsTimeEarned>(55)
+                        .leaf<RunAsInstructed>(83,85, 0.7)
                     .end()
                     .composite<BrainTree::ParallelSequence>(1,2)
                         .leaf<IsTimeEarned>(63)
-                        .leaf<RunAsInstructed>(99,100, 1.0)
-                    .end()
-                    //うねうねのひとつめのヘアピン
-                    .composite<BrainTree::ParallelSequence>(1,2)
-                        .leaf<IsTimeEarned>(78)
-                        .leaf<RunAsInstructed>(100,23, 3)
+                        .leaf<RunAsInstructed>(41,85,10)
                     .end()
                     .composite<BrainTree::ParallelSequence>(1,2)
-                        //.leaf<IsTimeEarned>(45)
-                        .leaf<IsTargetColorDetected>(Gray)
-                        .leaf<RunAsInstructed>(100,76, 1.0)
+                        .leaf<IsTargetColorDetected>(Black)
+                        .leaf<RunAsInstructed>(85,85, 5)
                     .end()
                     .composite<BrainTree::ParallelSequence>(1,2)
-                        .leaf<IsTimeEarned>(35)
-                        .leaf<RunAsInstructed>(70,100, 1)
+                        .leaf<IsTimeEarned>(15)
+                        .leaf<RunAsInstructed>(85,85, 1.0)
                     .end()
-                    //うねうねのふたつめのヘアピン
                     .composite<BrainTree::ParallelSequence>(1,2)
-                        .leaf<IsTimeEarned>(7)
-                        .leaf<RunAsInstructed>(35,100, 2.0)
+                        .leaf<IsTargetColorDetected>(Green_3)
+                        .leaf<RunAsInstructed>(85,85, 1)
                     .end()
-                    .composite<BrainTree::ParallelSequence>(1,3)
-                        .leaf<IsTimeEarned>(48)
-                        .leaf<RunAsInstructed>(19,100, 3.1)
-                    .end()
-                    .composite<BrainTree::ParallelSequence>(1,3)
-                        .leaf<IsTimeEarned>(132)
-                        .leaf<RunAsInstructed>(100,100, 1.0)
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTargetColorDetected>(White_2)
+                        .leaf<RunAsInstructed>(85,85, 1)
                     .end()
 
-                    //GATE２手前降下のための転回
-                    .composite<BrainTree::ParallelSequence>(1,3)
-                        .leaf<IsTimeEarned>(41)
-                        .leaf<RunAsInstructed>(100,19, 4)
+                    // .composite<BrainTree::ParallelSequence>(1,2)
+                    //     .leaf<IsTimeEarned>(800)
+                    //     .leaf<RunAsInstructed>(0,0, 0.0)
+                    // .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTimeEarned>(20)
+                        .leaf<RunAsInstructed>(85,85, 5.0)
+                    .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTimeEarned>(24)//24
+                        .leaf<RunAsInstructed>(25,85, 5.0)
+                    .end()
+                    // .composite<BrainTree::ParallelSequence>(1,2)
+                    //     .leaf<IsTimeEarned>(800)
+                    //     .leaf<RunAsInstructed>(0,0, 0.0)
+                    // .end()
+                    //距離式
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsVariableTimeEarned>(-1,230)
+                        .leaf<RunAsInstructed>(85,85, 5.0)
+                    .end()
+                     .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTimeEarned>(1)
+                        .leaf<RunAsInstructed>(20,100, 0)
+                    .end()
+
+                    //gate2開始
+                     .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTimeEarned>(63)
+                        .leaf<RunAsInstructed>(20,100, 0)
                     .end()
                     .composite<BrainTree::ParallelSequence>(1,2)
                         .leaf<IsTargetColorDetected>(Green)
-                        .leaf<RunAsInstructed>(84,100, 1.0)
+                        .leaf<RunAsInstructed>(74,75, 0)
                     .end()
                     .composite<BrainTree::ParallelSequence>(1,2)
-                        .leaf<IsTimeEarned>(20)
-                        .leaf<RunAsInstructed>(84,100, 1.0)
-                    .end()
-
-                    //ショートカットパス後の左回り
-                    .composite<BrainTree::ParallelSequence>(1,2)
-                        .leaf<IsTimeEarned>(52)
-                        .leaf<RunAsInstructed>(25,100, 4)
-                    .end()
-                    .composite<BrainTree::ParallelSequence>(1,2)
-                        .leaf<IsTimeEarned>(50)
-                        .leaf<RunAsInstructed>(100,100, 2.0)
-                    .end()
-                    //最後のストレートへの右回り
-                    .composite<BrainTree::ParallelSequence>(1,2)
-                        .leaf<IsTimeEarned>(23)
-                        .leaf<RunAsInstructed>(100,25, 3)
+                        .leaf<IsTimeEarned>(30)
+                        .leaf<RunAsInstructed>(70,75, 0)
                     .end()
                     .composite<BrainTree::ParallelSequence>(1,2)
                         .leaf<IsTimeEarned>(32)
-                        .leaf<RunAsInstructed>(100,100, 2.0)
+                        .leaf<RunAsInstructed>(20,75, 0.0)
+                    .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTargetColorDetected>(Black_2)
+                        //.leaf<IsTimeEarned>(50)
+                        .leaf<RunAsInstructed>(40,75, 0.0)
+                    .end()
+                    // .composite<BrainTree::ParallelSequence>(1,2)
+                    //     .leaf<IsTimeEarned>(800)
+                    //     .leaf<RunAsInstructed>(0,0, 0.0)
+                    // .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTimeEarned>(8)
+                        .leaf<RunAsInstructed>(0,0, 0)
+                    .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTimeEarned>(85)
+                        .leaf<RunAsInstructed>(53,-53, 0.0)
+                    .end()
+                    // .composite<BrainTree::ParallelSequence>(1,2)
+                    //     .leaf<IsTimeEarned>(800)
+                    //     .leaf<RunAsInstructed>(0,0, 0)
+                    // .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTimeEarned>(8)
+                        .leaf<RunAsInstructed>(0,0, 0)
+                    .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTimeEarned>(30)
+                        .leaf<RunAsInstructed>(50,50, 1.0)
+                    .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsVariableTimeEarned>(0,1)
+                        .leaf<RunAsInstructed>(45,75, 0.0)
+                    .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTimeEarned>(40)
+                        .leaf<RunAsInstructed>(75,21, 0.0)
+                    .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTimeEarned>(50)
+                        .leaf<RunAsInstructed>(75,64, 0.0)
+                    .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTimeEarned>(1)
+                        .leaf<RunAsInstructed>(20,100, 0)
+                    .end()                    
+                    // .composite<BrainTree::ParallelSequence>(1,2)
+                    //     .leaf<IsTimeEarned>(100)
+                    //     .leaf<RunAsInstructed>(75,75, 0.0)
+                    // .end()
+
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTargetColorDetected>(Green)
+                        .leaf<RunAsInstructed>(75,75, 0.0)
+                    .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTargetColorDetected>(White)
+                        .leaf<RunAsInstructed>(60,75, 5.0)
+                    .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTimeEarned>(800)
+                        .leaf<RunAsInstructed>(0,0, 0)
+                    .end()
+
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTimeEarned>(1)
+                        .leaf<RunAsInstructed>(85,85, 3)
+                    .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsVariableTimeEarned2>(0.0383,-4.1737,110.47)
+                        .leaf<RunAsInstructed>(25,85, 5)
+                    .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTargetColorDetected>(Black)
+                        .leaf<IsTimeEarned>(50)
+                        .leaf<RunAsInstructed>(85,85, 5.0)
+                    .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTimeEarned>(30)
+                        .leaf<RunAsInstructed>(85,85, 5.0)
+                    .end()
+
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTimeEarned>(800)
+                        .leaf<RunAsInstructed>(0,0, 0)
+                    .end()
+
+
+
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTimeEarned>(12)
+                        .leaf<RunAsInstructed>(85,30, 0)
+                    .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTimeEarned>(30)
+                        .leaf<RunAsInstructed>(85,85, 0)
+                    .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTimeEarned>(800)
+                        .leaf<RunAsInstructed>(0,0, 0)
                     .end()
                     .composite<BrainTree::ParallelSequence>(1,2)
                         .leaf<IsTimeEarned>(36)
-                        .leaf<RunAsInstructed>(100,25, 3)
+                        .leaf<RunAsInstructed>(85,20, 10)
+                    .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTimeEarned>(300)
+                        .leaf<RunAsInstructed>(85,85, 0)
+                    .end()
+
+
+
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTimeEarned>(800)
+                        .leaf<RunAsInstructed>(0,0, 0)
+                    .end()
+
+
+
+
+
+
+                    //もとそーす
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTimeEarned>(363) //397
+                        .leaf<TraceLine>(SPEED_FAST, GS_TARGET, P_CONST_FAST, I_CONST_FAST, D_CONST_FAST, 0.0)
+                    .end()
+                    //コースの右上の角
+                    // .composite<BrainTree::ParallelSequence>(1,2)
+                    //     //.leaf<IsCurveAveEarned>(5.0,10,0,More)
+                    //     .leaf<IsTimeEarned>(350)
+                    //     .leaf<TraceLine>(65, GS_TARGET, 0.75, 1.0, D_CONST, 0.0)
+                    // .end()
+                    // .composite<BrainTree::ParallelSequence>(1,2)
+                    //     .leaf<IsTimeEarned>(180) //397
+                    //     .leaf<TraceLine>(SPEED_FAST, GS_TARGET, P_CONST_FAST, I_CONST_FAST, D_CONST_FAST, 0.0)
+                    // .end()
+                    // .composite<BrainTree::ParallelSequence>(1,2)
+                    //     .leaf<IsTimeEarned>(32)
+                    //     .leaf<RunAsInstructed>(40,85, 0.0)
+                    // .end()
+                    // .composite<BrainTree::ParallelSequence>(1,2)
+                    //     .leaf<IsTimeEarned>(65)
+                    //     .leaf<RunAsInstructed>(80,100, 1.5)
+                    // .end()
+                    // .composite<BrainTree::ParallelSequence>(1,2)
+                    //     .leaf<IsTimeEarned>(34)
+                    //     .leaf<RunAsInstructed>(40,100, 1.0)
+                    // .end()
+                    // .composite<BrainTree::ParallelSequence>(1,2)
+                    //     .leaf<IsTimeEarned>(182)
+                    //     .leaf<RunAsInstructed>(100,100, 1.0)
+                    // .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTimeEarned>(29)
+                        .leaf<RunAsInstructed>(70,85, 0.0)
+                    .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTimeEarned>(69)
+                        .leaf<RunAsInstructed>(63,85, 0)
+                    .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTimeEarned>(21)
+                        .leaf<RunAsInstructed>(53,85, 0)
+                    .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTimeEarned>(30)
+                        //.leaf<IsTargetColorDetected>(Gray)
+                        .leaf<RunAsInstructed>(75,75, 0.0)
+                    .end()
+                    // .composite<BrainTree::ParallelSequence>(1,2)
+                    //     .leaf<IsTimeEarned>(800)
+                    //     .leaf<RunAsInstructed>(0,0, 0.0)
+                    // .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTimeEarned>(60)
+                        .leaf<RunAsInstructed>(56,85, 0.0)
+                    .end()
+                    // .composite<BrainTree::ParallelSequence>(1,2)
+                    //     .leaf<IsTimeEarned>(800)
+                    //     .leaf<RunAsInstructed>(0,0, 0.0)
+                    // .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTimeEarned>(120)
+                        .leaf<RunAsInstructed>(85,85, 0.0)
+                    .end()
+                    // .composite<BrainTree::ParallelSequence>(1,2)
+                    //     .leaf<IsTimeEarned>(800)
+                    //     .leaf<RunAsInstructed>(0,0, 0.0)
+                    // .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTimeEarned>(70)
+                        .leaf<RunAsInstructed>(50,85, 0.0)
+                    .end()
+                    // .composite<BrainTree::ParallelSequence>(1,2)
+                    //     .leaf<IsTimeEarned>(800)
+                    //     .leaf<RunAsInstructed>(0,0, 0.0)
+                    // .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        //.leaf<IsTimeEarned>(120)
+                        .leaf<IsTargetColorDetected>(Black)
+                        .leaf<RunAsInstructed>(85,85, 1.0)
+                    .end()
+                    // .composite<BrainTree::ParallelSequence>(1,2)
+                    //     .leaf<IsTimeEarned>(800)
+                    //     .leaf<RunAsInstructed>(0,0, 0.0)
+                    // .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsVariableTimeEarned>(-1,120)
+                        .leaf<RunAsInstructed>(85,85, 1.0)
+                    .end()
+                    // .composite<BrainTree::ParallelSequence>(1,2)
+                    //     .leaf<IsTimeEarned>(800)
+                    //     .leaf<RunAsInstructed>(0,0, 0.0)
+                    // .end()
+                    // .composite<BrainTree::ParallelSequence>(1,2)
+                    //     //.leaf<IsTargetColorDetected>(Gray)
+                    //     //.leaf<IsTimeEarned>(40)
+                    //     .leaf<RunAsInstructed>(70,70, 1.0)
+                    // .end()
+                    // .composite<BrainTree::ParallelSequence>(1,2)
+                    //     .leaf<IsTimeEarned>(800)
+                    //     .leaf<RunAsInstructed>(0,0, 0.0)
+                    // .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTimeEarned>(55)
+                        //.leaf<IsVariableTimeEarned>(0.1786,47.25)
+                        .leaf<RunAsInstructed>(54,85, 2.0)
+                    .end()
+                    // .composite<BrainTree::ParallelSequence>(1,2)
+                    //     .leaf<IsTimeEarned>(800)
+                    //     .leaf<RunAsInstructed>(0,0, 0.0)
+                    // .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTimeEarned>(205)
+                        .leaf<RunAsInstructed>(85,85, 0.0)
+                    .end()
+                    // .composite<BrainTree::ParallelSequence>(1,2)
+                    //     .leaf<IsTimeEarned>(800)
+                    //     .leaf<RunAsInstructed>(0,0, 0.0)
+                    // .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTimeEarned>(63)
+                        .leaf<RunAsInstructed>(20,100, 0)
+                    .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTimeEarned>(35)
+                        .leaf<RunAsInstructed>(74,75, 0)
+                    .end()
+                    // .composite<BrainTree::ParallelSequence>(1,2)
+                    //     .leaf<IsTimeEarned>(800)
+                    //     .leaf<RunAsInstructed>(0,0, 0.0)
+                    // .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTargetColorDetected>(Black)
+                        //.leaf<IsTimeEarned>(50)
+                        .leaf<RunAsInstructed>(40,75, 0.0)
+                    .end()
+                    // .composite<BrainTree::ParallelSequence>(1,2)
+                    //     .leaf<IsTimeEarned>(800)
+                    //     .leaf<RunAsInstructed>(0,0, 0.0)
+                    // .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTimeEarned>(8)
+                        .leaf<RunAsInstructed>(0,0, 0)
+                    .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTimeEarned>(102)
+                        .leaf<RunAsInstructed>(53,-53, 0.0)
+                    .end()
+                    // .composite<BrainTree::ParallelSequence>(1,2)
+                    //     .leaf<IsTimeEarned>(800)
+                    //     .leaf<RunAsInstructed>(0,0, 0)
+                    // .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTimeEarned>(8)
+                        .leaf<RunAsInstructed>(0,0, 0)
+                    .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTimeEarned>(35)
+                        .leaf<RunAsInstructed>(50,50, 1.0)
+                    .end()
+                    // .composite<BrainTree::ParallelSequence>(1,2)
+                    //     .leaf<IsTimeEarned>(300)
+                    //     .leaf<RunAsInstructed>(0,0, 0)
+                    // .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTimeEarned>(50)
+                        .leaf<RunAsInstructed>(75,58, 0.0)
+                    .end()                    
+                    // .composite<BrainTree::ParallelSequence>(1,2)
+                    //     .leaf<IsTimeEarned>(100)
+                    //     .leaf<RunAsInstructed>(75,75, 0.0)
+                    // .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTargetColorDetected>(Green)
+                        .leaf<RunAsInstructed>(75,75, 0.0)
+                    .end()
+                    // .composite<BrainTree::ParallelSequence>(1,2)
+                    //     .leaf<IsTimeEarned>(1000)
+                    //     .leaf<RunAsInstructed>(0,0, 0)
+                    // .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTargetColorDetected>(White)
+                        .leaf<RunAsInstructed>(56,75, 0.0)
+                    .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTargetColorDetected>(Black)
+                        .leaf<RunAsInstructed>(85,85, 0.0)
+                    .end()
+
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTimeEarned>(35)
+                        //.leaf<IsVariableTimeEarned2>(0.25,-25.679,691.14)
+                        .leaf<RunAsInstructed>(20,85, 5.0)
+                    .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTimeEarned>(25)
+                        .leaf<RunAsInstructed>(100,100, 5.0)
+                    .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTimeEarned>(55)
+                        //.leaf<IsVariableTimeEarned2>(0.25,-25.679,691.14)
+                        .leaf<RunAsInstructed>(85,20, 5.0)
+                    .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTimeEarned>(500)
+                        .leaf<RunAsInstructed>(100,100, 5.0)
+                    .end()
+
+
+
+
+
+                    //いぬの
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTimeEarned>(32)
+                        .leaf<RunAsInstructed>(56,75, 0.0)
+                    .end()
+                    // .composite<BrainTree::ParallelSequence>(1,2)
+                    //     .leaf<IsTargetColorDetected>(Gray)
+                    //     .leaf<RunAsInstructed>(41,85, 0.0)
+                    // .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTimeEarned>(39)
+                        .leaf<RunAsInstructed>(46,85, 1.95)
+                    .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTimeEarned>(45)
+                        .leaf<RunAsInstructed>(65,85, 1.0)
+                    .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTimeEarned>(50)
+                        .leaf<RunAsInstructed>(85,54, 0.0)
+                    .end()
+                    // .composite<BrainTree::ParallelSequence>(1,2)
+                    //     .leaf<IsTimeEarned>(35)
+                    //     .leaf<RunAsInstructed>(85,31, 0.0)
+                    // .end()
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        .leaf<IsTimeEarned>(35)
+                        .leaf<RunAsInstructed>(85,41, 0.0)
                     .end()
                     .composite<BrainTree::ParallelSequence>(1,2)
                         .leaf<IsTimeEarned>(280)

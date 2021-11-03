@@ -133,6 +133,7 @@ extern Plotter*     plotter;
 
 enum Color {
     Black,
+    Black_2,
     Jetblack,
     Blue,
     Red,
@@ -142,6 +143,7 @@ enum Color {
     Green_3,
     Gray,
     White,
+    White_2,
 };
 
 enum CalcMode {
