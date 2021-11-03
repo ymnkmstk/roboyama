@@ -1667,7 +1667,7 @@ tr_garage = (BrainTree::BehaviorTree*) BrainTree::Builder()
 
 
 
-                    //いぬの
+                    //もとのもとのそーす
                     .composite<BrainTree::ParallelSequence>(1,2)
                         .leaf<IsTimeEarned>(32)
                         .leaf<RunAsInstructed>(56,75, 0.0)
