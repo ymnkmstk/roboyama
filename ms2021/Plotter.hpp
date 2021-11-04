@@ -29,12 +29,14 @@ public:
     int32_t getAngR();
     int32_t setDistanceRecord(int32_t deltaDist);
     int32_t getDistanceRecord();
+    int32_t setDistanceRecord_prev(int32_t deltaDist);
+    int32_t getDistanceRecord_prev();
     void plot();
 protected:
     ev3api::Motor *leftMotor, *rightMotor;
     ev3api::GyroSensor *gyroSensor;
     double distance, azimuth, locX, locY;
-    int32_t prevAngL, prevAngR, distanceRecord;
+    int32_t prevAngL, prevAngR, distanceRecord,distanceRecord_prev;
 };
 
 #endif /* Plotter_hpp */
