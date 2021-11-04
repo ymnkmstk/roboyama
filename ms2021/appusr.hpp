@@ -144,6 +144,7 @@ enum Color {
     Green_3,
     Green_4,
     Green_5,
+    Green_6,
     Gray,
     Gray_2,
     Gray_3,
