@@ -1419,7 +1419,7 @@ tr_garage = (BrainTree::BehaviorTree*) BrainTree::Builder()
                     .end()
                     //最後のストレートへの右回り
                     .composite<BrainTree::ParallelSequence>(1,2)
-                        .leaf<IsTimeEarned>(23)
+                        .leaf<IsTimeEarned>(24)
                         .leaf<RunAsInstructed>(100,25, 3)
                     .end()
                     .composite<BrainTree::ParallelSequence>(1,2)
