@@ -1549,6 +1549,14 @@ tr_garage = (BrainTree::BehaviorTree*) BrainTree::Builder()
                     //     .leaf<IsTimeEarned>(500)
                     //     .leaf<RunAsInstructed>(0,0, 0.0)
                     // .end()
+
+                    .composite<BrainTree::ParallelSequence>(1,2)
+                        //.leaf<IsVariableTimeEarned2>(0.0698,-1.5412,-0.065)
+                        .leaf<IsVariableTimeEarned2>(0.0372,-0.8421,-0.0653)
+                        .leaf<RunAsInstructed>(75,20, 0.0)
+                    .end()
+
+
                     .composite<BrainTree::ParallelSequence>(1,2)
                         .leaf<IsTimeEarned>(10)
                         .leaf<RunAsInstructed>(75,20, 0.0)
@@ -1563,10 +1571,10 @@ tr_garage = (BrainTree::BehaviorTree*) BrainTree::Builder()
                         .leaf<RunAsInstructed>(75,47, 0.0)
                     .end()
                     .composite<BrainTree::ParallelSequence>(1,2)
+                        //.leaf<IsTargetColorDetected>(Green)
                         .leaf<IsTimeEarned>(20)
                         .leaf<RunAsInstructed>(75,40, 0.0)
                     .end()
-
                     //GATE2を出た
                     .composite<BrainTree::ParallelSequence>(1,2)
                         .leaf<IsTargetColorDetected>(White)
@@ -1580,19 +1588,21 @@ tr_garage = (BrainTree::BehaviorTree*) BrainTree::Builder()
                     //1
                     .composite<BrainTree::ParallelSequence>(1,2)
                         .leaf<IsTargetColorDetected>(Black)
-                        .leaf<IsTimeEarned>(80)
+                        .leaf<IsTimeEarned>(130)
                         .leaf<RunAsInstructed>(70,80, 0.0)
-                    .end()           
+                    .end()         
                     //2
                     .composite<BrainTree::ParallelSequence>(1,2)
                         //.leaf<IsTimeEarned>(35)
-                        .leaf<IsVariableTimeEarned2>(-0.0471,1.6511,20.949)
+                       .leaf<IsVariableTimeEarned2>(0.0081,-1.4852,62.592)
+                       // .leaf<IsVariableTimeEarned2>(0.0048,1.182,56.535)
                         .leaf<RunAsInstructed>(20,80, 1.0)
                     .end()
                     //3
                     .composite<BrainTree::ParallelSequence>(1,2)
                         //.leaf<IsTimeEarned>(10)
-                        .leaf<IsVariableTimeEarned>(-1,45,false)//奥行 55
+                        //.leaf<IsVariableTimeEarned>(-1,55,false)//奥行 55
+                       .leaf<IsVariableTimeEarned2>(0.0019,-1.0936,62.747)
                         .leaf<RunAsInstructed>(85,85, 0.0)
                     .end()
 
