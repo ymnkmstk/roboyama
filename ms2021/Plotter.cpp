@@ -6,7 +6,7 @@
 #include "Plotter.hpp"
 
 Plotter::Plotter(ev3api::Motor* lm, ev3api::Motor* rm, ev3api::GyroSensor* gs) :
-distance(0.0),azimuth(0.0),locX(0.0),locY(0.0),leftMotor(lm),rightMotor(rm),gyroSensor(gs) {
+distance(0.0),azimuth(0.0),locX(0.0),locY(0.0),distanceRecord(0),distanceRecord_prev(0),leftMotor(lm),rightMotor(rm),gyroSensor(gs) {
     /* reset motor encoders */
     leftMotor->reset();
     rightMotor->reset();
@@ -46,6 +46,24 @@ int32_t Plotter::getAngL() {
 int32_t Plotter::getAngR() {
     return prevAngR;
 }
+
+int32_t Plotter::getDistanceRecord() {
+    return distanceRecord;
+}
+
+int32_t Plotter::setDistanceRecord(int32_t deltaDist) {
+    distanceRecord = deltaDist;
+}
+
+int32_t Plotter::getDistanceRecord_prev() {
+    return distanceRecord_prev;
+}
+
+int32_t Plotter::setDistanceRecord_prev(int32_t deltaDist) {
+    distanceRecord_prev = deltaDist;
+}
+
+
 
 void Plotter::plot() {
     /* accumulate distance */

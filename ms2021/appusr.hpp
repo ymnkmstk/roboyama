@@ -129,16 +129,29 @@ extern Plotter*     plotter;
 #define GS_TARGET            47  /* was 47 for 2020 program                 */
 #define GS_TARGET_SLOW       25
 #define SONAR_ALERT_DISTANCE 10  /* in centimeters                          */
-#define BLUE_DISTANCE     8700  /* 2nd blue part should be further than this   */ 
+#define BLUE_DISTANCE     8040  /* 2nd blue part should be further than this   */ 
 
 enum Color {
     Black,
+    Black_2,
+    Black_3,
     Jetblack,
     Blue,
     Red,
     Yellow,
     Green,
+    Green_2,
+    Green_3,
+    Green_4,
+    Green_5,
+    Green_6,
+    Gray,
+    Gray_2,
+    Gray_3,
     White,
+    White_2,
+    White_3,
+    White_4,
 };
 
 enum CalcMode {
