@@ -645,7 +645,7 @@ void main_task(intptr_t unused) {
                 .leaf<IsAngleSmaller>(-12)
             .end()  
             .composite<BrainTree::ParallelSequence>(2,2)
-                .leaf<IsDistanceEarned>(2000)  // 距離到達まではfail、その後success
+                .leaf<IsDistanceEarned>(5000)
                 .composite<BrainTree::MemSequence>()
                     .leaf<IsColorDetected>(CL_BLACK)
                     .leaf<IsColorDetected>(CL_BLUE)
@@ -661,7 +661,7 @@ void main_task(intptr_t unused) {
         .composite<BrainTree::MemSequence>()
             .composite<BrainTree::ParallelSequence>(1,2)
                 .leaf<IsTimeEarned>(1900000)
-                .leaf<RunAsInstructed>(35, 55, 0.45)
+                .leaf<RunAsInstructed>(35, 54, 0.45)
             .end()
             .leaf<SetArmPosition>(ARM_INITIAL_ANGLE, ARM_SHIFT_PWM)
             .composite<BrainTree::ParallelSequence>(1,2)
