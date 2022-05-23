@@ -405,8 +405,8 @@ protected:
 
 /*
     usage:
-    ".leaf<RotateEV3>(30 * _COURSE, speed, srew_rate)"
-    is to rotate robot 30 degrees clockwise at the speed when in L course and counter-clockwise in R course
+    ".leaf<RotateEV3>(30, speed, srew_rate)"
+    is to rotate robot 30 degrees (=clockwise) at the specified speed.
     srew_rate = 0.0 indidates NO tropezoidal motion.
     srew_rate = 0.5 instructs FilteredMotor to change 1 pwm every two executions of update()
     until the current speed gradually reaches the instructed target speed.
@@ -415,7 +415,6 @@ class RotateEV3 : public BrainTree::Node {
 public:
     RotateEV3(int16_t degree, int s, double srew_rate) : deltaDegreeTarget(degree),speed(s),srewRate(srew_rate) {
         updated = false;
-        deltaDegreeTrpzMtrCtrl = 0;
         assert(degree >= -180 && degree <= 180);
         if (degree > 0) {
             clockwise = 1;
@@ -431,38 +430,34 @@ public:
             /* stop the robot at start */
             leftMotor->setPWM(0);
             rightMotor->setPWM(0);
+            _log("ODO=%05d, Rotation started. Current degree = %d", plotter->getDistance(), originalDegree);
             updated = true;
             return Status::Running;
         }
+
         int16_t deltaDegree = plotter->getDegree() - originalDegree;
         if (deltaDegree > 180) {
             deltaDegree -= 360;
         } else if (deltaDegree < -180) {
             deltaDegree += 360;
         }
-        deltaDegree = deltaDegree * _COURSE;
-
         if (clockwise * deltaDegree < clockwise * deltaDegreeTarget) {
-            if(clockwise * speed <= leftMotor->getPWM() * _COURSE && clockwise * deltaDegree < floor(clockwise * deltaDegreeTarget * 0.5) && deltaDegreeTrpzMtrCtrl == 0){
-                deltaDegreeTrpzMtrCtrl = deltaDegree; 
-            }else if(clockwise * speed > leftMotor->getPWM() * _COURSE && clockwise * deltaDegree >= floor(clockwise * deltaDegreeTarget * 0.5) && deltaDegreeTrpzMtrCtrl == 0){
-                deltaDegreeTrpzMtrCtrl = deltaDegreeTarget;
-            }
-
-            if(clockwise * deltaDegree < clockwise * deltaDegreeTarget - deltaDegreeTrpzMtrCtrl ){
-                leftMotor->setPWM(clockwise * speed * _COURSE);
-                rightMotor->setPWM((-clockwise) * speed * _COURSE);
-            }else{
+            if ((srewRate != 0.0) && (clockwise * deltaDegree >= clockwise * deltaDegreeTarget - 5)) {
+                /* when comes to the half-way, start decreazing the speed by tropezoidal motion */    
                 leftMotor->setPWM(clockwise * 3);
-                rightMotor->setPWM((-clockwise) * 3);
+                rightMotor->setPWM(-clockwise * 3);
+            } else {
+                leftMotor->setPWM(clockwise * speed);
+                rightMotor->setPWM((-clockwise) * speed);
             }
             return Status::Running;
         } else {
+            _log("ODO=%05d, Rotation ended. Current degree = %d", plotter->getDistance(), plotter->getDegree());
             return Status::Success;
         }
     }
 private:
-    int16_t deltaDegreeTarget, originalDegree, deltaDegreeTrpzMtrCtrl;
+    int16_t deltaDegreeTarget, originalDegree;
     int clockwise, speed;
     bool updated;
     double srewRate;
@@ -588,12 +583,16 @@ void main_task(intptr_t unused) {
     Filter *lpf_b = new FIR_Transposed(hn, FIR_ORDER);
     colorSensor->setRawColorFilters(lpf_r, lpf_g, lpf_b);
 
+    leftMotor->reset();
     srlfL = new SRLF(0.0);
     leftMotor->setPWMFilter(srlfL);
     leftMotor->setPWM(0);
+    rightMotor->reset();
     srlfR = new SRLF(0.0);
     rightMotor->setPWMFilter(srlfR);
     rightMotor->setPWM(0);
+    tailMotor->reset();
+    armMotor->reset();
 
 /*
     === BEHAVIOR TREE DEFINITION STARTS HERE ===
@@ -626,24 +625,16 @@ void main_task(intptr_t unused) {
             .decorator<BrainTree::Inverter>()
                 .leaf<IsAngleSmaller>(-12)
             .end()  
-            .composite<BrainTree::ParallelSequence>(2,2)
-                .leaf<IsDistanceEarned>(BLUE_DISTANCE)  // 距離到達まではfail、その後success
-                .composite<BrainTree::MemSequence>()
-                    .leaf<IsColorDetected>(CL_BLACK)
-                    .leaf<IsColorDetected>(CL_BLUE)
-                .end()
-            .end()
-            .composite<BrainTree::MemSequence>()
-                .composite<BrainTree::ParallelSequence>(1,2)
-                    .leaf<IsTimeEarned>(80)
-                    .leaf<TraceLine>(SPEED_NORM, GS_TARGET, P_CONST, I_CONST, D_CONST, 0.5, TS_NORMAL)
-                .end()
-            .end()
+            .leaf<IsDistanceEarned>(100)
+            .leaf<TraceLine>(SPEED_NORM, GS_TARGET, P_CONST, I_CONST, D_CONST, 0.0, TS_OPPOSITE)
         .end()
         .build();
 
     tr_block = (BrainTree::BehaviorTree*) BrainTree::Builder()
-        .leaf<RotateEV3>(30 * _COURSE, 10, 0.5)
+        .composite<BrainTree::MemSequence>()
+            .leaf<RotateEV3>(90, 10, 0.5)
+            .leaf<SetArmPosition>(ARM_INITIAL_ANGLE, ARM_SHIFT_PWM) 
+        .end()
         .build();
 
 #else /* BEHAVIOR FOR THE LEFT COURSE STARTS HERE */
@@ -660,14 +651,25 @@ void main_task(intptr_t unused) {
                     .leaf<IsColorDetected>(CL_BLUE)
                 .end()
             .end()
-            .leaf<TraceLine>(SPEED_NORM, GS_TARGET, P_CONST, I_CONST, D_CONST, 0.0, TS_OPPOSITE)
+            .composite<BrainTree::MemSequence>()
+                .leaf<TraceLine>(SPEED_NORM, GS_TARGET, P_CONST, I_CONST, D_CONST, 0.0, TS_OPPOSITE)
+            .end()
         .end()
         .build();
 
     tr_block = (BrainTree::BehaviorTree*) BrainTree::Builder()
         .composite<BrainTree::MemSequence>()
-            .leaf<RotateEV3>(-90 * _COURSE, 10, 0.5)
-            .leaf<SetArmPosition>(ARM_INITIAL_ANGLE, ARM_SHIFT_PWM) 
+            .composite<BrainTree::ParallelSequence>(1,2)
+                .leaf<IsTimeEarned>(1900000)
+                .leaf<RunAsInstructed>(35, 55, 0.45)
+            .end()
+            .leaf<SetArmPosition>(ARM_INITIAL_ANGLE, ARM_SHIFT_PWM)
+            .composite<BrainTree::ParallelSequence>(1,2)
+                .leaf<IsColorDetected>(CL_RED)
+                .leaf<IsTimeEarned>(2000000)
+                .leaf<RunAsInstructed>(25, 55, 0.5)
+            .end()
+
         .end()
         .build();
 
