@@ -21,9 +21,9 @@ TouchSensor*    touchSensor;
 SonarSensor*    sonarSensor;
 FilteredColorSensor*    colorSensor;
 GyroSensor*     gyroSensor;
-SRLF*           srlf_l;
+SRLF*           srlfL;
 FilteredMotor*  leftMotor;
-SRLF*           srlf_r;
+SRLF*           srlfR;
 FilteredMotor*  rightMotor;
 Motor*          tailMotor;
 Motor*          armMotor;
@@ -90,14 +90,14 @@ public:
 
 /*
     usage:
-    ".leaf<IsSonarOn>(dist)"
+    ".leaf<IsSonarOn>(distance)"
     is to determine if the robot is closer than the spedified alert distance
     to an object in front of sonar sensor.
     dist is in millimeter.
 */
 class IsSonarOn : public BrainTree::Node {
 public:
-    IsSonarOn(int32_t dist) : alertDistance(dist) {}
+    IsSonarOn(int32_t d) : alertDistance(d) {}
     Status update() override {
         int32_t distance = 10 * (sonarSensor->getDistance());
         if ((distance <= alertDistance) && (distance >= 0)) {
@@ -119,7 +119,7 @@ protected:
 */
 class IsAngleLarger : public BrainTree::Node {
 public:
-    IsAngleLarger(int angle) : angle(angle) {}
+    IsAngleLarger(int ang) : angle(ang) {}
     Status update() override {
         int32_t curAngle = gyroSensor->getAngle(); 
         if (curAngle >= angle){
@@ -140,7 +140,7 @@ protected:
 */
 class IsAngleSmaller : public BrainTree::Node {
 public:
-    IsAngleSmaller(int angle) : angle(angle) {}
+    IsAngleSmaller(int ang) : angle(ang) {}
     Status update() override {
         int32_t curAngle = gyroSensor->getAngle(); 
         if (curAngle <= angle){
@@ -161,7 +161,7 @@ protected:
 */
 class IsDistanceEarned : public BrainTree::Node {
 public:
-    IsDistanceEarned(int32_t dist) : deltaDistTarget(dist) {
+    IsDistanceEarned(int32_t d) : deltaDistTarget(d) {
         updated = false;
         earned = false;
     }
@@ -324,12 +324,14 @@ public:
     }
     Status update() override {
         if (!updated) {
+            srlfL->setRate(srewRate);
+            srlfR->setRate(srewRate);
             _log("ODO=%05d, Trace run started.", plotter->getDistance());
             updated = true;
         }
 
         int16_t sensor;
-        int8_t forward, turn, pwm_L, pwm_R;
+        int8_t forward, turn, pwmL, pwmR;
         rgb_raw_t cur_rgb;
 
         colorSensor->getRawColor(cur_rgb);
@@ -342,12 +344,10 @@ public:
         }
         forward = speed;
         /* steer EV3 by setting different speed to the motors */
-        pwm_L = forward - turn;
-        pwm_R = forward + turn;
-        srlf_l->setRate(srewRate);
-        leftMotor->setPWM(pwm_L);
-        srlf_r->setRate(srewRate);
-        rightMotor->setPWM(pwm_R);
+        pwmL = forward - turn;
+        pwmR = forward + turn;
+        leftMotor->setPWM(pwmL);
+        rightMotor->setPWM(pwmR);
         return Status::Running;
     }
 protected:
@@ -370,25 +370,25 @@ class RunAsInstructed : public BrainTree::Node {
 public:
     RunAsInstructed(int pwm_l, int pwm_r, double srew_rate) : pwmL(pwm_l),pwmR(pwm_r),srewRate(srew_rate) {
         updated = false;
-        if (_COURSE == -1){
-            pwm = pwmL;
+        if (_COURSE == -1) {
+            int pwm = pwmL;
             pwmL = pwmR;
             pwmR = pwm;            
         }     
     }
     Status update() override {
         if (!updated) {
+            srlfL->setRate(srewRate);
+            srlfR->setRate(srewRate);
             _log("ODO=%05d, Instructed run started.", plotter->getDistance());
             updated = true;
         }
-        srlf_l->setRate(srewRate);
-        srlf_r->setRate(srewRate);
         leftMotor->setPWM(pwmL);
         rightMotor->setPWM(pwmR);
         return Status::Running;
     }
 protected:
-    int pwmL, pwmR,pwm;
+    int pwmL, pwmR;
     double srewRate;
     bool updated;
 };
@@ -416,11 +416,11 @@ public:
     Status update() override {
         if (!updated) {
             originalDegree = plotter->getDegree();
+            srlfL->setRate(srewRate);
+            srlfR->setRate(srewRate);
             /* stop the robot at start */
-            srlf_l->setRate(0.0);
-            srlf_r->setRate(0.0);
-            leftMotor->setPWM(0.0);
-            rightMotor->setPWM(0.0);
+            leftMotor->setPWM(0);
+            rightMotor->setPWM(0);
             updated = true;
             return Status::Running;
         }
@@ -433,8 +433,6 @@ public:
         deltaDegree = deltaDegree * _COURSE;
 
         if (clockwise * deltaDegree < clockwise * deltaDegreeTarget) {
-            srlf_l->setRate(srewRate);
-            srlf_r->setRate(srewRate);
             if(clockwise * speed <= leftMotor->getPWM() * _COURSE && clockwise * deltaDegree < floor(clockwise * deltaDegreeTarget * 0.5) && deltaDegreeTrpzMtrCtrl == 0){
                 deltaDegreeTrpzMtrCtrl = deltaDegree; 
             }else if(clockwise * speed > leftMotor->getPWM() * _COURSE && clockwise * deltaDegree >= floor(clockwise * deltaDegreeTarget * 0.5) && deltaDegreeTrpzMtrCtrl == 0){
@@ -467,7 +465,7 @@ private:
 */
 class SetArmPosition : public BrainTree::Node {
 public:
-    SetArmPosition(int32_t target_degree, int pwm) : targetDegree(target_degree),pwm(pwm) {
+    SetArmPosition(int32_t target_degree, int pwm) : targetDegree(target_degree),pwmA(pwm) {
         updated = false;
     }
     Status update() override {
@@ -481,7 +479,7 @@ public:
             } else {
                 clockwise = -1;
             }
-            armMotor->setPWM(clockwise * pwm);
+            armMotor->setPWM(clockwise * pwmA);
             updated = true;
             return Status::Running;
         }
@@ -496,7 +494,7 @@ public:
     }
 private:
     int32_t targetDegree;
-    int pwm, clockwise;
+    int pwmA, clockwise;
     bool updated;
 };
 
@@ -507,7 +505,7 @@ private:
 */
 class SetTailPosition : public BrainTree::Node {
 public:
-    SetTailPosition(int32_t target_degree, int pwm) : targetDegree(target_degree),pwm(pwm) {
+    SetTailPosition(int32_t target_degree, int pwm) : targetDegree(target_degree),pwmT(pwm) {
         updated = false;
     }
     Status update() override {
@@ -521,14 +519,14 @@ public:
             } else {
                 clockwise = -1;
             }
-            tailMotor->setPWM(clockwise * pwm);
+            tailMotor->setPWM(clockwise * pwmT);
             updated = true;
             return Status::Running;
         }
         if (((clockwise ==  1) && (currentDegree >= targetDegree)) ||
             ((clockwise == -1) && (currentDegree <= targetDegree))) {
             _log("ODO=%05d, Tail position set to %d.", plotter->getDistance(), currentDegree);
-            tailMotor->setPWM(clockwise * pwm);
+            tailMotor->setPWM(0);
             return Status::Success;
         } else {
             return Status::Running;
@@ -536,7 +534,7 @@ public:
     }
 private:
     int32_t targetDegree;
-    int pwm, clockwise;
+    int pwmT, clockwise;
     bool updated;
 };
 
@@ -580,10 +578,10 @@ void main_task(intptr_t unused) {
     Filter *lpf_b = new FIR_Transposed(hn, FIR_ORDER);
     colorSensor->setRawColorFilters(lpf_r, lpf_g, lpf_b);
 
-    srlf_l = new SRLF(0.0);
-    leftMotor->setPWMFilter(srlf_l);
-    srlf_r = new SRLF(0.0);
-    rightMotor->setPWMFilter(srlf_r);
+    srlfL = new SRLF(0.0);
+    leftMotor->setPWMFilter(srlfL);
+    srlfR = new SRLF(0.0);
+    rightMotor->setPWMFilter(srlfR);
 
 /*
     === BEHAVIOR TREE DEFINITION STARTS HERE ===
