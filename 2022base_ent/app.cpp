@@ -324,8 +324,11 @@ public:
     }
     Status update() override {
         if (!updated) {
-            srlfL->setRate(srewRate);
-            srlfR->setRate(srewRate);
+            /* The following code chunk is to properly set prevXin in SRLF */
+            srlfL->setRate(0.0);
+            leftMotor->setPWM(leftMotor->getPWM());
+            srlfR->setRate(0.0);
+            rightMotor->setPWM(rightMotor->getPWM());
             _log("ODO=%05d, Trace run started.", plotter->getDistance());
             updated = true;
         }
@@ -346,7 +349,9 @@ public:
         /* steer EV3 by setting different speed to the motors */
         pwmL = forward - turn;
         pwmR = forward + turn;
+        srlfL->setRate(srewRate);
         leftMotor->setPWM(pwmL);
+        srlfR->setRate(srewRate);
         rightMotor->setPWM(pwmR);
         return Status::Running;
     }
@@ -378,12 +383,17 @@ public:
     }
     Status update() override {
         if (!updated) {
-            srlfL->setRate(srewRate);
-            srlfR->setRate(srewRate);
+            /* The following code chunk is to properly set prevXin in SRLF */
+            srlfL->setRate(0.0);
+            leftMotor->setPWM(leftMotor->getPWM());
+            srlfR->setRate(0.0);
+            rightMotor->setPWM(rightMotor->getPWM());
             _log("ODO=%05d, Instructed run started.", plotter->getDistance());
             updated = true;
         }
+        srlfL->setRate(srewRate);
         leftMotor->setPWM(pwmL);
+        srlfR->setRate(srewRate);
         rightMotor->setPWM(pwmR);
         return Status::Running;
     }
@@ -580,8 +590,10 @@ void main_task(intptr_t unused) {
 
     srlfL = new SRLF(0.0);
     leftMotor->setPWMFilter(srlfL);
+    leftMotor->setPWM(0);
     srlfR = new SRLF(0.0);
     rightMotor->setPWMFilter(srlfR);
+    rightMotor->setPWM(0);
 
 /*
     === BEHAVIOR TREE DEFINITION STARTS HERE ===
@@ -624,7 +636,7 @@ void main_task(intptr_t unused) {
             .composite<BrainTree::MemSequence>()
                 .composite<BrainTree::ParallelSequence>(1,2)
                     .leaf<IsTimeEarned>(80)
-                    .leaf<TraceLine>(SPEED_NORM, GS_TARGET, P_CONST, I_CONST, D_CONST, 0.0, TS_NORMAL)
+                    .leaf<TraceLine>(SPEED_NORM, GS_TARGET, P_CONST, I_CONST, D_CONST, 0.5, TS_NORMAL)
                 .end()
             .end()
         .end()
@@ -642,23 +654,21 @@ void main_task(intptr_t unused) {
                 .leaf<IsAngleSmaller>(-12)
             .end()  
             .composite<BrainTree::ParallelSequence>(2,2)
-                .leaf<IsDistanceEarned>(BLUE_DISTANCE)  // 距離到達まではfail、その後success
+                .leaf<IsDistanceEarned>(2000)  // 距離到達まではfail、その後success
                 .composite<BrainTree::MemSequence>()
                     .leaf<IsColorDetected>(CL_BLACK)
                     .leaf<IsColorDetected>(CL_BLUE)
                 .end()
             .end()
-            .composite<BrainTree::MemSequence>()
-                .composite<BrainTree::ParallelSequence>(1,2)  // 30秒走行
-                    .leaf<IsTimeEarned>(30000000)
-                    .leaf<TraceLine>(SPEED_NORM, GS_TARGET, P_CONST, I_CONST, D_CONST, 0.0, TS_OPPOSITE)
-                .end()
-            .end()
+            .leaf<TraceLine>(SPEED_NORM, GS_TARGET, P_CONST, I_CONST, D_CONST, 0.0, TS_OPPOSITE)
         .end()
         .build();
 
     tr_block = (BrainTree::BehaviorTree*) BrainTree::Builder()
-        .leaf<RotateEV3>(30 * _COURSE, 10, 0.5)
+        .composite<BrainTree::MemSequence>()
+            .leaf<RotateEV3>(-90 * _COURSE, 10, 0.5)
+            .leaf<SetArmPosition>(ARM_INITIAL_ANGLE, ARM_SHIFT_PWM) 
+        .end()
         .build();
 
 #endif /* if defined(MAKE_RIGHT) */

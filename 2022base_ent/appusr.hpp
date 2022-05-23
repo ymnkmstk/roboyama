@@ -104,7 +104,6 @@ extern Plotter*     plotter;
 #define GS_TARGET               47      /* was 47 for 2020 program                 */
 #define GS_TARGET_SLOW          25
 #define SONAR_ALERT_DISTANCE    100     /* in millimeter                           */
-#define BLUE_DISTANCE           8040    /* 2nd blue part should be further than this   */ 
 #define ARM_INITIAL_ANGLE       -58
 #define ARM_SHIFT_PWM           100
 
