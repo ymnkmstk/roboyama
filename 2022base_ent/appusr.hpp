@@ -15,7 +15,9 @@
 #include "Clock.h"
 using namespace ev3api;
 
+#if defined(MAKE_SIM)
 #include "etroboc_ext.h"
+#endif
 
 /* M_PI and M_TWOPI is NOT available even with math header file under -std=c++11
    because they are not strictly comforming to C++11 standards
