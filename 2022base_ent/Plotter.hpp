@@ -17,6 +17,10 @@
    this program is compiled under -std=gnu++11 option */
 #include <math.h>
 
+#ifndef M_TWOPI
+#define M_TWOPI         (M_PI * 2.0)
+#endif
+
 class Plotter {
 public:
     Plotter(ev3api::Motor* lm, ev3api::Motor* rm, ev3api::GyroSensor* gs);
