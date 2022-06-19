@@ -34,7 +34,7 @@ using namespace ev3api;
 
 /* global variables */
 extern FILE*        bt;
-extern Clock*       clock;
+extern Clock*       ev3clock;
 extern TouchSensor* touchSensor;
 extern SonarSensor* sonarSensor;
 extern FilteredColorSensor* colorSensor;
@@ -62,11 +62,11 @@ extern Plotter*     plotter;
 #ifdef LOG_ON_CONSOL
 #define _log(fmt, ...) \
     syslog(LOG_NOTICE, "%08u, %s: " fmt, \
-    clock->now(), __PRETTY_FUNCTION__, ##__VA_ARGS__)
+    ev3clock->now(), __PRETTY_FUNCTION__, ##__VA_ARGS__)
 #else
 #define _log(fmt, ...) \
     fprintf(bt, "%08u, %s: " fmt "\n", \
-    clock->now(), __PRETTY_FUNCTION__, ##__VA_ARGS__)
+    ev3clock->now(), __PRETTY_FUNCTION__, ##__VA_ARGS__)
 #endif
 
 /* macro to covert an enumeration constant to a string */

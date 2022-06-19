@@ -16,7 +16,7 @@ extern "C" void __sync_synchronize() {}
 
 /* global variables */
 FILE*           bt;
-Clock*          clock;
+Clock*          ev3clock;
 TouchSensor*    touchSensor;
 SonarSensor*    sonarSensor;
 FilteredColorSensor*    colorSensor;
@@ -47,7 +47,7 @@ State state = ST_INITIAL;
 class ResetClock : public BrainTree::Node {
 public:
     Status update() override {
-        clock->reset();
+        ev3clock->reset();
         _log("clock reset.");
         ev3_led_set_color(LED_GREEN);
         return Status::Success;
@@ -202,11 +202,11 @@ public:
     }
     Status update() override {
         if (!updated) {
-            originalTime = clock->now();
+            originalTime = ev3clock->now();
             _log("ODO=%05d, Time accumulation started.", plotter->getDistance());
              updated = true;
         }
-        int32_t deltaTime = clock->now() - originalTime;
+        int32_t deltaTime = ev3clock->now() - originalTime;
 
         if (deltaTime >= deltaTimeTarget) {
             if (!earned) {
@@ -562,7 +562,7 @@ void main_task(intptr_t unused) {
     bt = ev3_serial_open_file(EV3_SERIAL_BT);
     assert(bt != NULL);
     /* create and initialize EV3 objects */
-    clock       = new Clock();
+    ev3clock    = new Clock();
     touchSensor = new TouchSensor(PORT_1);
     sonarSensor = new SonarSensor(PORT_2);
     colorSensor = new FilteredColorSensor(PORT_3);
@@ -697,10 +697,12 @@ void main_task(intptr_t unused) {
     delete colorSensor;
     delete sonarSensor;
     delete touchSensor;
-    delete clock;
+    delete ev3clock;
     _log("being terminated...");
     fclose(bt);
+#if defined(MAKE_SIM)    
     ETRoboc_notifyCompletedToSimulator();
+#endif
     ext_tsk();
 }
 
