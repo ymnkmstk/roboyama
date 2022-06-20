@@ -3,6 +3,11 @@
 
     Copyright © 2022 MSAD Mode2E. All rights reserved.
 */
+#include "BrainTree.h"
+/*
+    BrainTree.h must present before ev3api.h on RasPike environment.
+    Note that ev3api.h is included by app.h.
+*/
 #include "app.h"
 #include "appusr.hpp"
 #include <iostream>

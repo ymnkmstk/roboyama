@@ -24,7 +24,6 @@ using namespace ev3api;
    this program is compiled under -std=gnu++11 option */
 #include <math.h>
 
-#include "BrainTree.h"
 #include "FilteredMotor.hpp"
 #include "SRLF.hpp"
 #include "FilteredColorSensor.hpp"
