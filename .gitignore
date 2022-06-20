@@ -2,12 +2,14 @@
 !.gitignore
 !/2021base/
 !/2022base_ent/
+!/2022base_pri/
 !/aflac2019/
 !/aflac2020/
 !/ms2021/
 /ms2021/work/
 !/test-sensor/
 !/ev3way-cpp/
+!/sample_cpp5/
 !/EV3way_EV3RT/
 !/loganalysis/
 *~
