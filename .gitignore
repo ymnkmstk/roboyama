@@ -7,6 +7,10 @@
 !/aflac2020/
 !/ms2021/
 /ms2021/work/
+!/msad2022_ent/
+/msad2022_ent/work/
+!/msad2022_pri/
+/msad2022_pri/work/
 !/test-sensor/
 !/ev3way-cpp/
 !/sample_cpp5/
@@ -17,3 +21,4 @@
 .DS_Store
 a.out
 *30_CS.sh
+.$*.drawio.*
