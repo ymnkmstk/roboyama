@@ -1,7 +1,7 @@
 /*
     app.cpp
 
-    Copyright © 2022 MSAD Mode2E. All rights reserved.
+    Copyright © 2022 MSAD Mode2P. All rights reserved.
 */
 #include "BrainTree.h"
 /*
@@ -199,7 +199,7 @@ public:
             }
             return Status::Success;
         } else {
-            return Status::Failure;
+            return Status::Running;
         }
     }
 protected:
@@ -234,7 +234,7 @@ public:
             }
             return Status::Success;
         } else {
-            return Status::Failure;
+            return Status::Running;
         }
     }
 protected:
