@@ -185,7 +185,7 @@ public:
             }
             return Status::Success;
         } else {
-            return Status::Failure;
+            return Status::Running;
         }
     }
 protected:
@@ -220,7 +220,7 @@ public:
             }
             return Status::Success;
         } else {
-            return Status::Failure;
+            return Status::Running;
         }
     }
 protected:
@@ -569,8 +569,8 @@ void main_task(intptr_t unused) {
     /* create and initialize EV3 objects */
     ev3clock    = new Clock();
     touchSensor = new TouchSensor(PORT_1);
-    sonarSensor = new SonarSensor(PORT_2);
-    colorSensor = new FilteredColorSensor(PORT_3);
+    sonarSensor = new SonarSensor(PORT_3);
+    colorSensor = new FilteredColorSensor(PORT_2);
     gyroSensor  = new GyroSensor(PORT_4);
     leftMotor   = new FilteredMotor(PORT_C);
     rightMotor  = new FilteredMotor(PORT_B);
