@@ -1,7 +1,7 @@
 /*
     app.cpp
 
-    Copyright © 2022 MSAD Mode2E. All rights reserved.
+    Copyright © 2022 MSAD Mode2P. All rights reserved.
 */
 #include "BrainTree.h"
 /*
@@ -625,7 +625,7 @@ void main_task(intptr_t unused) {
             .leaf<IsTimeEarned>(3000000) // wait 3 seconds
             .composite<BrainTree::ParallelSequence>(1,3)
                 .leaf<IsTimeEarned>(10000000) // break after 10 seconds
-                .leaf<RunAsInstructed>(-50,-25,-0.5)
+                .leaf<RunAsInstructed>(-50,-25,0.5)
             .end()
             .leaf<StopNow>()
         .end()
