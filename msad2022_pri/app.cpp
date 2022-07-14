@@ -604,18 +604,144 @@ void main_task(intptr_t unused) {
 
 #else /* BEHAVIOR FOR THE LEFT COURSE STARTS HERE */
     tr_run = (BrainTree::BehaviorTree*) BrainTree::Builder()
-        .composite<BrainTree::ParallelSequence>(1,3)
+
+        .composite<BrainTree::ParallelSequence>(1,2)
             .leaf<IsBackOn>()
-            /*
-            ToDo: earned distance is not calculated properly parhaps because the task is NOT invoked every 10ms as defined in app.h on RasPike.
-              Identify a realistic PERIOD_UPD_TSK.  It also impacts PID calculation.
-            */
-            .leaf<IsDistanceEarned>(10900)
+        
             .composite<BrainTree::MemSequence>()
-                .leaf<IsColorDetected>(CL_BLACK)
-                .leaf<IsColorDetected>(CL_BLUE)
+    /*
+    first trace
+    */ 
+                .composite<BrainTree::ParallelSequence>(1,2)
+                   .leaf<IsTimeEarned>(1300000)
+                   .leaf<TraceLine>(SPEED_NORM, GS_TARGET, P_CONST, I_CONST, D_CONST, 0.0, TS_NORMAL)
+                .end()
+    /*
+    first turn right
+    */ 
+                .composite<BrainTree::ParallelSequence>(1,2)
+                   .leaf<IsTimeEarned>(1190000)
+                   .leaf<RunAsInstructed>(60,25, 0.0)
+                .end()
+    /*
+    after turn right,run
+    */ 
+                .composite<BrainTree::ParallelSequence>(1,2)
+                   .leaf<IsTimeEarned>(1200000)
+                   .leaf<RunAsInstructed>(100,100, 0.0)
+                .end()
+    /*
+    after run,turn right
+    */ 
+                .composite<BrainTree::ParallelSequence>(1,2)
+                   .leaf<IsTimeEarned>(1000000)
+                   .leaf<RunAsInstructed>(60,25, 0.0)
+                .end()
+    /*
+    color detect
+    */ 
+                .composite<BrainTree::ParallelSequence>(1,2)
+                   .leaf<IsColorDetected>(CL_BLACK)
+                   .leaf<RunAsInstructed>(50,50, 0.0)
+                .end()
+    /*
+    rine trace while
+    */ 
+                .composite<BrainTree::ParallelSequence>(1,2)
+                   .leaf<IsTimeEarned>(2500000)
+                   .leaf<TraceLine>(SPEED_NORM, GS_TARGET, P_CONST, I_CONST, D_CONST, 0.0, TS_NORMAL)
+                .end()
+    /*
+    go straight
+    */ 
+                .composite<BrainTree::ParallelSequence>(1,2)
+                   .leaf<IsTimeEarned>(800000)
+                   .leaf<RunAsInstructed>(100,100, 0.0)
+                .end()
+    /*
+    go till line detect
+    */ 
+                .composite<BrainTree::ParallelSequence>(1,2)
+                   .leaf<IsTimeEarned>(1200000)
+                   .leaf<IsColorDetected>(CL_BLACK)
+                   .leaf<RunAsInstructed>(100,100, 0.0)
+                .end()
+    /*
+    if don,t detect turn adjust a little
+    */ 
+                .composite<BrainTree::ParallelSequence>(1,2)
+                   .leaf<IsTimeEarned>(900000)
+                   .leaf<RunAsInstructed>(60,30, 0.0)
+                .end()
+    /*
+    if don,t detect, try to detect again 
+    */ 
+                .composite<BrainTree::ParallelSequence>(1,2)
+                   .leaf<IsColorDetected>(CL_BLACK)
+                   .leaf<RunAsInstructed>(60,30, 0.0)
+                .end()
+    /*
+    rine tlace while
+    */ 
+                .composite<BrainTree::ParallelSequence>(1,2)
+                   .leaf<IsTimeEarned>(5500000)
+                   .leaf<TraceLine>(SPEED_HIGH, GS_TARGET, P_CONST, I_CONST, D_CONST, 0.0, TS_NORMAL)
+                .end()
+    /*
+    after passing 3rd gate, go straight while
+    */ 
+                .composite<BrainTree::ParallelSequence>(1,2)
+                   .leaf<IsColorDetected>(CL_JETBLACK)
+                   .leaf<TraceLine>(SPEED_NORM, GS_TARGET, P_CONST, I_CONST, D_CONST, 0.0, TS_NORMAL)
+                .end()
+    /*
+    go till color detect
+    */ 
+                .composite<BrainTree::ParallelSequence>(1,2)
+                   .leaf<IsDistanceEarned>(30)
+                   .leaf<RunAsInstructed>(50,50, 0.0)
+                .end()
+                .composite<BrainTree::ParallelSequence>(1,2)
+                   .leaf<IsDistanceEarned>(30)
+                   .leaf<RunAsInstructed>(50,60, 0.0)
+                .end()
+    /*
+    if don,t detect, try to detect
+    */ 
+                .composite<BrainTree::ParallelSequence>(1,2)
+                   .leaf<IsColorDetected>(CL_BLACK)
+                   .leaf<RunAsInstructed>(100,100, 0.0)
+                .end()
+    
+                .composite<BrainTree::ParallelSequence>(1,2)
+                   .leaf<IsTimeEarned>(3000000)
+                   .leaf<TraceLine>(SPEED_HIGH, GS_TARGET, P_CONST, I_CONST, D_CONST, 0.0, TS_NORMAL)
+                .end()
+
+                .composite<BrainTree::ParallelSequence>(1,2)
+                   .leaf<IsColorDetected>(CL_JETBLACK)
+                   .leaf<TraceLine>(SPEED_NORM, GS_TARGET, P_CONST, I_CONST, D_CONST, 0.0, TS_NORMAL)
+                .end()
+                
+                .composite<BrainTree::ParallelSequence>(1,2)
+                   .leaf<IsDistanceEarned>(20)
+                   .leaf<RunAsInstructed>(50,50, 0.0)
+                .end()
+                .composite<BrainTree::ParallelSequence>(1,2)
+                   .leaf<IsColorDetected>(CL_BLACK)
+                   .leaf<RunAsInstructed>(50,60, 0.0)
+                .end()
+
+                .composite<BrainTree::ParallelSequence>(1,2)
+                   .composite<BrainTree::MemSequence>()
+                      .leaf<IsColorDetected>(CL_BLACK)
+                      .leaf<IsColorDetected>(CL_BLUE)
+                   .end()
+                   .leaf<TraceLine>(SPEED_HIGH, GS_TARGET, P_CONST, I_CONST, D_CONST, 0.0, TS_NORMAL)
+                .end()
+                
             .end()
-            .leaf<TraceLine>(SPEED_NORM, GS_TARGET, P_CONST, I_CONST, D_CONST, 0.0, TS_NORMAL)
+
         .end()
         .build();
 
