@@ -85,6 +85,9 @@ extern Plotter*     plotter;
 #ifndef SPEED_NORM
 #define SPEED_NORM              45  /* was 50 for 2020 program                 */
 #endif
+#ifndef SPEED_HIGH
+#define SPEED_HIGH              70    
+#endif
 #ifndef P_CONST
 #define P_CONST                 0.75D
 #endif
