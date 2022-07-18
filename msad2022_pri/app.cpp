@@ -613,7 +613,7 @@ void main_task(intptr_t unused) {
     first trace
     */ 
                 .composite<BrainTree::ParallelSequence>(1,2)
-                   .leaf<IsTimeEarned>(1300000)
+                   .leaf<IsTimeEarned>(1500000)
                    .leaf<TraceLine>(SPEED_NORM, GS_TARGET, P_CONST, I_CONST, D_CONST, 0.0, TS_NORMAL)
                 .end()
     /*
