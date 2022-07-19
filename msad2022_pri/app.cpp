@@ -613,7 +613,7 @@ void main_task(intptr_t unused) {
     */ 
                 .composite<BrainTree::ParallelSequence>(1,2)
                    .leaf<IsTimeEarned>(1300000)
-                   .leaf<TraceLine>(SPEED_NORM, GS_TARGET, P_CONST, I_CONST, D_CONST, 0.0, TS_NORMAL)
+                   .leaf<TraceLine>(SPEED_NORM, GS_TARGET, P_CONST, I_CONST, D_CONST, 0.0, TS_OPPOSITE)
                 .end()
     /*
     first turn right
