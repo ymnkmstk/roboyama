@@ -268,6 +268,12 @@ public:
                     return Status::Success;
                 }
                 break;
+            case CL_JETBLACK_YMNK:
+                if (cur_rgb.r <=10 && cur_rgb.g <=10 && cur_rgb.b <=10) { 
+                    _log("ODO=%05d, CL_JETBLACK detected.", plotter->getDistance());
+                    return Status::Success;
+                }
+                break;
             case CL_BLACK:
                 if (cur_rgb.r <=50 && cur_rgb.g <=45 && cur_rgb.b <=60) {
                     _log("ODO=%05d, CL_BLACK detected.", plotter->getDistance());
@@ -603,91 +609,77 @@ void main_task(intptr_t unused) {
     tr_block = nullptr;
 #else /* BEHAVIOR FOR THE LEFT COURSE STARTS HERE */
     tr_run = (BrainTree::BehaviorTree*) BrainTree::Builder()
-
         .composite<BrainTree::ParallelSequence>(1,2)
             .leaf<IsBackOn>()
-        
             .composite<BrainTree::MemSequence>()
     /*
     to the first cross
-    */ 
+    */
                 .composite<BrainTree::ParallelSequence>(1,2)
-                   .leaf<IsTimeEarned>(13000000)
-                   .leaf<TraceLine>(SPEED_HIGH, GS_TARGET, P_CONST, I_CONST, D_CONST, 0.0, TS_OPPOSITE)
+                   .leaf<IsColorDetected>(CL_JETBLACK_YMNK)
+                   .leaf<IsTimeEarned>(18000000)
+                   .leaf<TraceLine>(45, GS_TARGET, P_CONST, I_CONST, D_CONST, 0.0, TS_OPPOSITE)
                 .end()
     /*
     go straight
-    */ 
+    */
                 .composite<BrainTree::ParallelSequence>(1,2)
-                   .leaf<IsTimeEarned>(800000)
+                   .leaf<IsTimeEarned>(1070000)
                    .leaf<RunAsInstructed>(50,50, 0.0)
                 .end()
     /*
     turn right
-    */ 
+    */
                 .composite<BrainTree::ParallelSequence>(1,2)
-                   .leaf<IsTimeEarned>(800000)
-                   .leaf<RunAsInstructed>(60,50, 0.0)
+                   .leaf<IsTimeEarned>(900000)
+                   .leaf<RunAsInstructed>(65,45, 0.0)
                 .end()
     /*
     till detect black,go right
-    */ 
+    */
                 .composite<BrainTree::ParallelSequence>(1,2)
                    .leaf<IsColorDetected>(CL_BLACK)
-                   .leaf<RunAsInstructed>(60,45, 0.0)
+                   .leaf<RunAsInstructed>(65,40, 0.0)
+                .end()
+                .composite<BrainTree::ParallelSequence>(1,2)
+                   .leaf<IsTimeEarned>(2000000)
+                   .leaf<TraceLine>(40, GS_TARGET, P_CONST, I_CONST, D_CONST, 0.0, TS_NORMAL)
                 .end()
     /*
     line trace till,next cross
-    */ 
+    */
                 .composite<BrainTree::ParallelSequence>(1,2)
-                   .leaf<IsTimeEarned>(13000000)
-                   .leaf<TraceLine>(SPEED_HIGH, GS_TARGET, P_CONST, I_CONST, D_CONST, 0.0, TS_OPPOSITE)
+                   .leaf<IsColorDetected>(CL_JETBLACK_YMNK)
+                   .leaf<IsTimeEarned>(65000000)
+                   .leaf<TraceLine>(50, GS_TARGET, P_CONST, I_CONST, D_CONST, 0.0, TS_NORMAL)
                 .end()
     /*
     go straight
-    */ 
+    */
                 .composite<BrainTree::ParallelSequence>(1,2)
-                   .leaf<IsTimeEarned>(800000)
-                   .leaf<RunAsInstructed>(100,100, 0.0)
-                .end()
-                .composite<BrainTree::ParallelSequence>(1,2)
-                   .leaf<IsColorDetected>(CL_BLACK)
-                   .leaf<RunAsInstructed>(50,50, 0.0)
-                .end()
-                .composite<BrainTree::ParallelSequence>(1,2)
-                   .leaf<IsTimeEarned>(800000)
-                   .leaf<RunAsInstructed>(100,100, 0.0)
-                .end()
-                .composite<BrainTree::ParallelSequence>(1,2)
-                   .leaf<IsColorDetected>(CL_BLACK)
-                   .leaf<RunAsInstructed>(50,50, 0.0)
-                .end()
-    /*
-    go straight
-    */ 
-                .composite<BrainTree::ParallelSequence>(1,2)
-                   .leaf<IsTimeEarned>(800000)
-                   .leaf<RunAsInstructed>(100,100, 0.0)
+                   .leaf<IsTimeEarned>(1620000)
+                   .leaf<RunAsInstructed>(60,74, 0.0)
                 .end()
     /*
     to the final trace
-    */ 
+    */
                 .composite<BrainTree::ParallelSequence>(1,2)
-                   .leaf<IsTimeEarned>(1200000)
+                   .leaf<IsTimeEarned>(150000000)
                    .leaf<IsColorDetected>(CL_BLACK)
-                   .leaf<RunAsInstructed>(50,60, 0.0)
+                   .leaf<RunAsInstructed>(50,50, 0.0)
                 .end()
-
-                .compositeite<BrainTree::ParallelSequence>(1,2)
+                .composite<BrainTree::ParallelSequence>(1,2)
+                   .leaf<IsTimeEarned>(1900000)
+                   .leaf<TraceLine>(35, GS_TARGET, P_CONST, I_CONST, D_CONST, 0.0, TS_OPPOSITE)
+                .end()
+                .composite<BrainTree::ParallelSequence>(1,2)
                    .composite<BrainTree::MemSequence>()
                       .leaf<IsColorDetected>(CL_BLACK)
                       .leaf<IsColorDetected>(CL_BLUE)
                    .end()
-                   .leaf<TraceLine>(SPEED_HIGH, GS_TARGET, P_CONST, I_CONST, D_CONST, 0.0, TS_NORMAL)
+                   .leaf<TraceLine>(45, GS_TARGET, P_CONST, I_CONST, D_CONST, 0.0, TS_OPPOSITE)
                 .end()
-                
             .end()
-
         .end()
         .build();
 
